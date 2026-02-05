@@ -1,0 +1,55 @@
+{
+  "auth": {
+    "identityProviders": {
+      "github": {
+        "registration": {
+          "clientIdSettingName": "GITHUB_CLIENT_ID",
+          "clientSecretSettingName": "GITHUB_CLIENT_SECRET"
+        }
+      }
+    },
+    "rolesSource": "/api/GetRoles"
+  },
+  "routes": [
+    {
+      "route": "/.auth/*",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/GetRoles",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
+      "route": "/api/health",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
+      "route": "/api/*",
+      "allowedRoles": ["OrgMember"]
+    },
+    {
+      "route": "/unauthorized.html",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
+      "route": "/*",
+      "allowedRoles": ["OrgMember"]
+    }
+  ],
+  "responseOverrides": {
+    "401": {
+      "redirect": "/.auth/login/github",
+      "statusCode": 302
+    },
+    "403": {
+      "rewrite": "/unauthorized.html",
+      "statusCode": 403
+    }
+  },
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "platform": {
+    "apiRuntime": "node:20"
+  }
+}

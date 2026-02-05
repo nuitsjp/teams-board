@@ -1,0 +1,17 @@
+{
+  "name": "blob-static-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Azure Blob Storage Static website ダッシュボード",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0",
+    "jsdom": "^25.0.0",
+    "papaparse": "^5.5.0"
+  }
+}

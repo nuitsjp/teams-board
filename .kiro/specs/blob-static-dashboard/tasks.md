@@ -11,8 +11,8 @@
 >
 > テストを書かずにプロダクションコードを書いてはならない。1つのテストにつき1つの振る舞いのみを検証する。
 
-- [ ] 1. プロジェクト骨格とテスト基盤の構築
-- [ ] 1.1 プロジェクトのディレクトリ構成・テストランナー・仮テストデータを一括で準備する
+- [x] 1. プロジェクト骨格とテスト基盤の構築
+- [x] 1.1 プロジェクトのディレクトリ構成・テストランナー・仮テストデータを一括で準備する
   - `$web` コンテナ配置を前提としたHTML・JS・CSSの基本ファイルを配置する
   - ES Modulesによるモジュール分割の基盤を整える
   - PapaParse v5.x をローカルファイルとして配置する（CDN不使用、閉域環境対応）
@@ -24,8 +24,8 @@
   - データ構造は設計のDashboardIndex / DashboardItem / ItemDetail に準拠するが、フィールド内容は仮とする
   - _Requirements: 8.1, 8.2, 1.1, 2.1_
 
-- [ ] 2. AuthManager の TDD実装
-- [ ] 2.1 AuthManagerのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 2. AuthManager の TDD実装
+- [x] 2.1 AuthManagerのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - `token`パラメータ付きURLからSASトークンを抽出できること
     - `token`パラメータがないURLではnullを返すこと
@@ -39,8 +39,8 @@
   - 全TODOリスト完了後、history.replaceState のモックを使ったテストも含め全テストがGreenであることを確認する
   - _Requirements: 3.1, 3.2_
 
-- [ ] 3. Router の TDD実装
-- [ ] 3.1 (P) RouterのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 3. Router の TDD実装
+- [x] 3.1 (P) RouterのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - `#/` のハッシュから `{ view: "dashboard" }` ルートを取得できること
     - `#/items/abc` のハッシュから `{ view: "detail", itemId: "abc" }` ルートを取得できること
@@ -53,8 +53,8 @@
   - Refactor: ルート解析ロジックの責務を整理する
   - _Requirements: 2.2_
 
-- [ ] 4. DataFetcher の TDD実装
-- [ ] 4.1 DataFetcherのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 4. DataFetcher の TDD実装
+- [x] 4.1 DataFetcherのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - `fetchIndex()` が `data/index.json` にキャッシュバスター付きでリクエストすること
     - `fetchIndex()` 成功時に `{ ok: true, data: DashboardIndex }` を返すこと
@@ -69,8 +69,8 @@
   - キャッシュバスター有無の差異を明示的にテストし、itemsが不変リソースとして扱われることを検証する
   - _Requirements: 1.1, 1.4, 2.1, 2.3, 6.1, 6.2_
 
-- [ ] 5. IndexMerger の TDD実装
-- [ ] 5.1 (P) IndexMergerのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 5. IndexMerger の TDD実装
+- [x] 5.1 (P) IndexMergerのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - 空のindexに新規アイテムを追加できること
     - 既存アイテムがあるindexに新規アイテムを追加できること
@@ -83,8 +83,8 @@
   - Refactor: イミュータブルな操作を保証し、重複チェックロジックを整理する
   - _Requirements: 5.2_
 
-- [ ] 6. CsvTransformer の TDD実装
-- [ ] 6.1 CsvTransformerのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 6. CsvTransformer の TDD実装
+- [x] 6.1 CsvTransformerのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - 正常なCSV文字列をパースしてDashboardItem配列を生成できること
     - 正常なCSV文字列をパースしてItemDetail配列を生成できること
@@ -99,8 +99,8 @@
   - マッピングルールは仮実装とし、次回の要件追加時に見直す
   - _Requirements: 4.1, 4.2, 4.4, 8.3_
 
-- [ ] 7. BlobWriter の TDD実装
-- [ ] 7.1 BlobWriterのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 7. BlobWriter の TDD実装
+- [x] 7.1 BlobWriterのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - 単一ファイルのPUTリクエストが正しいURL・ヘッダーで送信されること
     - SASトークンがURLクエリパラメータとして付与されること
@@ -118,8 +118,8 @@
   - 書き込み順序のテストではfetch呼び出しの順序をモックの呼び出し記録で検証する
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 6.3, 7.1_
 
-- [ ] 8. UI Layer の TDD実装（閲覧系）
-- [ ] 8.1 DashboardViewのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 8. UI Layer の TDD実装（閲覧系）
+- [x] 8.1 DashboardViewのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - データ取得中にローディング表示がDOMに存在すること
     - データ取得成功後にアイテム一覧がDOMにレンダリングされること
@@ -132,7 +132,7 @@
   - 一覧UIの表示内容・レイアウトは仮とする
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 8.2 DetailViewのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 8.2 DetailViewのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - 指定IDのアイテム詳細がDOMにレンダリングされること
     - データ取得失敗時にエラーメッセージと「一覧へ戻る」リンクが表示されること
@@ -143,8 +143,8 @@
   - 詳細UIの表示内容・レイアウトは仮とする
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 9. UI Layer の TDD実装（管理系）
-- [ ] 9.1 管理者モード表示切替のTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 9. UI Layer の TDD実装（管理系）
+- [x] 9.1 管理者モード表示切替のTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - 管理者モード有効時に管理者UIセクションがDOMに表示されること
     - 管理者モード無効時に管理者UIセクションがDOMに存在しないこと
@@ -154,7 +154,7 @@
   - Refactor: 表示切替の条件分岐を整理する
   - _Requirements: 3.3, 3.4_
 
-- [ ] 9.2 CsvUploaderのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 9.2 CsvUploaderのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - ファイル選択UIがDOMに表示されること
     - Drag&Dropエリアがドロップイベントを受け付けること
@@ -165,7 +165,7 @@
   - Refactor: イベントハンドラの責務を整理する
   - _Requirements: 4.1, 4.4_
 
-- [ ] 9.3 PreviewPanelと保存確定UIのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 9.3 PreviewPanelと保存確定UIのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - 変換結果がテーブル形式でDOMにプレビュー表示されること
     - 保存確定ボタンがDOMに表示されること
@@ -175,7 +175,7 @@
   - Refactor: プレビューテーブルの生成ロジックを整理する
   - _Requirements: 4.3, 5.5_
 
-- [ ] 9.4 書き込み進捗・結果表示とリトライのTODOリストを作成し、Red→Green→Refactorで実装する
+- [x] 9.4 書き込み進捗・結果表示とリトライのTODOリストを作成し、Red→Green→Refactorで実装する
   - **TODOリスト**:
     - 書き込み処理中に進捗状態（ファイル名）がDOMに表示されること
     - 全PUT成功時に完了メッセージがDOMに表示されること
@@ -187,8 +187,8 @@
   - Refactor: 進捗表示と結果表示の状態管理を整理する
   - _Requirements: 5.5, 5.6, 7.1, 7.2, 7.3_
 
-- [ ] 10. 全体結合テスト
-- [ ] 10.1 閲覧フローの結合テストを実装・実行する
+- [x] 10. 全体結合テスト
+- [x] 10.1 閲覧フローの結合テストを実装・実行する
   - **TODOリスト**:
     - index.html初期表示 → index.json取得 → 一覧レンダリングの一連のフローが動作すること
     - アイテム選択 → ハッシュ変更 → 詳細画面表示のフローが動作すること
@@ -198,7 +198,7 @@
   - Red→Green→Refactorサイクルで結合テストを追加していく
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 6.1, 6.2_
 
-- [ ] 10.2 管理者フローの結合テストを実装・実行する
+- [x] 10.2 管理者フローの結合テストを実装・実行する
   - **TODOリスト**:
     - SAS付きURL → トークン取得 → 管理者UI表示のフローが動作すること
     - CSV投入 → パース → プレビュー表示のフローが動作すること

@@ -1,147 +1,209 @@
-# Blob AccountによるStatic Web Site構築
+# study-log
 
-## 背景
-
-* ダッシュボード／ドリルダウン閲覧を提供する静的サイトを運用したい。
-* 利用頻度が低く、常時稼働のDBやバックエンドを置くのはコスト・運用負荷に見合わない。
-* 閲覧時UXを損ねたくない（バックエンド待ちやコールドスタートを避けたい）。
-* 更新情報はCSVで与えられ、手作業の登録（Issue等）は避けたい。
-* Azure Functions は配置ポリシー上 App Service プランのみで安価に使いづらい。
-* 環境は専用線により閉域接続が成立しており、イントラ内からのみ利用する前提が取れる。
-* 取り扱うデータは機密性が高くなく、SASのURL漏洩は重大問題としない（ただし過度な複雑化は避けたい）。
+Azure Blob Storage の静的サイトホスティング機能を利用した、ダッシュボード／ドリルダウン閲覧・更新システム。
 
 ## 目的
 
-1. **閲覧の安定UX**：静的配信のみで完結し、低頻度アクセスでも高速
-2. **最小コスト／最小運用**：DB/常時稼働APIを持たない
-3. **更新の省力化**：CSV投入→クライアント側で変換→JSON更新で反映
-4. **シンプルな権限制御**：一般ユーザーは読み取りのみ、管理者は書き込み可能（SASで簡易分離）
+利用頻度が低くDB・常時稼働バックエンドを持つのがコストに見合わないケースにおいて、**静的ファイル配信のみ**でダッシュボード閲覧と CSV によるデータ更新を実現する。
+
+| 目標 | 実現方法 |
+|------|---------|
+| 閲覧の安定 UX | 静的配信のみ（コールドスタートなし） |
+| 最小コスト・最小運用 | Azure Blob Storage + `$web` コンテナのみ |
+| 更新の省力化 | CSV 投入 → ブラウザ変換 → JSON 配信 |
+| シンプルな権限制御 | 閉域ネットワーク ＋ SAS トークンによる簡易分離 |
+
+## リポジトリ構成
+
+```
+study-log/
+├── frontend/
+│   ├── dashboard/          # ← メインアプリケーション
+│   │   ├── public/         # $web コンテナに配置する静的ファイル
+│   │   │   ├── index.html
+│   │   │   ├── css/style.css
+│   │   │   ├── js/main.js
+│   │   │   ├── lib/papaparse.min.js
+│   │   │   └── data/       # index.json, items/*.json（仮データ）
+│   │   ├── src/            # ES Modules ソースコード
+│   │   │   ├── core/       # AuthManager, Router
+│   │   │   ├── data/       # DataFetcher, BlobWriter, IndexMerger
+│   │   │   ├── logic/      # CsvTransformer
+│   │   │   └── ui/         # DashboardView, DetailView, AdminPanel
+│   │   └── tests/          # Vitest テスト（87件）
+│   └── staticwebapp.config.json
+├── backend/                # Azure Functions（別機能、本ダッシュボードでは不使用）
+├── .kiro/specs/            # 仕様書（要件・設計・タスク）
+└── CLAUDE.md               # AI 開発ガイドライン
+```
+
+## クイックスタート
+
+### 前提条件
+
+- **Node.js** v20 以上
+- **npm**
+
+### セットアップとテスト実行
+
+```bash
+cd frontend/dashboard
+npm install
+npm test
+```
+
+87 件の全テストが通ることを確認してください。
+
+```
+ Test Files  12 passed (12)
+      Tests  87 passed (87)
+```
+
+### ローカルで画面を確認する
+
+`public/` 配下を任意の静的サーバで配信します。
+
+```bash
+# 例: npx serve を使う場合
+npx serve public
+```
+
+ブラウザで `http://localhost:3000` を開くとダッシュボード一覧が表示されます。
 
 ## アーキテクチャ概要
 
-* ホスティング：**Azure Blob Storage Static website（$web）**
-
-  * 静的サイト本体（HTML/JS/CSS）
-  * 描画用JSON（サイトからfetchしてレンダリング）
-* 更新処理：**ブラウザJavaScriptのみ**
-
-  * 管理者はSAS付きURLでアクセスし、SASを用いてBlobへPUT（上書き/追加）
-  * 一般ユーザーはSASなしで読み取りのみ
-* アクセス制御：**閉域（専用線）＋Storageネットワーク規則**を基本境界とする
-
-## コンポーネントと責務
-
-### 1) Azure Blob Storage（Static website）
-
-* `$web/` に以下を格納
-
-  * `index.html` / JS / CSS（UI）
-  * `data/index.json`（一覧・集約）
-  * `data/items/<id>.json`（詳細：任意）
-  * `raw/<timestamp>-<name>.csv`（元データ保管：任意）
-* 一般ユーザーは `web.core.windows.net` の静的サイトエンドポイントから **匿名read** で取得
-
-### 2) ブラウザ（一般ユーザー）
-
-* `data/index.json` 等を取得して画面をレンダリング
-* 更新機能は利用しない（UIを非表示にしてもよい）
-
-### 3) ブラウザ（管理者）
-
-* 管理者向けに配布したURL：
-
-  * `https://<site>/index.html?token=<SAS>`
-* `token`（SAS）を用いて **Blobサービスエンドポイント（blob.core...）** に対し、
-
-  * `raw/*.csv` のアップロード
-  * `data/*.json` の上書き更新
-    を行う
-
-## データ設計
-
-### 配信用（閲覧用）
-
-* `data/index.json`：ダッシュボードの一覧・集約（推奨：1ファイルに寄せる）
-* `data/items/<id>.json`：ドリルダウン詳細（必要な場合のみ）
-
-### 保管用（復元・監査用）
-
-* `raw/<timestamp>-<name>.csv`：投入された元CSVをそのまま保存（任意）
-
-  * 失敗時の復元がしやすい
-  * データの正当性確認や差分比較の材料になる
-
-## 処理フロー
-
-### 閲覧フロー
-
-1. ユーザーが `index.html` を開く
-2. JavaScriptが `data/index.json`（必要なら `data/items/...`）を取得
-3. 取得したJSONを集計してレンダリング
-
-### 更新フロー（管理者のみ）
-
-1. 管理者が `index.html?token=<SAS>` でサイトを開く（ブックマーク運用）
-2. CSVをファイル選択/Drag&Dropで受け取る
-3. CSVをブラウザでパースし、配信用JSONに変換
-4. （任意）元CSVを `raw/` に保存
-5. 生成したJSONを `data/` に上書き保存
-6. 一般ユーザーは次回アクセス/手動リロードで新JSONを取得して反映
-
-## 更新時シーケンス（Mermaid）
-
-```mermaid
-sequenceDiagram
-  autonumber
-  actor A as Admin
-  participant UI as Browser (Static UI)
-  participant WEB as Static website ($web)
-  participant BLOB as Blob service (blob.core)
-
-  A->>WEB: GET index.html?token=<SAS>
-  WEB-->>UI: HTML/JS/CSS
-  UI->>UI: token(SAS)をURLから取得
-  A->>UI: CSVを選択/Drag&Drop
-  UI->>UI: CSVパース→JSON生成
-  opt 元CSVも保存
-    UI->>BLOB: PUT raw/<ts>-<name>.csv (SAS)
-  end
-  UI->>BLOB: PUT data/index.json (overwrite, SAS)
-  opt 詳細JSONも更新
-    UI->>BLOB: PUT data/items/<id>.json (overwrite, SAS)
-  end
-  BLOB-->>UI: 200 OK
-  Note over UI,WEB: 通知なし。一般ユーザーは次回閲覧/リロードで新JSONを取得
+```
+┌─────────────────────────────────────────────────────┐
+│  ブラウザ                                            │
+│  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
+│  │ Dashboard │  │  Detail  │  │   AdminPanel      │  │
+│  │   View    │  │   View   │  │  CsvUploader      │  │
+│  └────┬─────┘  └────┬─────┘  │  PreviewPanel     │  │
+│       │              │        └────────┬──────────┘  │
+│  ┌────┴──────────────┴────┐   ┌───────┴──────────┐  │
+│  │     DataFetcher        │   │   BlobWriter      │  │
+│  │  (GET, キャッシュ制御)  │   │ (PUT + SAS token) │  │
+│  └────────┬───────────────┘   └───────┬──────────┘  │
+└───────────┼───────────────────────────┼──────────────┘
+            │                           │
+   GET (静的サイト EP)           PUT (Blob サービス EP)
+            │                           │
+   ┌────────▼───────────────────────────▼──────────┐
+   │        Azure Blob Storage ($web コンテナ)       │
+   │  data/index.json  data/items/*.json  raw/*.csv │
+   └────────────────────────────────────────────────┘
 ```
 
-## セキュリティ（割り切りを含む）
+### 閲覧フロー（一般ユーザー）
 
-* 一般ユーザーにはSASを配布しない（閲覧は匿名read）
-* 管理者のみSASを配布し、更新はSASの権限で実施
-* SAS漏洩は重大問題としない前提だが、影響を局所化するために以下を推奨
+1. `index.html` をブラウザで開く
+2. `data/index.json` をキャッシュバスター付きで取得し一覧表示
+3. アイテム選択で `data/items/<id>.json` を取得して詳細表示（不変リソース、ブラウザキャッシュ有効）
 
-  * SASの権限は必要最小限（例：`raw/` と `data/` のみ）
-  * 期限を設ける／Stored access policyで失効しやすくする（可能なら）
-  * URLに残ったtokenは、読み取ったら `history.replaceState` で除去するなど“拡散防止”は任意で実施
-* アカウント/コンテナの到達性は閉域（専用線）とStorageネットワーク規則で制御
+### 更新フロー（管理者）
 
-## 非機能（性能・可用性）
+1. `?token=<SAS>` 付き URL でアクセス → 管理者モード有効化
+2. CSV ファイルをドラッグ&ドロップまたはファイル選択で投入
+3. ブラウザ上で PapaParse が CSV → JSON に変換、プレビュー表示
+4. 「保存を確定」で Blob に書き込み（順序: `raw/*.csv` → `data/items/*.json` → `data/index.json`）
 
-* 閲覧：静的配信のみで高速・安定（バックエンド依存なし）
-* 更新：ブラウザ処理のため、CSVサイズが増えると端末性能に依存
-* 反映：JSON上書き後、次回アクセスまたはリロードで反映（即時通知はしない）
+## コンポーネント一覧
 
-## 運用
+| コンポーネント | 責務 | テスト数 |
+|---------------|------|---------|
+| AuthManager | SAS トークン抽出、管理者モード制御、URL からの token 除去 | 9 |
+| Router | ハッシュベースの画面遷移（`#/`, `#/items/<id>`） | 8 |
+| DataFetcher | JSON データ取得、キャッシュバスター制御 | 8 |
+| BlobWriter | SAS 付き PUT、書き込み順序制御、リトライ | 11 |
+| IndexMerger | index.json のマージ、重複 ID 検出 | 6 |
+| CsvTransformer | CSV パース（PapaParse）、JSON 変換 | 8 |
+| DashboardView | ダッシュボード一覧表示、ローディング/エラー状態 | 5 |
+| DetailView | ドリルダウン詳細表示、戻る操作 | 4 |
+| AdminPanel | 管理者 UI（CSV 投入、プレビュー、進捗表示、リトライ） | 13 |
 
-* 管理者URL（SAS付き）の配布・更新（期限切れ時の再配布）
-* JSON破損時の復旧：`raw/` のCSVから再生成（あるいは前世代JSONを復元）
-* キャッシュ対策：
+結合テスト: 閲覧フロー 6 件 + 管理者フロー 6 件 + スモークテスト 3 件
 
-  * `data/index.json?v=<timestamp>` のようなキャッシュバスター
-  * もしくは `index.json` を上書きせず `index.<version>.json` にして参照を更新
+## 技術スタック
 
-## トレードオフ
+| 要素 | 選択 | 理由 |
+|------|------|------|
+| フロントエンド | Vanilla JS（ES Modules） | ビルドツール不要、`$web` に直接配置可能 |
+| CSV パーサー | PapaParse v5.x | Web Worker 対応、依存ゼロ、ローカルファイル配置（CDN 不使用） |
+| テスト | Vitest + jsdom | ES Modules ネイティブ対応、高速 |
+| ホスティング | Azure Blob Storage 静的サイト | 最小コスト、閉域環境対応 |
 
-* サーバ側の検証・監査が弱く、データ品質はクライアント実装と運用に依存
-* 同時更新が起きると上書き競合する可能性（運用ルールで回避するか、追記方式に変更）
-* URLにSASを入れる方式は漏洩に弱い（ただし本方式は許容前提）
+## Azure 環境の準備
+
+本アプリケーションを Azure にデプロイするには以下の設定が必要です。
+
+### 1. Storage アカウントの静的サイトホスティング有効化
+
+```bash
+az storage blob service-properties update \
+  --account-name <ACCOUNT_NAME> \
+  --static-website \
+  --index-document index.html
+```
+
+### 2. CORS 設定（Blob サービス）
+
+管理者のブラウザから Blob サービスエンドポイントへ PUT するため、CORS ルールが必要です。
+
+```bash
+az storage cors add \
+  --account-name <ACCOUNT_NAME> \
+  --services b \
+  --methods PUT GET HEAD \
+  --origins "https://<ACCOUNT_NAME>.<ZONE>.web.core.windows.net" \
+  --allowed-headers "x-ms-blob-type,x-ms-blob-content-type,content-type,x-ms-version" \
+  --exposed-headers "x-ms-meta-*"
+```
+
+### 3. SAS トークン発行（管理者用）
+
+```bash
+az storage container generate-sas \
+  --account-name <ACCOUNT_NAME> \
+  --name '$web' \
+  --permissions rwc \
+  --expiry <EXPIRY_DATE> \
+  --https-only
+```
+
+発行された SAS トークンを URL の `?token=` パラメータとして管理者に配布します。
+
+### 4. デプロイ
+
+`public/` 配下のファイルを `$web` コンテナにアップロードします。
+
+```bash
+az storage blob upload-batch \
+  --account-name <ACCOUNT_NAME> \
+  --destination '$web' \
+  --source frontend/dashboard/public
+```
+
+## 仕様書
+
+要件定義・技術設計・タスク分解は `.kiro/specs/blob-static-dashboard/` に格納されています。
+
+| ファイル | 内容 |
+|---------|------|
+| `requirements.md` | 8 つの要件と受入基準 |
+| `design.md` | アーキテクチャ設計、コンポーネント定義、データモデル |
+| `tasks.md` | TDD 実装計画（全タスク完了済み） |
+| `research.md` | 技術調査結果（Azure REST API、CORS、PapaParse 等） |
+
+## 開発ワークフロー
+
+本リポジトリでは AI-DLC（AI Development Life Cycle）に基づく Spec-Driven Development を採用しています。
+
+```
+要件定義 → 技術設計 → タスク分解 → TDD 実装
+```
+
+各フェーズで人間のレビューと承認を行い、テストを先に書いてから実装コードを書く TDD サイクルを厳守します。詳細は `CLAUDE.md` を参照してください。
+
+## ライセンス
+
+MIT License - 詳細は [LICENSE](LICENSE) を参照してください。
