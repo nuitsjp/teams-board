@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
+import { SummaryCard } from '../components/SummaryCard';
+import { StudyGroupList } from '../components/StudyGroupList';
+import { MemberList } from '../components/MemberList';
+import { Clock, Users, User, Loader2 } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -30,50 +34,64 @@ export function DashboardPage() {
   }, []);
 
   if (loading) {
-    return <div className="loading">読み込み中...</div>;
+    return (
+      <div className="flex items-center justify-center py-20 text-text-muted">
+        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+        読み込み中...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="error">データ取得エラー: {error}</div>;
+    return (
+      <div className="mx-auto max-w-xl mt-8 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+        データ取得エラー: {error}
+      </div>
+    );
   }
 
   const { studyGroups, members } = data;
-  const sortedMembers = [...members].sort(
-    (a, b) => b.totalDurationSeconds - a.totalDurationSeconds
-  );
+
+  const totalSessions = studyGroups.reduce((acc, g) => acc + g.sessionIds.length, 0);
+  const totalDuration = studyGroups.reduce((acc, g) => acc + g.totalDurationSeconds, 0);
 
   return (
-    <div>
-      {/* 勉強会グループ一覧 */}
-      <section className="study-groups-section">
-        <h2>勉強会グループ</h2>
-        {studyGroups.map((group) => (
-          <div key={group.id} className="study-group-card">
-            <h3>{group.name}</h3>
-            <div className="study-group-info">
-              {group.sessionIds.length}回 / {formatDuration(group.totalDurationSeconds)}
-            </div>
-          </div>
-        ))}
-      </section>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-xl font-bold text-text-primary">学習サマリー</h2>
+        <p className="text-sm text-text-muted mt-1">全体の学習記録を確認できます</p>
+      </div>
 
-      {/* 参加者一覧（合計時間の降順） */}
-      <section className="members-section">
-        <h2>参加者</h2>
-        {sortedMembers.map((member) => (
-          <div
-            key={member.id}
-            className="member-card"
-            data-member-id={member.id}
-            onClick={() => navigate(`/members/${member.id}`)}
-          >
-            <h3>{member.name}</h3>
-            <div className="member-info">
-              {formatDuration(member.totalDurationSeconds)} / {member.sessionIds.length}回
-            </div>
-          </div>
-        ))}
-      </section>
+      {/* 統計カード */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <SummaryCard
+          title="総勉強時間"
+          value={formatDuration(totalDuration)}
+          icon={Clock}
+        />
+        <SummaryCard
+          title="総開催回数"
+          value={`${totalSessions}回`}
+          icon={Users}
+        />
+        <SummaryCard
+          title="参加人数"
+          value={`${members.length}人`}
+          icon={User}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* 左カラム: 勉強会グループ */}
+        <div className="lg:col-span-5">
+          <StudyGroupList groups={studyGroups} />
+        </div>
+
+        {/* 右カラム: メンバー一覧 */}
+        <div className="lg:col-span-7">
+          <MemberList members={members} />
+        </div>
+      </div>
     </div>
   );
 }

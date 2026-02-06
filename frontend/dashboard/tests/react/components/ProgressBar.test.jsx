@@ -6,23 +6,21 @@ describe('ProgressBar', () => {
     const { container } = render(
       <ProgressBar current={0} total={3} visible={false} statusText="" />
     );
-    expect(container.querySelector('.save-progress')).toBeNull();
+    expect(container.innerHTML).toBe('');
   });
 
   it('visible=trueの場合にプログレスバーを表示すること', () => {
-    const { container } = render(
+    render(
       <ProgressBar current={1} total={3} visible={true} statusText="保存中..." />
     );
-    expect(container.querySelector('.save-progress')).not.toBeNull();
-    expect(screen.getByText('保存中...')).toBeInTheDocument();
+    expect(screen.getByText(/保存中\.\.\./)).toBeInTheDocument();
   });
 
   it('進捗値が正しく設定されること', () => {
-    const { container } = render(
+    render(
       <ProgressBar current={2} total={5} visible={true} statusText="" />
     );
-    const progress = container.querySelector('progress');
-    expect(progress.value).toBe(2);
-    expect(progress.max).toBe(5);
+    // divベースのプログレスバー: width: 40%
+    expect(screen.getByText(/40%/)).toBeInTheDocument();
   });
 });

@@ -17,9 +17,11 @@ describe('FileDropZone', () => {
       <FileDropZone onFilesAdded={() => {}} disabled={false} hasFiles={false} />
     );
 
-    const dropZone = container.querySelector('.csv-drop-zone');
+    // ドロップゾーンはborder-dashedクラスを持つdiv
+    const dropZone = container.querySelector('.border-dashed');
     fireEvent.dragOver(dropZone);
-    expect(dropZone.classList.contains('dragover')).toBe(true);
+    // ドラッグオーバー時にプライマリカラーのボーダーに変わる
+    expect(dropZone.className).toContain('border-primary-500');
   });
 
   it('ファイル選択時にonFilesAddedが呼ばれること', async () => {

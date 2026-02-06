@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* デザイントークン定義 */
+@theme {
+  /* プライマリ — ティール系 */
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
+
+  /* アクセント — アンバー系 */
+  --color-accent-50: #fffbeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+
+  /* 背景 */
+  --color-page-bg: #f5f7f6;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f4;
+
+  /* テキスト */
+  --color-text-primary: #1a2e2a;
+  --color-text-secondary: #4a6560;
+  --color-text-muted: #7a938d;
+
+  /* ボーダー */
+  --color-border: #e2e8e6;
+  --color-border-light: #edf2f0;
+
+  /* セマンティック */
+  --color-success: #16a34a;
+  --color-error: #dc2626;
+  --color-warning: #d97706;
+}
+
+/* ベーススタイル */
+@layer base {
+  body {
+    @apply bg-page-bg text-text-primary font-sans antialiased;
+  }
+}

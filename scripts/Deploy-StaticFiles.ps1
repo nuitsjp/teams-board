@@ -68,6 +68,29 @@ if ($SourcePaths.Count -eq 0) {
     }
 }
 
+# テスト実行・プロダクションビルド
+$dashboardDir = Join-Path (Split-Path $PSScriptRoot -Parent) "frontend/dashboard"
+Push-Location $dashboardDir
+try {
+    # テスト実行
+    Write-Host "テストを実行しています..." -ForegroundColor Cyan
+    & npx vitest run
+    if ($LASTEXITCODE -ne 0) {
+        throw "テストに失敗しました (exit code: $LASTEXITCODE)。デプロイを中断します。"
+    }
+    Write-Host "テスト完了" -ForegroundColor Green
+
+    # プロダクションビルド実行
+    Write-Host "プロダクションビルドを実行しています..." -ForegroundColor Cyan
+    & npm run build
+    if ($LASTEXITCODE -ne 0) {
+        throw "ビルドに失敗しました (exit code: $LASTEXITCODE)"
+    }
+    Write-Host "ビルド完了" -ForegroundColor Green
+} finally {
+    Pop-Location
+}
+
 # サブスクリプション切替
 Write-Host "サブスクリプションを切り替えています..." -ForegroundColor Cyan
 Set-AzContext -SubscriptionId $SubscriptionId | Out-Null

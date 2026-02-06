@@ -1,50 +1,27 @@
+import { Check, X, AlertTriangle, Clock } from 'lucide-react';
+
 /**
  * ステータスアイコンを返す
  * @param {string} status
- * @returns {string}
+ * @returns {import('react').ReactNode}
  */
-function statusIcon(status) {
-  switch (status) {
-    case 'pending':
-    case 'validating':
-      return '⏳';
-    case 'ready':
-      return '✓';
-    case 'saving':
-      return '⏳';
-    case 'saved':
-      return '✓';
-    case 'error':
-    case 'save_failed':
-      return '✗';
-    case 'duplicate_warning':
-      return '⚠';
-    default:
-      return '';
-  }
-}
-
-/**
- * ステータスアイコンのCSSクラス
- * @param {string} status
- * @returns {string}
- */
-function statusClass(status) {
+function StatusIcon({ status }) {
+  const size = 16;
   switch (status) {
     case 'pending':
     case 'validating':
     case 'saving':
-      return 'pending';
+      return <Clock size={size} className="text-warning" />;
     case 'ready':
     case 'saved':
-      return 'success';
+      return <Check size={size} className="text-success" />;
     case 'error':
     case 'save_failed':
-      return 'failure';
+      return <X size={size} className="text-error" />;
     case 'duplicate_warning':
-      return 'warning';
+      return <AlertTriangle size={size} className="text-warning" />;
     default:
-      return '';
+      return null;
   }
 }
 
@@ -67,24 +44,26 @@ export function FileQueueList({ queue, onRemove, onApproveDuplicate }) {
   if (queue.length === 0) return null;
 
   return (
-    <ul className="queue-list">
+    <ul className="space-y-1 my-3">
       {queue.map((item) => (
-        <li key={item.id} className={`queue-item queue-item-${item.status}`} data-file-id={item.id}>
-          <span className={`status-icon ${statusClass(item.status)}`}>
-            {statusIcon(item.status)}
-          </span>
-          <span className="queue-item-name">{item.file.name}</span>
-          <span className="queue-item-size">({formatSize(item.file.size)})</span>
+        <li
+          key={item.id}
+          className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-light rounded-lg text-sm animate-[fadeIn_0.3s_ease]"
+          data-file-id={item.id}
+        >
+          <StatusIcon status={item.status} />
+          <span className="font-medium text-text-primary">{item.file.name}</span>
+          <span className="text-text-muted text-xs">({formatSize(item.file.size)})</span>
 
           {item.status === 'error' && (
-            <span className="queue-item-error msg-error">{item.errors.join(', ')}</span>
+            <span className="text-xs text-error bg-red-50 px-1.5 py-0.5 rounded">{item.errors.join(', ')}</span>
           )}
 
           {item.status === 'duplicate_warning' && (
             <>
-              <span className="queue-item-warning msg-warning">重複セッションが検出されました</span>
+              <span className="text-xs text-warning bg-amber-50 px-1.5 py-0.5 rounded">重複セッションが検出されました</span>
               <button
-                className="btn btn-sm btn-approve"
+                className="text-xs px-2 py-0.5 rounded border border-accent-400 bg-accent-50 text-accent-600 hover:bg-accent-200 transition-colors"
                 onClick={() => onApproveDuplicate(item.id)}
               >
                 上書き
@@ -94,7 +73,7 @@ export function FileQueueList({ queue, onRemove, onApproveDuplicate }) {
 
           {item.status !== 'saving' && item.status !== 'saved' && (
             <button
-              className="btn btn-sm btn-remove"
+              className="ml-auto text-xs px-2 py-0.5 rounded border border-border bg-surface text-error hover:bg-red-50 transition-colors"
               onClick={() => onRemove(item.id)}
             >
               削除

@@ -87,7 +87,7 @@ describe('MemberDetailPage', () => {
     renderWithRouter('m1');
 
     await waitFor(() => {
-      expect(screen.getByText('← 一覧へ戻る')).toBeInTheDocument();
+      expect(screen.getByText('一覧へ戻る')).toBeInTheDocument();
     });
   });
 });
