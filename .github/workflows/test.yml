@@ -1,0 +1,42 @@
+# フロントエンド テスト CI ワークフロー
+# PR および main ブランチへの push 時にユニットテストとビルド検証を実行する
+name: Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/dashboard/**"
+      - ".github/workflows/test.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/dashboard/**"
+      - ".github/workflows/test.yml"
+
+defaults:
+  run:
+    working-directory: frontend/dashboard
+
+jobs:
+  test:
+    name: ユニットテスト
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/dashboard/package-lock.json
+
+      - name: 依存パッケージのインストール
+        run: npm ci
+
+      - name: ユニットテスト実行
+        run: npm run test
+
+      - name: ビルド検証
+        run: npm run build
