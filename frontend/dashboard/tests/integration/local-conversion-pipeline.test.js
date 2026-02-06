@@ -5,7 +5,7 @@ import { SessionAggregationService } from '../../local-batch/session-aggregation
 import { DataContractValidator } from '../../local-batch/data-contract-validator.js';
 import { ConsistencyValidator } from '../../local-batch/consistency-validator.js';
 import { ConversionReporter } from '../../local-batch/conversion-reporter.js';
-import { IndexMerger } from '../../public/js/data/index-merger.js';
+import { IndexMerger } from '../../src/services/index-merger.js';
 
 /**
  * テスト用のCSV解析結果を生成する

@@ -1,6 +1,6 @@
 // IndexMerger テスト — 新ドメインモデル対応
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { IndexMerger } from '../../public/js/data/index-merger.js';
+import { IndexMerger } from '../../src/services/index-merger.js';
 
 describe('IndexMerger', () => {
   let merger;

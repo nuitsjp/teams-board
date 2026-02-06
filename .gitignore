@@ -1,6 +1,10 @@
 # Playwright MCP
 .playwright-mcp/
 
+# Playwright テスト生成物
+playwright-report/
+test-results/
+
 # Logs
 logs
 *.log

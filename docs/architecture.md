@@ -67,22 +67,31 @@
 * 初期化時に `token` パラメータからSASを抽出し、`history.replaceState` でURLから除去する
 * `token`（SAS）を用いて **Blobサービスエンドポイント** に対し、以下の順序で書き込む
 
-### ソースコード構成
+### リポジトリ構成
 
 ```
-frontend/dashboard/
-├── public/              # $web コンテナに配置する静的ファイル
-│   ├── index.html
-│   ├── css/style.css
-│   ├── js/main.js       # エントリーポイント
-│   ├── lib/papaparse.min.js
-│   └── data/            # index.json, items/*.json
-├── src/                 # ES Modules ソースコード
-│   ├── core/            # AuthManager, Router
-│   ├── data/            # DataFetcher, BlobWriter, IndexMerger
-│   ├── logic/           # CsvTransformer
-│   └── ui/              # DashboardView, DetailView, AdminPanel
-└── tests/               # Vitest テスト（87件）
+study-log/
+├── frontend/
+│   ├── dashboard/              # メインアプリケーション（React + Vite）
+│   │   ├── index.html          # エントリ HTML（Vite が使用）
+│   │   ├── vite.config.js      # Vite + React プラグイン設定
+│   │   ├── playwright.config.js
+│   │   ├── public/             # Vite の静的アセット（ビルド時に dist/ へコピーされる）
+│   │   │   ├── css/style.css
+│   │   │   └── data/           # index.json, sessions/*.json（開発用サンプルデータ）
+│   │   ├── src/                # React アプリケーションソースコード
+│   │   │   ├── components/     # FileDropZone, FileQueueList, PreviewArea, ProgressBar
+│   │   │   ├── hooks/          # useAuth, useFileQueue
+│   │   │   ├── pages/          # DashboardPage, MemberDetailPage, AdminPage
+│   │   │   ├── services/       # DataFetcher, BlobWriter, IndexMerger, CsvTransformer
+│   │   │   └── utils/          # formatDuration 等の共有ユーティリティ
+│   │   ├── tests/              # Vitest ユニット／統合テスト
+│   │   ├── e2e/                # Playwright E2E テスト
+│   │   └── dist/               # ビルド成果物（git 管理外）
+│   └── staticwebapp.config.json
+├── backend/                    # Azure Functions（別機能、本ダッシュボードでは不使用）
+├── .kiro/specs/                # 仕様書（要件・設計・タスク）
+└── CLAUDE.md                   # AI 開発ガイドライン
 ```
 
 ## データ設計
