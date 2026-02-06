@@ -1,6 +1,6 @@
 // BlobWriter テスト
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BlobWriter } from '../../public/js/data/blob-writer.js';
+import { BlobWriter } from '../../src/services/blob-writer.js';
 
 describe('BlobWriter', () => {
   let writer;

@@ -1,6 +1,6 @@
 # study-log
 
-Azure Blob Storage の静的サイトホスティング機能を利用した、ダッシュボード／ドリルダウン閲覧・更新システム。
+Azure Blob Storage の静的サイトホスティング機能を利用した、勉強会ダッシュボード／ドリルダウン閲覧・更新システム。
 
 URL: [https://strjstudylogprod.z11.web.core.windows.net/](https://strjstudylogprod.z11.web.core.windows.net/)
 
@@ -22,30 +22,6 @@ URL: [https://strjstudylogprod.z11.web.core.windows.net/](https://strjstudylogpr
 
 - [アーキテクチャ概要](./docs/architecture.md)
 
-## リポジトリ構成
-
-```
-study-log/
-├── frontend/
-│   ├── dashboard/          # ← メインアプリケーション
-│   │   ├── public/         # $web コンテナに配置する静的ファイル
-│   │   │   ├── index.html
-│   │   │   ├── css/style.css
-│   │   │   ├── js/main.js
-│   │   │   ├── lib/papaparse.min.js
-│   │   │   └── data/       # index.json, items/*.json（仮データ）
-│   │   ├── src/            # ES Modules ソースコード
-│   │   │   ├── core/       # AuthManager, Router
-│   │   │   ├── data/       # DataFetcher, BlobWriter, IndexMerger
-│   │   │   ├── logic/      # CsvTransformer
-│   │   │   └── ui/         # DashboardView, DetailView, AdminPanel
-│   │   └── tests/          # Vitest テスト（87件）
-│   └── staticwebapp.config.json
-├── backend/                # Azure Functions（別機能、本ダッシュボードでは不使用）
-├── .kiro/specs/            # 仕様書（要件・設計・タスク）
-└── CLAUDE.md               # AI 開発ガイドライン
-```
-
 ## クイックスタート
 
 ### 前提条件
@@ -61,84 +37,119 @@ npm install
 npm test
 ```
 
-87 件の全テストが通ることを確認してください。
-
-```
- Test Files  12 passed (12)
-      Tests  87 passed (87)
-```
+全テストが pass することを確認してください。
 
 ### ローカルで画面を確認する
 
-`public/` 配下を任意の静的サーバで配信します。
-
 ```bash
-# 例: npx serve を使う場合
-npx serve public
+cd frontend/dashboard
+
+# 開発サーバー（HMR 付き）
+npm run dev
+
+# または、プロダクションビルドを確認する場合
+npm run build
+npm run preview
 ```
 
-ブラウザで `http://localhost:3000` を開くとダッシュボード一覧が表示されます。
+`npm run dev` でブラウザが開き、ダッシュボード一覧が表示されます（デフォルト: `http://localhost:5173`）。
+
+### E2E テスト
+
+```bash
+cd frontend/dashboard
+npx playwright install    # 初回のみ
+npm run test:e2e          # ヘッドレス実行
+npm run test:e2e:headed   # ブラウザ表示付き実行
+```
+
+### npm scripts 一覧
+
+| コマンド | 説明 |
+|---------|------|
+| `npm run dev` | Vite 開発サーバー起動（HMR 付き） |
+| `npm run build` | プロダクションビルド（`dist/` に出力） |
+| `npm run preview` | ビルド済みアプリのプレビューサーバー |
+| `npm test` | Vitest でユニット／統合テストを実行 |
+| `npm run test:e2e` | Playwright E2E テストを実行 |
 
 ## アーキテクチャ概要
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  ブラウザ                                            │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────────┐  │
-│  │ Dashboard │  │  Detail  │  │   AdminPanel      │  │
-│  │   View    │  │   View   │  │  CsvUploader      │  │
-│  └────┬─────┘  └────┬─────┘  │  PreviewPanel     │  │
-│       │              │        └────────┬──────────┘  │
-│  ┌────┴──────────────┴────┐   ┌───────┴──────────┐  │
-│  │     DataFetcher        │   │   BlobWriter      │  │
-│  │  (GET, キャッシュ制御)  │   │ (PUT + SAS token) │  │
-│  └────────┬───────────────┘   └───────┬──────────┘  │
-└───────────┼───────────────────────────┼──────────────┘
-            │                           │
-   GET (静的サイト EP)           PUT (Blob サービス EP)
-            │                           │
-   ┌────────▼───────────────────────────▼──────────┐
-   │        Azure Blob Storage ($web コンテナ)       │
-   │  data/index.json  data/items/*.json  raw/*.csv │
-   └────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│  ブラウザ（React SPA）                                      │
+│                                                           │
+│  ┌─ Pages ──────────────────────────────────────────────┐ │
+│  │  DashboardPage    MemberDetailPage    AdminPage      │ │
+│  └──────┬───────────────────┬──────────────┬────────────┘ │
+│         │                   │              │              │
+│  ┌─ Hooks ──────────────────┼──────────────┤              │
+│  │  useAuth                 │     useFileQueue            │
+│  └──────────────────────────┤──────────────┤              │
+│                             │              │              │
+│  ┌─ Services（再利用） ──────┴──────────────┴────────────┐ │
+│  │  DataFetcher    BlobWriter    IndexMerger             │ │
+│  │  (GET, キャッシュ制御)  (PUT + SAS)  CsvTransformer    │ │
+│  └──────────┬───────────────────────────┬────────────────┘ │
+└─────────────┼───────────────────────────┼─────────────────┘
+              │                           │
+     GET (静的サイト EP)           PUT (Blob サービス EP)
+              │                           │
+     ┌────────▼───────────────────────────▼──────────┐
+     │        Azure Blob Storage ($web コンテナ)       │
+     │  data/index.json  data/sessions/*.json  raw/*  │
+     └────────────────────────────────────────────────┘
 ```
 
 ### 閲覧フロー（一般ユーザー）
 
-1. `index.html` をブラウザで開く
-2. `data/index.json` をキャッシュバスター付きで取得し一覧表示
-3. アイテム選択で `data/items/<id>.json` を取得して詳細表示（不変リソース、ブラウザキャッシュ有効）
+1. ブラウザで SPA にアクセス（ハッシュルーティング: `#/`）
+2. DataFetcher が `data/index.json` をキャッシュバスター付きで取得し、勉強会グループ・メンバー一覧を表示
+3. メンバーカードクリックで `#/members/<id>` に遷移し、セッション参加履歴を詳細表示
 
 ### 更新フロー（管理者）
 
-1. `?token=<SAS>` 付き URL でアクセス → 管理者モード有効化
+1. `?token=<SAS>` 付き URL でアクセス → 管理者モード有効化（useAuth Hook）
 2. CSV ファイルをドラッグ&ドロップまたはファイル選択で投入
-3. ブラウザ上で PapaParse が CSV → JSON に変換、プレビュー表示
-4. 「保存を確定」で Blob に書き込み（順序: `raw/*.csv` → `data/items/*.json` → `data/index.json`）
+3. CsvTransformer（PapaParse）が CSV → JSON に変換、プレビュー表示
+4. 「一括保存」で BlobWriter が書き込み（順序: `raw/*.csv` → `data/sessions/*.json` → `data/index.json`）
 
-## コンポーネント一覧
+## コンポーネント構成
 
-| コンポーネント | 責務 | テスト数 |
-|---------------|------|---------|
-| AuthManager | SAS トークン抽出、管理者モード制御、URL からの token 除去 | 9 |
-| Router | ハッシュベースの画面遷移（`#/`, `#/items/<id>`） | 8 |
-| DataFetcher | JSON データ取得、キャッシュバスター制御 | 8 |
-| BlobWriter | SAS 付き PUT、書き込み順序制御、リトライ | 11 |
-| IndexMerger | index.json のマージ、重複 ID 検出 | 6 |
-| CsvTransformer | CSV パース（PapaParse）、JSON 変換 | 8 |
-| DashboardView | ダッシュボード一覧表示、ローディング/エラー状態 | 5 |
-| DetailView | ドリルダウン詳細表示、戻る操作 | 4 |
-| AdminPanel | 管理者 UI（CSV 投入、プレビュー、進捗表示、リトライ） | 13 |
+### Pages（画面コンポーネント）
 
-結合テスト: 閲覧フロー 6 件 + 管理者フロー 6 件 + スモークテスト 3 件
+| コンポーネント | 責務 |
+|---------------|------|
+| DashboardPage | 勉強会グループ一覧・メンバー一覧表示、メンバーカードクリックで詳細遷移 |
+| MemberDetailPage | メンバーのセッション参加履歴を日付降順で詳細表示 |
+| AdminPage | CSV インポート・プレビュー・一括保存の管理者機能 |
+
+### Hooks（カスタム Hook）
+
+| Hook | 責務 |
+|------|------|
+| useAuth | SAS トークン抽出、管理者モード判定、URL からの token 除去 |
+| useFileQueue | ファイルキュー状態管理（useReducer）、バリデーション、重複検出 |
+
+### Services（ビジネスロジック層、移行前のコードを再利用）
+
+| サービス | 責務 |
+|---------|------|
+| DataFetcher | JSON データ取得（index.json, session 詳細）、キャッシュバスター制御 |
+| BlobWriter | Azure Blob Storage への PUT、書き込み順序制御、リトライ |
+| IndexMerger | index.json のマージ、重複セッション ID 検出 |
+| CsvTransformer | Teams 出席レポート CSV パース（PapaParse）、JSON 変換、UTF-16LE 対応 |
 
 ## 技術スタック
 
 | 要素 | 選択 | 理由 |
 |------|------|------|
-| フロントエンド | Vanilla JS（ES Modules） | ビルドツール不要、`$web` に直接配置可能 |
-| CSV パーサー | PapaParse v5.x | Web Worker 対応、依存ゼロ、ローカルファイル配置（CDN 不使用） |
-| テスト | Vitest + jsdom | ES Modules ネイティブ対応、高速 |
+| フレームワーク | React 19 + ReactDOM 19 | 宣言的 UI による保守性向上 |
+| ビルドツール | Vite + @vitejs/plugin-react | HMR、高速ビルド、JSX 変換 |
+| ルーティング | react-router-dom（HashRouter） | SPA ハッシュベースルーティング |
+| CSV パーサー | PapaParse | Teams 出席レポートの UTF-16LE CSV 解析 |
+| ユニットテスト | Vitest + React Testing Library | jsdom 環境、コンポーネントテスト |
+| E2E テスト | Playwright | ブラウザベースの画面遷移・管理者フロー検証 |
 | ホスティング | Azure Blob Storage 静的サイト | 最小コスト、閉域環境対応 |
 
 ## Azure 環境の準備
@@ -183,25 +194,36 @@ az storage container generate-sas \
 
 ### 4. デプロイ
 
-`public/` 配下のファイルを `$web` コンテナにアップロードします。
+プロダクションビルドを実行し、`dist/` 配下のファイルを `$web` コンテナにアップロードします。
 
 ```bash
+cd frontend/dashboard
+npm run build
+```
+
+```bash
+# PowerShell スクリプトによるデプロイ
+.\scripts\Deploy-StaticFiles.ps1
+```
+
+```bash
+# または Azure CLI で手動デプロイ
 az storage blob upload-batch \
   --account-name <ACCOUNT_NAME> \
   --destination '$web' \
-  --source frontend/dashboard/public
+  --source frontend/dashboard/dist
 ```
+
+> **注意**: `data/` ディレクトリはデータのライフサイクルが異なるため、デプロイスクリプトでは除外されます。
 
 ## 仕様書
 
-要件定義・技術設計・タスク分解は `.kiro/specs/blob-static-dashboard/` に格納されています。
+要件定義・技術設計・タスク分解は `.kiro/specs/` 配下に格納されています。
 
-| ファイル | 内容 |
-|---------|------|
-| `requirements.md` | 8 つの要件と受入基準 |
-| `design.md` | アーキテクチャ設計、コンポーネント定義、データモデル |
-| `tasks.md` | TDD 実装計画（全タスク完了済み） |
-| `research.md` | 技術調査結果（Azure REST API、CORS、PapaParse 等） |
+| 仕様 | 内容 |
+|------|------|
+| `blob-static-dashboard/` | 初期アーキテクチャ設計（Vanilla JS 版） |
+| `react-migration/` | React + Vite への移行（要件・設計・タスク） |
 
 ## 開発ワークフロー
 

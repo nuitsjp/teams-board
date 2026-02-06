@@ -11,6 +11,8 @@ You are running on Windows. Bash isn't available directly, so please use Bash (v
 - Class names, function names, and other identifiers must be written in English.
 - Can execute GitHub CLI/Azure CLI. Will execute and verify them personally
   whenever possible.
+- Do not modify files directly on the main branch. 
+- Create a branch with an appropriate name and switch to it before making any modifications.
 
 # AI-DLC and Spec-Driven Development
 
