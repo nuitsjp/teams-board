@@ -2,6 +2,8 @@
 
 Azure Blob Storage の静的サイトホスティング機能を利用した、ダッシュボード／ドリルダウン閲覧・更新システム。
 
+URL: [https://strjstudylogprod.z11.web.core.windows.net/](https://strjstudylogprod.z11.web.core.windows.net/)
+
 ## 目的
 
 利用頻度が低くDB・常時稼働バックエンドを持つのがコストに見合わないケースにおいて、**静的ファイル配信のみ**でダッシュボード閲覧と CSV によるデータ更新を実現する。
