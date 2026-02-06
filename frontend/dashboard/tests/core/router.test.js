@@ -1,6 +1,6 @@
 // Router テスト — 新画面構成対応
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Router } from '../../src/core/router.js';
+import { Router } from '../../public/js/core/router.js';
 
 describe('Router', () => {
   let router;

@@ -1,6 +1,6 @@
 // LocalVerificationRunner テスト — 置換後データでの画面動作を検証する
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LocalVerificationRunner } from '../../src/local-batch/local-verification-runner.js';
+import { LocalVerificationRunner } from '../../local-batch/local-verification-runner.js';
 
 /**
  * テスト用のDataFetcherモックを生成する

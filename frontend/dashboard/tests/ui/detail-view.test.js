@@ -1,6 +1,6 @@
 // MemberDetailView テスト — 個人ドリルダウン画面
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemberDetailView } from '../../src/ui/detail-view.js';
+import { MemberDetailView } from '../../public/js/ui/detail-view.js';
 
 describe('MemberDetailView', () => {
   let container;

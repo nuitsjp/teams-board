@@ -1,9 +1,9 @@
 // 閲覧フロー結合テスト — ドメインモデル対応
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Router } from '../../src/core/router.js';
-import { DataFetcher } from '../../src/data/data-fetcher.js';
-import { DashboardView } from '../../src/ui/dashboard-view.js';
-import { MemberDetailView } from '../../src/ui/detail-view.js';
+import { Router } from '../../public/js/core/router.js';
+import { DataFetcher } from '../../public/js/data/data-fetcher.js';
+import { DashboardView } from '../../public/js/ui/dashboard-view.js';
+import { MemberDetailView } from '../../public/js/ui/detail-view.js';
 
 describe('閲覧フロー結合テスト', () => {
   let appEl;

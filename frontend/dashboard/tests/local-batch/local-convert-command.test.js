@@ -1,6 +1,6 @@
 // LocalConvertCommand テスト — 入力から検証・置換・レポートまでを統制する
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LocalConvertCommand } from '../../src/local-batch/local-convert-command.js';
+import { LocalConvertCommand } from '../../local-batch/local-convert-command.js';
 
 /**
  * 全依存コンポーネントのモックを生成する

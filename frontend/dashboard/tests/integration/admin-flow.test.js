@@ -1,7 +1,7 @@
 // 管理者フロー結合テスト — 複数ファイル対応版
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AuthManager } from '../../src/core/auth-manager.js';
-import { IndexMerger } from '../../src/data/index-merger.js';
+import { AuthManager } from '../../public/js/core/auth-manager.js';
+import { IndexMerger } from '../../public/js/data/index-merger.js';
 
 // PapaParseモック
 vi.mock('papaparse', () => ({
@@ -11,9 +11,9 @@ vi.mock('papaparse', () => ({
 }));
 
 import Papa from 'papaparse';
-import { CsvTransformer } from '../../src/logic/csv-transformer.js';
-import { BlobWriter } from '../../src/data/blob-writer.js';
-import { AdminPanel } from '../../src/ui/admin-panel.js';
+import { CsvTransformer } from '../../public/js/logic/csv-transformer.js';
+import { BlobWriter } from '../../public/js/data/blob-writer.js';
+import { AdminPanel } from '../../public/js/ui/admin-panel.js';
 
 describe('管理者フロー結合テスト', () => {
   let container;

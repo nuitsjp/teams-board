@@ -1,6 +1,6 @@
 // AuthManager テスト
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AuthManager } from '../../src/core/auth-manager.js';
+import { AuthManager } from '../../public/js/core/auth-manager.js';
 
 describe('AuthManager', () => {
   beforeEach(() => {

@@ -1,6 +1,6 @@
 // CsvTransformerAdapter — ローカルファイル入力を既存CSV変換器へ適合させるアダプター
 import * as fsPromises from 'node:fs/promises';
-import { CsvTransformer } from '../logic/csv-transformer.js';
+import { CsvTransformer } from '../public/js/logic/csv-transformer.js';
 
 export class CsvTransformerAdapter {
   /**

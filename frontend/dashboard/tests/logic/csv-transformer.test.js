@@ -1,6 +1,6 @@
 // CsvTransformer テスト — Teams出席レポート専用パーサー
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CsvTransformer } from '../../src/logic/csv-transformer.js';
+import { CsvTransformer } from '../../public/js/logic/csv-transformer.js';
 
 // PapaParseのモック
 vi.mock('papaparse', () => ({

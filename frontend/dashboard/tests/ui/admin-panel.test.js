@@ -1,6 +1,6 @@
 // AdminPanel テスト — Teams出席レポート対応（複数ファイル対応版）
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AdminPanel } from '../../src/ui/admin-panel.js';
+import { AdminPanel } from '../../public/js/ui/admin-panel.js';
 
 describe('AdminPanel', () => {
   let container;

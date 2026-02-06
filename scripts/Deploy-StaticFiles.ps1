@@ -3,11 +3,10 @@
     静的ファイルをAzure Blob Storage ($web コンテナ) にアップロードする
 
 .DESCRIPTION
-    frontend/dashboard/public/ および frontend/dashboard/src/ 配下の静的ファイルを
-    $web コンテナにアップロードする。ファイル拡張子に基づいて適切なContent-Typeを設定し、
+    frontend/dashboard/public/ 配下の静的ファイルを $web コンテナにアップロードする。
+    ファイル拡張子に基づいて適切なContent-Typeを設定し、
     ディレクトリ構造を維持してBlob名を生成する。
-    SourcePathsパラメータで複数のソースディレクトリを指定可能。
-    各ソースにBlobプレフィックスを指定して、Blob上のパス構造を制御する。
+    アプリケーションJSは public/js/ に統合されているため、単一ソースでデプロイ可能。
     data/ ディレクトリはデータのライフサイクルが異なるため除外される。
 
 .PARAMETER SubscriptionId
@@ -26,7 +25,7 @@
     アップロード元のディレクトリとBlobプレフィックスの配列。
     各要素は "ローカルパス:Blobプレフィックス" 形式。
     Blobプレフィックスが空の場合はルートにアップロード。
-    例: @("frontend/dashboard/public:", "frontend/dashboard/src:src")
+    例: @("frontend/dashboard/public:")
 #>
 param(
     [string]$SubscriptionId = "9f8bb535-5bea-4687-819e-7605b47941b5",
@@ -59,10 +58,9 @@ $mimeTypes = @{
 # SourcePaths が未指定の場合、SourcePath から構築（後方互換）
 if ($SourcePaths.Count -eq 0) {
     if ($SourcePath -eq "") {
-        # デフォルト: public/ をルートに、src/ を src/ プレフィックスにデプロイ
+        # デフォルト: public/ をルートにデプロイ（JSは public/js/ に統合済み）
         $SourcePaths = @(
-            "frontend/dashboard/public:",
-            "frontend/dashboard/src:src"
+            "frontend/dashboard/public:"
         )
     } else {
         # 従来の単一パス指定（ルートにアップロード）
@@ -82,14 +80,22 @@ $ctx = $sa.Context
 $totalUploadCount = 0
 $totalFileCount = 0
 
+# リポジトリルートをスクリプト位置から算出（カレントディレクトリに依存しない）
+$repoRoot = Split-Path $PSScriptRoot -Parent
+
 foreach ($sourceEntry in $SourcePaths) {
     # "ローカルパス:Blobプレフィックス" を分割
     $parts = $sourceEntry.Split(":", 2)
     $localPath = $parts[0]
     $blobPrefix = if ($parts.Count -gt 1) { $parts[1] } else { "" }
 
-    # ソースディレクトリの解決
-    $resolvedSourcePath = Resolve-Path $localPath -ErrorAction Stop
+    # ソースディレクトリの解決（リポジトリルート基準）
+    $fullLocalPath = if ([System.IO.Path]::IsPathRooted($localPath)) {
+        $localPath
+    } else {
+        Join-Path $repoRoot $localPath
+    }
+    $resolvedSourcePath = Resolve-Path $fullLocalPath -ErrorAction Stop
     $prefixLabel = if ($blobPrefix -eq "") { "(ルート)" } else { $blobPrefix }
     Write-Host "`nアップロード元: $resolvedSourcePath → Blobプレフィックス: $prefixLabel" -ForegroundColor Cyan
 

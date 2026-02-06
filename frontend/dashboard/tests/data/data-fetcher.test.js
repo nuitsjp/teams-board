@@ -1,6 +1,6 @@
 // DataFetcher テスト — 新データ構造対応
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataFetcher } from '../../src/data/data-fetcher.js';
+import { DataFetcher } from '../../public/js/data/data-fetcher.js';
 
 describe('DataFetcher', () => {
   let fetcher;

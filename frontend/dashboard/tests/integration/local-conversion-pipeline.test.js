@@ -1,11 +1,11 @@
 // ローカル変換パイプライン結合テスト — 入力から検証・置換・レポートまでの統合フロー
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LocalConvertCommand } from '../../src/local-batch/local-convert-command.js';
-import { SessionAggregationService } from '../../src/local-batch/session-aggregation-service.js';
-import { DataContractValidator } from '../../src/local-batch/data-contract-validator.js';
-import { ConsistencyValidator } from '../../src/local-batch/consistency-validator.js';
-import { ConversionReporter } from '../../src/local-batch/conversion-reporter.js';
-import { IndexMerger } from '../../src/data/index-merger.js';
+import { LocalConvertCommand } from '../../local-batch/local-convert-command.js';
+import { SessionAggregationService } from '../../local-batch/session-aggregation-service.js';
+import { DataContractValidator } from '../../local-batch/data-contract-validator.js';
+import { ConsistencyValidator } from '../../local-batch/consistency-validator.js';
+import { ConversionReporter } from '../../local-batch/conversion-reporter.js';
+import { IndexMerger } from '../../public/js/data/index-merger.js';
 
 /**
  * テスト用のCSV解析結果を生成する

@@ -1,19 +1,19 @@
 // メインエントリーポイント
-import { AuthManager } from '../src/core/auth-manager.js';
-import { Router } from '../src/core/router.js';
-import { DataFetcher } from '../src/data/data-fetcher.js';
-import { BlobWriter } from '../src/data/blob-writer.js';
-import { IndexMerger } from '../src/data/index-merger.js';
-import { CsvTransformer } from '../src/logic/csv-transformer.js';
-import { DashboardView } from '../src/ui/dashboard-view.js';
-import { MemberDetailView } from '../src/ui/detail-view.js';
-import { AdminPanel } from '../src/ui/admin-panel.js';
+import { AuthManager } from './core/auth-manager.js';
+import { Router } from './core/router.js';
+import { DataFetcher } from './data/data-fetcher.js';
+import { BlobWriter } from './data/blob-writer.js';
+import { IndexMerger } from './data/index-merger.js';
+import { CsvTransformer } from './logic/csv-transformer.js';
+import { DashboardView } from './ui/dashboard-view.js';
+import { MemberDetailView } from './ui/detail-view.js';
+import { AdminPanel } from './ui/admin-panel.js';
 
 // アプリケーション初期化
 const auth = AuthManager.initialize();
 const router = new Router();
 const fetcher = new DataFetcher();
-const blobWriter = new BlobWriter(auth);
+const blobWriter = new BlobWriter(auth, 'https://strjstudylogprod.blob.core.windows.net/$web');
 const indexMerger = new IndexMerger();
 const csvTransformer = new CsvTransformer();
 

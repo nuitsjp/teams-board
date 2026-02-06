@@ -1,10 +1,10 @@
 // 置換後データでのUI表示テスト — LocalVerificationRunnerと実UIコンポーネントの結合検証
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LocalVerificationRunner } from '../../src/local-batch/local-verification-runner.js';
-import { DataFetcher } from '../../src/data/data-fetcher.js';
-import { DashboardView } from '../../src/ui/dashboard-view.js';
-import { MemberDetailView } from '../../src/ui/detail-view.js';
-import { Router } from '../../src/core/router.js';
+import { LocalVerificationRunner } from '../../local-batch/local-verification-runner.js';
+import { DataFetcher } from '../../public/js/data/data-fetcher.js';
+import { DashboardView } from '../../public/js/ui/dashboard-view.js';
+import { MemberDetailView } from '../../public/js/ui/detail-view.js';
+import { Router } from '../../public/js/core/router.js';
 
 // 置換後データを想定したテストデータ
 const replacedIndex = {

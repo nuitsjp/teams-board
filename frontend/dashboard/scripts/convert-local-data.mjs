@@ -3,8 +3,8 @@
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { LocalConvertCommand } from '../src/local-batch/local-convert-command.js';
-import { ConversionReporter } from '../src/local-batch/conversion-reporter.js';
+import { LocalConvertCommand } from '../local-batch/local-convert-command.js';
+import { ConversionReporter } from '../local-batch/conversion-reporter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

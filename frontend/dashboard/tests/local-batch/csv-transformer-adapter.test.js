@@ -1,6 +1,6 @@
 // CsvTransformerAdapter テスト — ローカルファイル入力を既存CSV変換器へ適合させる
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CsvTransformerAdapter } from '../../src/local-batch/csv-transformer-adapter.js';
+import { CsvTransformerAdapter } from '../../local-batch/csv-transformer-adapter.js';
 
 /**
  * テスト用のfsモックを生成する

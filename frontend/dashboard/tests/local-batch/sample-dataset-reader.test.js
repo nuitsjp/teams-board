@@ -1,6 +1,6 @@
 // SampleDatasetReader テスト — data/sample 配下のCSV入力列挙と前提検証
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SampleDatasetReader } from '../../src/local-batch/sample-dataset-reader.js';
+import { SampleDatasetReader } from '../../local-batch/sample-dataset-reader.js';
 
 /**
  * テスト用のfsモックを生成する

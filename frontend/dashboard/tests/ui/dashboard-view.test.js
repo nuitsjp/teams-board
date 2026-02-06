@@ -1,6 +1,6 @@
 // DashboardView テスト — ドメインモデル対応
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DashboardView } from '../../src/ui/dashboard-view.js';
+import { DashboardView } from '../../public/js/ui/dashboard-view.js';
 
 describe('DashboardView', () => {
   let container;

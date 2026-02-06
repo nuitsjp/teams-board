@@ -4,6 +4,9 @@ Azure Blob Storage の静的サイトホスティング機能を利用した、�
 
 URL: [https://strjstudylogprod.z11.web.core.windows.net/](https://strjstudylogprod.z11.web.core.windows.net/)
 
+管理者用URL（SASトークン付き、有効期限: 2026-03-31）: [管理者モード](https://strjstudylogprod.z11.web.core.windows.net/?token=se%3D2026-03-31T00%253A00%253A00Z%26sp%3Drcwl%26spr%3Dhttps%26sv%3D2026-02-06%26sr%3Dc%26sig%3DxF1sZpLJVwo6h7rx%252BsVRQl7fOTzidTgNJb2qy7T5JdM%253D)
+<!-- token有効期限: 2026-03-31 / 権限: read,create,write,list -->
+
 ## 目的
 
 利用頻度が低くDB・常時稼働バックエンドを持つのがコストに見合わないケースにおいて、**静的ファイル配信のみ**でダッシュボード閲覧と CSV によるデータ更新を実現する。

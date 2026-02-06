@@ -1,6 +1,6 @@
 // AtomicPublicDataWriter テスト — ステージング経由で公開データを安全に置換する
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AtomicPublicDataWriter } from '../../src/local-batch/atomic-public-data-writer.js';
+import { AtomicPublicDataWriter } from '../../local-batch/atomic-public-data-writer.js';
 
 /**
  * テスト用のfsモックを生成する

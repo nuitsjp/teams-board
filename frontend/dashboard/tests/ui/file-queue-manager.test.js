@@ -1,6 +1,6 @@
 // FileQueueManager テスト — 複数ファイルキュー管理
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FileQueueManager } from '../../src/ui/file-queue-manager.js';
+import { FileQueueManager } from '../../public/js/ui/file-queue-manager.js';
 
 describe('FileQueueManager', () => {
   let mockCsvTransformer;

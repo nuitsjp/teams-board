@@ -12,7 +12,7 @@ describe('テスト基盤', () => {
   });
 
   it('ES Modulesのインポートが動作すること', async () => {
-    const { AuthManager } = await import('../src/core/auth-manager.js');
+    const { AuthManager } = await import('../public/js/core/auth-manager.js');
     expect(AuthManager).toBeDefined();
   });
 });
