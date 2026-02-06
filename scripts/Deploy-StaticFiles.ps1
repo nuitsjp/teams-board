@@ -8,6 +8,7 @@
     ディレクトリ構造を維持してBlob名を生成する。
     SourcePathsパラメータで複数のソースディレクトリを指定可能。
     各ソースにBlobプレフィックスを指定して、Blob上のパス構造を制御する。
+    data/ ディレクトリはデータのライフサイクルが異なるため除外される。
 
 .PARAMETER SubscriptionId
     対象のAzureサブスクリプションID（デフォルト: 9f8bb535-5bea-4687-819e-7605b47941b5）
@@ -92,9 +93,13 @@ foreach ($sourceEntry in $SourcePaths) {
     $prefixLabel = if ($blobPrefix -eq "") { "(ルート)" } else { $blobPrefix }
     Write-Host "`nアップロード元: $resolvedSourcePath → Blobプレフィックス: $prefixLabel" -ForegroundColor Cyan
 
-    # ファイル一覧の取得
-    $files = Get-ChildItem -Path $resolvedSourcePath -Recurse -File
-    $fileCount = $files.Count
+    # ファイル一覧の取得（data/ ディレクトリを除外）
+    $files = Get-ChildItem -Path $resolvedSourcePath -Recurse -File |
+        Where-Object {
+            $rel = $_.FullName.Substring($resolvedSourcePath.Path.Length + 1).Replace("\", "/")
+            $rel -notlike "data/*"
+        }
+    $fileCount = @($files).Count
 
     if ($fileCount -eq 0) {
         Write-Host "  アップロード対象のファイルが見つかりません: $resolvedSourcePath" -ForegroundColor Yellow
