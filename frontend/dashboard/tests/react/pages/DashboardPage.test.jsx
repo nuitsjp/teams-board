@@ -30,7 +30,7 @@ describe('DashboardPage', () => {
   });
 
   it('ローディング中に「読み込み中...」と表示すること', () => {
-    mockFetchIndex.mockReturnValue(new Promise(() => {}));
+    mockFetchIndex.mockReturnValue(new Promise(() => { }));
 
     render(
       <MemoryRouter>
@@ -72,9 +72,9 @@ describe('DashboardPage', () => {
     });
 
     // 花子（3600秒）が太郎（1800秒）より先に表示される
-    const cards = document.querySelectorAll('.member-card');
-    expect(cards[0].textContent).toContain('テスト花子');
-    expect(cards[1].textContent).toContain('テスト太郎');
+    const rows = screen.getAllByTestId('member-row');
+    expect(rows[0]).toHaveTextContent('テスト花子');
+    expect(rows[1]).toHaveTextContent('テスト太郎');
   });
 
   it('データ取得エラー時にエラーメッセージを表示すること', async () => {

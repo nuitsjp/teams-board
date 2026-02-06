@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth, createAuthAdapter } from '../hooks/useAuth.jsx';
 import { useFileQueue } from '../hooks/useFileQueue.js';
 import { FileDropZone } from '../components/FileDropZone.jsx';
@@ -9,6 +10,7 @@ import { CsvTransformer } from '../services/csv-transformer.js';
 import { BlobWriter } from '../services/blob-writer.js';
 import { IndexMerger } from '../services/index-merger.js';
 import { DataFetcher } from '../services/data-fetcher.js';
+import { ArrowLeft, Upload, RotateCcw } from 'lucide-react';
 
 const BLOB_BASE_URL = 'https://strjstudylogprod.blob.core.windows.net/$web';
 
@@ -17,6 +19,7 @@ const BLOB_BASE_URL = 'https://strjstudylogprod.blob.core.windows.net/$web';
  */
 export function AdminPage() {
   const auth = useAuth();
+  const navigate = useNavigate();
   const authAdapter = useMemo(() => createAuthAdapter(auth), [auth]);
 
   const csvTransformer = useMemo(() => new CsvTransformer(), []);
@@ -104,14 +107,26 @@ export function AdminPage() {
     for (const item of failed) {
       updateStatus(item.id, 'ready');
     }
-    // ready状態に戻した後にhandleBulkSaveが呼ばれる（ボタンクリックで再実行）
   }, [queue, updateStatus]);
 
-  if (!auth.isAdmin) return null;
+  // 非管理者はダッシュボードにリダイレクト
+  if (!auth.isAdmin) return <Navigate to="/" replace />;
 
   return (
-    <section id="admin-panel">
-      <h2>管理者パネル</h2>
+    <div className="space-y-6">
+      {/* 戻るボタン */}
+      <button
+        onClick={() => navigate('/')}
+        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        ダッシュボードへ戻る
+      </button>
+
+      <div>
+        <h2 className="text-xl font-bold text-text-primary">管理者パネル</h2>
+        <p className="text-sm text-text-muted mt-1">CSVインポート・プレビュー・一括保存</p>
+      </div>
 
       <FileDropZone
         onFilesAdded={addFiles}
@@ -133,22 +148,30 @@ export function AdminPage() {
           statusText={saveStatusText}
         />
       ) : (
-        <>
+        <div className="flex items-center gap-3">
           <PreviewArea readyItems={previewItems} />
 
           {readyItems.length > 0 && (
-            <button className="btn btn-primary" onClick={handleBulkSave}>
+            <button
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+              onClick={handleBulkSave}
+            >
+              <Upload className="w-4 h-4" />
               一括保存 ({readyItems.length}件)
             </button>
           )}
 
           {failedItems.length > 0 && (
-            <button className="btn btn-retry" onClick={handleRetry}>
+            <button
+              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-100 text-accent-600 border border-accent-300 rounded-lg hover:bg-accent-200 transition-colors text-sm font-medium"
+              onClick={handleRetry}
+            >
+              <RotateCcw className="w-4 h-4" />
               失敗した操作をリトライ ({failedItems.length}件)
             </button>
           )}
-        </>
+        </div>
       )}
-    </section>
+    </div>
   );
 }

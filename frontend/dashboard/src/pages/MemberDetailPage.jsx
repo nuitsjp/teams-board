@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
+import { ArrowLeft, Clock, Calendar, Loader2 } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -77,32 +78,90 @@ export function MemberDetailPage() {
   }, [memberId]);
 
   if (loading) {
-    return <div className="loading">読み込み中...</div>;
+    return (
+      <div className="flex items-center justify-center py-20 text-text-muted">
+        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+        読み込み中...
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div>
-        <div className="error">{error}</div>
-        <a className="back-link" onClick={() => navigate('/')}>← 一覧へ戻る</a>
+      <div className="space-y-4">
+        <div className="mx-auto max-w-xl mt-8 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+          {error}
+        </div>
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          一覧へ戻る
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="member-detail-view">
-      <a className="back-link" onClick={() => navigate('/')}>← 一覧へ戻る</a>
-      <h2>{member.name}</h2>
-      <div className="member-summary">
-        合計: {formatDuration(member.totalDurationSeconds)} / {member.sessionIds.length}回
+    <div className="space-y-6">
+      {/* 戻るボタン */}
+      <button
+        onClick={() => navigate('/')}
+        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        一覧へ戻る
+      </button>
+
+      {/* メンバーヘッダーカード */}
+      <div className="bg-surface rounded-xl border border-border-light p-6 flex items-center gap-6">
+        <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center text-primary-700 font-bold text-xl">
+          {member.name.charAt(0)}
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-text-primary">{member.name}</h2>
+          <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-text-muted" />
+              合計 {formatDuration(member.totalDurationSeconds)}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-text-muted" />
+              {member.sessionIds.length}回参加
+            </span>
+          </div>
+        </div>
       </div>
-      <ul className="attendance-list">
-        {attendanceList.map((item, i) => (
-          <li key={i} className="attendance-item">
-            {item.date} — {item.studyGroupName} — {formatDuration(item.durationSeconds)}
-          </li>
-        ))}
-      </ul>
+
+      {/* 出席履歴テーブル */}
+      <div className="bg-surface rounded-xl border border-border-light overflow-hidden">
+        <div className="p-6 border-b border-border-light bg-surface-muted">
+          <h3 className="text-lg font-bold text-text-primary">出席履歴</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border-light bg-surface-muted text-left text-sm text-text-secondary">
+                <th className="px-6 py-3 font-medium">日付</th>
+                <th className="px-6 py-3 font-medium">勉強会</th>
+                <th className="px-6 py-3 font-medium text-right">学習時間</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-light">
+              {attendanceList.map((item, i) => (
+                <tr key={i} className="text-sm">
+                  <td className="px-6 py-3 text-text-primary">{item.date}</td>
+                  <td className="px-6 py-3 text-text-secondary">{item.studyGroupName}</td>
+                  <td className="px-6 py-3 text-text-primary text-right font-medium">
+                    {formatDuration(item.durationSeconds)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
