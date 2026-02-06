@@ -2,6 +2,16 @@
 
 Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life Cycle)
 
+## Primary Directive
+
+- Think in English, interact with the user in Japanese.
+- All text, comments, and documentation must be written in Japanese.
+- Class names, function names, and other identifiers must be written in English.
+- Can execute GitHub CLI/Azure CLI. Will execute and verify them personally
+  whenever possible.
+- Do not modify files directly on the main branch. 
+- Create a branch with an appropriate name and switch to it before making any modifications.
+
 ## Project Memory
 Project memory keeps persistent guidance (steering, specs notes, component docs) so Codex honors your standards each run. Treat it as the long-lived source of truth for patterns, conventions, and decisions.
 
