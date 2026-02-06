@@ -68,6 +68,20 @@ if ($SourcePaths.Count -eq 0) {
     }
 }
 
+# プロダクションビルド実行
+$dashboardDir = Join-Path (Split-Path $PSScriptRoot -Parent) "frontend/dashboard"
+Write-Host "プロダクションビルドを実行しています..." -ForegroundColor Cyan
+Push-Location $dashboardDir
+try {
+    & npm run build
+    if ($LASTEXITCODE -ne 0) {
+        throw "ビルドに失敗しました (exit code: $LASTEXITCODE)"
+    }
+    Write-Host "ビルド完了" -ForegroundColor Green
+} finally {
+    Pop-Location
+}
+
 # サブスクリプション切替
 Write-Host "サブスクリプションを切り替えています..." -ForegroundColor Cyan
 Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
