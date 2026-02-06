@@ -1,244 +1,291 @@
-# Blob AccountによるStatic Web Site構築
+# Study Log アーキテクチャ（現行実装）
 
-## 背景
+## 1. 目的と前提
 
-* ダッシュボード／ドリルダウン閲覧を提供する静的サイトを運用したい。
-* 利用頻度が低く、常時稼働のDBやバックエンドを置くのはコスト・運用負荷に見合わない。
-* 閲覧時UXを損ねたくない（バックエンド待ちやコールドスタートを避けたい）。
-* 更新情報はCSVで与えられ、手作業の登録（Issue等）は避けたい。
-* Azure Functions は配置ポリシー上 App Service プランのみで安価に使いづらい。
-* 環境は専用線により閉域接続が成立しており、イントラ内からのみ利用する前提が取れる。
-* 取り扱うデータは機密性が高くなく、SASのURL漏洩は重大問題としない（ただし過度な複雑化は避けたい）。
+本ドキュメントは、`study-log` の**現在の実装**を基準に、構成・責務・データフロー・運用フローを整理したものです。  
+対象は以下の3系統です。
 
-## 目的
+- 閲覧系フロー（一般ユーザー）
+- 管理者更新フロー（SASトークン付きブラウザ更新）
+- ローカル変換フロー（`data/sample` → `public/data` の検証付き置換）
 
-1. **閲覧の安定UX**：静的配信のみで完結し、低頻度アクセスでも高速
-2. **最小コスト／最小運用**：DB/常時稼働APIを持たない
-3. **更新の省力化**：CSV投入→クライアント側で変換→JSON更新で反映
-4. **シンプルな権限制御**：一般ユーザーは読み取りのみ、管理者は書き込み可能（SASで簡易分離）
+本システムは、Azure Blob Storage の静的サイト配信を中心に運用し、常時稼働バックエンドなしで成立する構成を採用しています。
 
-## アーキテクチャ概要
+## 2. システム境界
 
-* ホスティング：**Azure Blob Storage Static website（$web）**
+### 2.1 稼働境界
 
-  * 静的サイト本体（HTML/JS/CSS）
-  * 描画用JSON（サイトからfetchしてレンダリング）
-* 更新処理：**ブラウザJavaScriptのみ**
+- フロントエンド: React SPA（`frontend/dashboard`）
+- 配信基盤: Azure Blob Storage Static Website（`$web`）
+- 更新書き込み先: Blob Service Endpoint（SAS必須）
+- ローカル変換: Node.js バッチ（`frontend/dashboard/local-batch`）
 
-  * 管理者はSAS付きURLでアクセスし、SASを用いてBlobへPUT（追加）
-  * 一般ユーザーはSASなしで読み取りのみ
-* アクセス制御：**閉域（専用線）＋Storageネットワーク規則**を基本境界とする
+### 2.2 非対象（現行フローでは未使用）
 
-### 技術スタック
+- `backend/` 配下の Azure Functions 実行フロー
+- DB 接続を使うサーバーサイド集計
 
-| レイヤー | 選択 | 役割 |
-|---------|------|------|
-| フロントエンド | Vanilla JS（ES Modules） | UI・ロジック全般。ビルドツール不要、`$web` に直接配置可能 |
-| CSVパーサー | PapaParse v5.x | Web Worker対応。ローカルファイルとして配置（CDN不使用、閉域対応） |
-| テスト | Vitest + jsdom | ES Modulesネイティブ対応 |
-| ホスティング | Azure Blob Storage | 静的サイトホスティング + Blob REST API |
+## 3. 全体アーキテクチャ
 
-## コンポーネントと責務
+```mermaid
+graph TD
+    U[一般ユーザー]
+    A[管理者]
+    D[開発者]
 
-### 1) Azure Blob Storage（Static website）
+    subgraph Browser["ブラウザ実行環境"]
+        SPA[React SPA<br/>App + Pages + Hooks + Services]
+    end
 
-* `$web/` に以下を格納
+    subgraph Azure["Azure Blob Storage"]
+        WEB["Static Website Endpoint<br/>(*.web.core.windows.net)"]
+        BLOB["Blob Service Endpoint<br/>(*.blob.core.windows.net/$web)"]
+    end
 
-  * `index.html` / JS / CSS（UI）
-  * `data/index.json`（一覧・集約）— **可変**、キャッシュバスター必須
-  * `data/items/<id>.json`（詳細）— **不変**（追加のみ、上書き禁止）、ブラウザキャッシュ有効
-  * `raw/<timestamp>-<name>.csv`（元データ保管）— **不変**（追記のみ）
-* エンドポイントは2種類を使い分ける
-  * **静的サイトエンドポイント**（`*.web.core.windows.net`）：一般ユーザーの匿名read
-  * **Blobサービスエンドポイント**（`*.blob.core.windows.net`）：管理者のSAS付きPUT/GET
+    subgraph Local["ローカル変換バッチ"]
+        CMD[LocalConvertCommand]
+        LB[Validators + AtomicPublicDataWriter]
+    end
 
-### 2) ブラウザ（一般ユーザー）
+    subgraph Repo["リポジトリデータ"]
+        SAMPLE["data/sample/*.csv"]
+        PUBLIC["frontend/dashboard/public/data"]
+    end
 
-* 静的サイトエンドポイントから `data/index.json` 等を取得して画面をレンダリング
-* `index.json` はキャッシュバスター（`?v=<timestamp>`）付きで常に最新を取得
-* `items/<id>.json` は不変リソースとしてブラウザキャッシュを活用（キャッシュバスターなし）
-* 管理者UIは非表示（SASトークンがないため AdminPanel が自動的に隠れる）
+    U -->|GET| WEB
+    WEB -->|index.json / sessions| SPA
+    A -->|token付きURLでアクセス| WEB
+    SPA -->|PUT/GET with SAS| BLOB
+    BLOB -->|raw/*.csv / data/*.json| SPA
 
-### 3) ブラウザ（管理者）
-
-* 管理者向けに配布したURL：
-
-  * `https://<site>/index.html?token=<SAS>`
-* 初期化時に `token` パラメータからSASを抽出し、`history.replaceState` でURLから除去する
-* `token`（SAS）を用いて **Blobサービスエンドポイント** に対し、以下の順序で書き込む
-
-### リポジトリ構成
-
-```
-study-log/
-├── frontend/
-│   ├── dashboard/              # メインアプリケーション（React + Vite）
-│   │   ├── index.html          # エントリ HTML（Vite が使用）
-│   │   ├── vite.config.js      # Vite + React プラグイン設定
-│   │   ├── playwright.config.js
-│   │   ├── public/             # Vite の静的アセット（ビルド時に dist/ へコピーされる）
-│   │   │   ├── css/style.css
-│   │   │   └── data/           # index.json, sessions/*.json（開発用サンプルデータ）
-│   │   ├── src/                # React アプリケーションソースコード
-│   │   │   ├── components/     # FileDropZone, FileQueueList, PreviewArea, ProgressBar
-│   │   │   ├── hooks/          # useAuth, useFileQueue
-│   │   │   ├── pages/          # DashboardPage, MemberDetailPage, AdminPage
-│   │   │   ├── services/       # DataFetcher, BlobWriter, IndexMerger, CsvTransformer
-│   │   │   └── utils/          # formatDuration 等の共有ユーティリティ
-│   │   ├── tests/              # Vitest ユニット／統合テスト
-│   │   ├── e2e/                # Playwright E2E テスト
-│   │   └── dist/               # ビルド成果物（git 管理外）
-│   └── staticwebapp.config.json
-├── backend/                    # Azure Functions（別機能、本ダッシュボードでは不使用）
-├── .kiro/specs/                # 仕様書（要件・設計・タスク）
-└── CLAUDE.md                   # AI 開発ガイドライン
+    D -->|npm run convert:local-data| CMD
+    SAMPLE --> CMD
+    CMD --> LB
+    LB --> PUBLIC
 ```
 
-## データ設計
+## 4. フロントエンド構成（React SPA）
 
-### 配信用（閲覧用）
+### 4.1 レイヤー構成
 
-* `data/index.json`：ダッシュボードの一覧・集約
+| レイヤー | 主な実装 | 責務 |
+|---|---|---|
+| App | `src/App.jsx`, `src/main.jsx` | `AuthProvider` + ルーティング初期化 |
+| Pages | `DashboardPage`, `MemberDetailPage`, `AdminPage` | 画面単位のデータ取得・表示・操作 |
+| Components | `FileDropZone`, `FileQueueCard`, `ProgressBar` など | 再利用UI部品 |
+| Hooks | `useAuth`, `useFileQueue` | 認証状態・ファイルキュー状態管理 |
+| Services | `data-fetcher`, `csv-transformer`, `index-merger`, `blob-writer` | I/O とドメイン処理 |
+| Utils | `format-duration` | 表示フォーマット |
 
-  ```json
-  {
-    "items": [
-      { "id": "item-001", "title": "月次売上レポート", "summary": { "期間": "2026年1月", "売上合計": 1500000 } }
-    ],
-    "updatedAt": "2026-02-01T10:00:00+09:00"
-  }
-  ```
+### 4.2 ルーティング
 
-* `data/items/<id>.json`：ドリルダウン詳細（不変リソース）
+- `#/` : ダッシュボード
+- `#/members/:memberId` : メンバー詳細
+- `#/admin` : 管理画面（非管理者は `Navigate to="/"`）
+- `*` : ダッシュボードへリダイレクト
 
-  ```json
-  {
-    "id": "item-001",
-    "title": "月次売上レポート",
-    "data": { "期間": "2026年1月", "売上合計": 1500000, "件数": 42 }
-  }
-  ```
+### 4.3 認証・管理者モード
 
-### 保管用（復元・監査用）
+- URL クエリ `token` を `useAuth` が初回に抽出
+- 抽出後は `history.replaceState` で URL から `token` を除去
+- `isAdmin` が true の場合のみ管理導線を表示
+- SAS はメモリ保持のみ（localStorage/sessionStorage 非使用）
 
-* `raw/<ISO8601>-<name>.csv`：投入された元CSVをそのまま保存
+## 5. データ契約
 
-  * 失敗時の復元がしやすい
-  * データの正当性確認や差分比較の材料になる
+### 5.1 配信データ
 
-### データの可変性とキャッシュ戦略
+- `data/index.json`（可変・集約）
+- `data/sessions/<sessionId>.json`（不変・明細）
 
-| パス | 可変性 | キャッシュ |
-|------|-------|-----------|
-| `data/index.json` | 可変（上書き更新） | キャッシュバスター（`?v=<timestamp>`）必須 |
-| `data/items/<id>.json` | 不変（追加のみ、上書き禁止） | ブラウザキャッシュ有効 |
-| `raw/<ts>-<name>.csv` | 不変（追記のみ） | — |
+`index.json` 例:
 
-## 処理フロー
+```json
+{
+  "studyGroups": [
+    {
+      "id": "52664958",
+      "name": "もくもく勉強会",
+      "totalDurationSeconds": 47105,
+      "sessionIds": ["52664958-2026-02-06"]
+    }
+  ],
+  "members": [
+    {
+      "id": "c6606539",
+      "name": "Nakamura Atsushi A (中村 充志)",
+      "totalDurationSeconds": 29683,
+      "sessionIds": ["52664958-2026-02-06"]
+    }
+  ],
+  "updatedAt": "2026-02-06T07:52:50.022Z"
+}
+```
 
-### 閲覧フロー
+`sessions/<sessionId>.json` 例:
 
-1. ユーザーが `index.html` を開く
-2. JavaScriptが `data/index.json?v=<timestamp>` を取得（キャッシュバスター付き）
-3. 取得したJSONをダッシュボード一覧としてレンダリング
-4. アイテム選択時に `data/items/<id>.json` を取得して詳細画面を表示（キャッシュ有効）
-5. ハッシュベースルーティング（`#/`, `#/items/<id>`）で画面遷移を制御
+```json
+{
+  "id": "52664958-2026-02-06",
+  "studyGroupId": "52664958",
+  "date": "2026-02-06",
+  "attendances": [
+    { "memberId": "c6606539", "durationSeconds": 3645 }
+  ]
+}
+```
 
-### 更新フロー（管理者のみ）
+### 5.2 保管データ
 
-1. 管理者が `index.html?token=<SAS>` でサイトを開く（ブックマーク運用）
-2. AuthManagerがURLからSASトークンを抽出し、`history.replaceState` でURLから除去
-3. 管理者UIが表示される（CSVアップロード領域）
-4. CSVをファイル選択/Drag&Dropで受け取る
-5. PapaParseがWeb Workerモードでパースし、JSON（DashboardItem + ItemDetail）に変換
-6. 変換結果をプレビューテーブルで表示
-7. 管理者が「保存を確定」すると、以下の**順序で**Blobに書き込む：
-   1. `raw/<timestamp>-<name>.csv` — 元CSVの保管
-   2. `data/items/<id>.json` — 新規詳細JSON（既存IDの上書きは行わない）
-   3. `data/index.json` — **書き込み直前に最新版をGETし、IndexMergerでマージしてからPUT**
-8. 書き込み結果（成功/失敗）をファイルごとに表示。失敗時はリトライボタンを提供
-9. 一般ユーザーは次回アクセス/リロードで新JSONを取得して反映
+- `raw/<timestamp>-<filename>.csv`（管理者更新時の原本保存）
 
-## 更新時シーケンス（Mermaid）
+### 5.3 キャッシュ戦略
+
+| パス | 可変性 | 取得方法 |
+|---|---|---|
+| `data/index.json` | 可変 | `?v=<timestamp>` 付き GET |
+| `data/sessions/<id>.json` | 不変 | キャッシュバスターなし GET |
+| `raw/*.csv` | 追記のみ | 管理者 PUT のみ |
+
+## 6. ドメイン処理
+
+### 6.1 CSV 変換（`CsvTransformer`）
+
+- 入力: Teams 出席レポート CSV（UTF-16LE）
+- 主な処理: `TextDecoder('utf-16le')` によるデコード、`1.要約/2.参加者/3.会議中...` のセクション分割、PapaParse による参加者TSV解析、時間文字列の秒正規化
+- 出力: `sessionRecord`（保存用）、`mergeInput`（`IndexMerger` 入力）、`warnings`（不正行スキップ情報）
+
+### 6.2 ID 生成規則
+
+- `studyGroupId`: クリーニング済み会議タイトルの SHA-256 先頭8桁
+- `memberId`: メールアドレスの SHA-256 先頭8桁
+- `sessionId`: `${studyGroupId}-${YYYY-MM-DD}`
+
+### 6.3 インデックス更新（`IndexMerger`）
+
+- `studyGroups` と `members` をイミュータブルに更新
+- 重複 `sessionId` は警告扱いで追加しない
+- `updatedAt` を更新
+
+## 7. 実行フロー
+
+### 7.1 閲覧フロー（一般ユーザー）
 
 ```mermaid
 sequenceDiagram
-  autonumber
-  actor A as Admin
-  participant UI as Browser (Static UI)
-  participant WEB as Static website ($web)
-  participant BLOB as Blob service (blob.core)
+  actor U as User
+  participant SPA as React SPA
+  participant WEB as Static Website
 
-  A->>WEB: GET index.html?token=<SAS>
-  WEB-->>UI: HTML/JS/CSS
-  UI->>UI: token(SAS)をURLから取得、history.replaceStateでURL浄化
-  UI->>UI: 管理者UI表示
-  A->>UI: CSVを選択/Drag&Drop
-  UI->>UI: PapaParse(Web Worker)でCSVパース→JSON変換
-  UI->>UI: プレビュー表示
-  A->>UI: 保存を確定
-
-  UI->>BLOB: PUT raw/<ts>-<name>.csv (SAS)
-  BLOB-->>UI: 200 OK
-
-  UI->>BLOB: PUT data/items/<id>.json (SAS, 新規追加のみ)
-  BLOB-->>UI: 200 OK
-
-  UI->>BLOB: GET data/index.json (SAS, 最新取得)
-  BLOB-->>UI: 現在のindex.json
-  UI->>UI: IndexMergerで既存indexと新規アイテムをマージ
-
-  UI->>BLOB: PUT data/index.json (SAS, マージ結果)
-  BLOB-->>UI: 200 OK
-  UI->>UI: 書き込み結果表示（成功/失敗一覧）
-
-  Note over UI,WEB: 一般ユーザーは次回閲覧/リロードで新JSONを取得
+  U->>WEB: GET /
+  WEB-->>SPA: HTML/JS/CSS
+  SPA->>WEB: GET data/index.json?v=timestamp
+  WEB-->>SPA: DashboardIndex
+  U->>SPA: メンバー選択
+  SPA->>WEB: GET data/sessions/<id>.json (複数)
+  WEB-->>SPA: SessionRecord群
+  SPA-->>U: 一覧/詳細を表示
 ```
 
-## 前提条件：CORS設定
+### 7.2 管理者更新フロー（ブラウザ）
 
-ブラウザからBlobサービスエンドポイントへのPUT/GETにはCORS設定が必要。
+```mermaid
+sequenceDiagram
+  actor A as Admin
+  participant SPA as AdminPage
+  participant BLOB as Blob Service
 
-| 項目 | 設定値 |
-|------|--------|
-| AllowedOrigins | 静的サイトエンドポイントのURL |
-| AllowedMethods | `PUT, GET, HEAD` |
-| AllowedHeaders | `x-ms-blob-type, x-ms-blob-content-type, content-type, x-ms-version` |
-| ExposedHeaders | `x-ms-meta-*` |
+  A->>SPA: CSV複数投入
+  SPA->>SPA: useFileQueue で検証・パース・重複判定
+  A->>SPA: 一括保存
+  loop ready状態の各ファイル
+    SPA->>BLOB: PUT raw/<ts>-<name>.csv
+    SPA->>BLOB: PUT data/sessions/<sessionId>.json
+    SPA->>BLOB: GET data/index.json
+    SPA->>SPA: IndexMerger.merge
+    SPA->>BLOB: PUT data/index.json
+  end
+```
 
-PUTリクエスト時のヘッダー：`x-ms-blob-type: BlockBlob`, `x-ms-version: 2025-01-05`
+### 7.3 ローカル変換フロー（開発者）
 
-## セキュリティ（割り切りを含む）
+```mermaid
+sequenceDiagram
+  actor D as Developer
+  participant CMD as LocalConvertCommand
+  participant ADP as CsvTransformerAdapter
+  participant VAL as Validators
+  participant W as AtomicPublicDataWriter
 
-* 一般ユーザーにはSASを配布しない（閲覧は匿名read）
-* 管理者のみSASを配布し、更新はSASの権限で実施
-* SASトークンはメモリ内のみに保持し、localStorage/sessionStorageには保存しない
-* URLからのtoken除去は `history.replaceState` で必ず実施し、ブラウザ履歴への残存を防止
-* SAS漏洩は重大問題としない前提だが、影響を局所化するために以下を推奨
+  D->>CMD: npm run convert:local-data
+  CMD->>ADP: CSVごとに parse
+  CMD->>CMD: SessionAggregationServiceで集約
+  CMD->>VAL: 契約検証 + 整合検証
+  alt 検証失敗
+    CMD-->>D: failure report（置換なし）
+  else 検証成功
+    CMD->>W: staging経由で public/data を置換
+    CMD-->>D: success/partial report
+  end
+```
 
-  * Container SAS + Stored Access Policyの組み合わせで一括失効を可能にする
-  * SASの権限は必要最小限（`Read + Write + Create`、`$web` コンテナ限定）
-  * 有効期限は短めに設定し、期限切れ時に再配布する運用
-  * HTTPS必須
-* アカウント/コンテナの到達性は閉域（専用線）とStorageネットワーク規則で制御
+## 8. デプロイと運用
 
-## 非機能（性能・可用性）
+### 8.1 デプロイサイクル分離
 
-* 閲覧：静的配信のみで高速・安定（バックエンド依存なし）
-* キャッシュ：`items/<id>.json` の不変戦略により、2回目以降のドリルダウンはネットワークアクセスなし
-* 更新：PapaParseのWeb Workerモードにより、大規模CSVでもUIスレッドをブロックしない
-* 反映：JSON上書き後、次回アクセスまたはリロードで反映（即時通知はしない）
+- `scripts/Deploy-StaticFiles.ps1`
+- `frontend/dashboard/dist` を `$web` にアップロード
+- `data/*` は除外（コード配備時にデータを上書きしない）
 
-## 運用
+### 8.2 インフラ管理
 
-* 管理者URL（SAS付き）の配布・更新（期限切れ時の再配布）
-* JSON破損時の復旧：`raw/` のCSVから再生成（あるいは前世代JSONを復元）
-* 更新は1名ずつ実施する運用ルール（同時更新の楽観的ロック制御はスコープ外）
-* `index.json` の肥大化が進んだ場合はページネーション導入を検討
+- `scripts/Deploy-Infrastructure.ps1`
+- 静的サイト有効化
+- Blob CORS 設定
+- Stored Access Policy 設定
+- ネットワーク規則（`DefaultAction Deny`）適用
 
-## トレードオフ
+### 8.3 運用支援スクリプト
 
-* サーバ側の検証・監査が弱く、データ品質はクライアント実装と運用に依存
-* 同時更新が起きると上書き競合する可能性（運用ルールで回避。将来的にETag楽観的ロックを検討）
-* `items` は不変のため、既存アイテムの修正にはIDを変えて新規追加する運用が必要
-* URLにSASを入れる方式は漏洩に弱い（ただし閉域前提で許容）
+- `scripts/New-SasToken.ps1`: 管理者用 URL 発行
+- `scripts/Clear-StudyData.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
+- `frontend/dashboard/scripts/convert-local-data.mjs`: ローカル変換実行
+
+## 9. セキュリティ方針（現行実装）
+
+- 閲覧: 静的サイトエンドポイントから匿名 GET
+- 更新: SAS 付き Blob Service Endpoint への PUT/GET
+- トークン取り扱い: URL から即時除去し、メモリ内のみで保持
+- CORS: `GET, PUT, HEAD` と `x-ms-blob-type`, `x-ms-version` などを許可
+
+補足: `frontend/staticwebapp.config.json` は Azure Static Web Apps 向け設定であり、Blob Static Website 単体運用では適用されません。
+
+## 10. テスト構成
+
+- 単体/結合: Vitest + jsdom（`tests/data`, `tests/logic`, `tests/react`, `tests/local-batch`）
+- 画面E2E: Playwright（`e2e`）
+- ローカル変換検証: `local-batch` の統合テストで契約検証・整合検証・原子的置換を確認
+
+## 11. 既知の制約
+
+- `AdminPage` の `BLOB_BASE_URL` はコード内固定値
+- 同時更新の排他制御はアプリ側で未実装（最終書き込み勝ち）
+- `memberId` はメール依存のため、メール欠落時は識別精度が低下
+- `backend/` は本アーキテクチャの実行経路に含まれない
+
+## 12. ディレクトリ要約
+
+```text
+study-log/
+├── docs/architecture.md
+├── data/sample/                         # ローカル変換入力CSV
+├── frontend/
+│   ├── dashboard/
+│   │   ├── src/                         # React SPA
+│   │   ├── local-batch/                 # ローカル変換パイプライン
+│   │   ├── public/data/                 # 配信データ（ローカル）
+│   │   └── scripts/convert-local-data.mjs
+│   └── staticwebapp.config.json         # SWA向け設定（Blob運用では未適用）
+├── scripts/                             # Azure運用スクリプト
+└── backend/                             # 現行フローでは未使用
+```

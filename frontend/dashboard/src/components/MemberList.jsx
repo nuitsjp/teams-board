@@ -1,26 +1,49 @@
+import { useState } from 'react';
 import { formatDuration } from '../utils/format-duration';
-import { User, Clock, ChevronRight } from 'lucide-react';
+import { User, Clock, ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function MemberList({ members }) {
   const navigate = useNavigate();
-  const sortedMembers = [...members].sort(
-    (a, b) => b.totalDurationSeconds - a.totalDurationSeconds
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMembers = members.filter((member) =>
+    searchQuery === ''
+      ? true
+      : member.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const sortedMembers = [...filteredMembers].sort((a, b) =>
+    a.name.localeCompare(b.name, 'ja')
   );
 
   return (
     <div className="bg-surface rounded-xl border border-border-light overflow-hidden">
-      <div className="p-6 border-b border-border-light bg-surface-muted flex justify-between items-center">
-        <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+      <div className="p-6 border-b border-border-light bg-surface-muted flex justify-between items-center gap-4">
+        <h2 className="text-lg font-bold text-text-primary flex items-center gap-2 shrink-0">
           <User className="w-5 h-5 text-primary-600" />
           メンバー
         </h2>
-        <span className="text-xs font-medium bg-primary-50 text-primary-700 px-2 py-1 rounded-full">
-          {members.length} 名
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+          <input
+            type="text"
+            placeholder="名前で検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 text-sm border border-border-light rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+        </div>
+        <span className="text-xs font-medium bg-primary-50 text-primary-700 px-2 py-1 rounded-full shrink-0">
+          {sortedMembers.length} 名
         </span>
       </div>
       <div className="divide-y divide-border-light max-h-[600px] overflow-y-auto">
-        {sortedMembers.map((member) => (
+        {sortedMembers.length === 0 ? (
+          <div className="p-8 text-center text-text-muted">
+            該当するメンバーが見つかりません
+          </div>
+        ) : sortedMembers.map((member) => (
           <div
             key={member.id}
             data-testid="member-row"

@@ -3,8 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth, createAuthAdapter } from '../hooks/useAuth.jsx';
 import { useFileQueue } from '../hooks/useFileQueue.js';
 import { FileDropZone } from '../components/FileDropZone.jsx';
-import { FileQueueList } from '../components/FileQueueList.jsx';
-import { PreviewArea } from '../components/PreviewArea.jsx';
+import { FileQueueCardList } from '../components/FileQueueCardList.jsx';
 import { ProgressBar } from '../components/ProgressBar.jsx';
 import { CsvTransformer } from '../services/csv-transformer.js';
 import { BlobWriter } from '../services/blob-writer.js';
@@ -48,12 +47,6 @@ export function AdminPage() {
       }
     })();
   }, [dataFetcher, setExistingSessionIds]);
-
-  // プレビュー用のアイテム
-  const previewItems = queue.filter((item) =>
-    item.parseResult && item.parseResult.ok &&
-    ['ready', 'duplicate_warning', 'saving', 'saved', 'save_failed'].includes(item.status)
-  );
 
   // 一括保存処理
   const handleBulkSave = useCallback(async () => {
@@ -134,7 +127,7 @@ export function AdminPage() {
         hasFiles={queue.length > 0}
       />
 
-      <FileQueueList
+      <FileQueueCardList
         queue={queue}
         onRemove={removeFile}
         onApproveDuplicate={approveDuplicate}
@@ -149,8 +142,6 @@ export function AdminPage() {
         />
       ) : (
         <div className="flex items-center gap-3">
-          <PreviewArea readyItems={previewItems} />
-
           {readyItems.length > 0 && (
             <button
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
