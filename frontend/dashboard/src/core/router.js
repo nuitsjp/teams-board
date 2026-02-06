@@ -12,24 +12,24 @@ export class Router {
 
   /**
    * 現在のハッシュからルートを解析する
-   * @returns {{ view: 'dashboard' } | { view: 'detail', itemId: string }}
+   * @returns {{ view: 'dashboard' } | { view: 'memberDetail', memberId: string }}
    */
   getCurrentRoute() {
     const hash = window.location.hash;
-    const match = hash.match(/^#\/items\/(.+)$/);
+    const match = hash.match(/^#\/members\/(.+)$/);
     if (match) {
-      return { view: 'detail', itemId: match[1] };
+      return { view: 'memberDetail', memberId: match[1] };
     }
     return { view: 'dashboard' };
   }
 
   /**
    * 指定ルートへ遷移する
-   * @param {{ view: 'dashboard' } | { view: 'detail', itemId: string }} route
+   * @param {{ view: 'dashboard' } | { view: 'memberDetail', memberId: string }} route
    */
   navigate(route) {
-    if (route.view === 'detail') {
-      window.location.hash = `#/items/${route.itemId}`;
+    if (route.view === 'memberDetail') {
+      window.location.hash = `#/members/${route.memberId}`;
     } else {
       window.location.hash = '#/';
     }

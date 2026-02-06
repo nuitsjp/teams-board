@@ -1,4 +1,4 @@
-// DataFetcher テスト
+// DataFetcher テスト — 新データ構造対応
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DataFetcher } from '../../src/data/data-fetcher.js';
 
@@ -16,7 +16,7 @@ describe('DataFetcher', () => {
     it('data/index.json にキャッシュバスター付きでリクエストすること', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ items: [], updatedAt: '' }),
+        json: () => Promise.resolve({ studyGroups: [], members: [], updatedAt: '' }),
       });
       await fetcher.fetchIndex();
       const url = mockFetch.mock.calls[0][0];
@@ -24,7 +24,11 @@ describe('DataFetcher', () => {
     });
 
     it('成功時に { ok: true, data: DashboardIndex } を返すこと', async () => {
-      const indexData = { items: [{ id: 'a', title: 'A', summary: {} }], updatedAt: '2026-01-01' };
+      const indexData = {
+        studyGroups: [{ id: 'abc12345', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
+        members: [{ id: 'mem00001', name: 'テスト太郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
+        updatedAt: '2026-02-01',
+      };
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(indexData),
@@ -52,26 +56,31 @@ describe('DataFetcher', () => {
     });
   });
 
-  describe('fetchItem', () => {
-    it('data/items/<id>.json にキャッシュバスターなしでリクエストすること', async () => {
+  describe('fetchSession', () => {
+    it('data/sessions/<id>.json にキャッシュバスターなしでリクエストすること', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ id: 'x', title: 'X', data: {} }),
+        json: () => Promise.resolve({ id: 'abc12345-2026-01-15', studyGroupId: 'abc12345', date: '2026-01-15', attendances: [] }),
       });
-      await fetcher.fetchItem('x');
+      await fetcher.fetchSession('abc12345-2026-01-15');
       const url = mockFetch.mock.calls[0][0];
-      expect(url).toBe('data/items/x.json');
+      expect(url).toBe('data/sessions/abc12345-2026-01-15.json');
       expect(url).not.toContain('?v=');
     });
 
-    it('成功時に { ok: true, data: ItemDetail } を返すこと', async () => {
-      const itemData = { id: 'item-001', title: '月次', data: { key: 'val' } };
+    it('成功時に { ok: true, data: SessionRecord } を返すこと', async () => {
+      const sessionData = {
+        id: 'abc12345-2026-01-15',
+        studyGroupId: 'abc12345',
+        date: '2026-01-15',
+        attendances: [{ memberId: 'mem00001', durationSeconds: 3600 }],
+      };
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(itemData),
+        json: () => Promise.resolve(sessionData),
       });
-      const result = await fetcher.fetchItem('item-001');
-      expect(result).toEqual({ ok: true, data: itemData });
+      const result = await fetcher.fetchSession('abc12345-2026-01-15');
+      expect(result).toEqual({ ok: true, data: sessionData });
     });
 
     it('HTTPエラー時に { ok: false, error: string } を返すこと', async () => {
@@ -80,14 +89,14 @@ describe('DataFetcher', () => {
         status: 500,
         statusText: 'Internal Server Error',
       });
-      const result = await fetcher.fetchItem('missing');
+      const result = await fetcher.fetchSession('missing');
       expect(result.ok).toBe(false);
       expect(result.error).toContain('500');
     });
 
     it('ネットワークエラー時に適切なエラー結果を返すこと', async () => {
       mockFetch.mockRejectedValue(new TypeError('Failed to fetch'));
-      const result = await fetcher.fetchItem('err');
+      const result = await fetcher.fetchSession('err');
       expect(result.ok).toBe(false);
       expect(result.error).toContain('Failed to fetch');
     });

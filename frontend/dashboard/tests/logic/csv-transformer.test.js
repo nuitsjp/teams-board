@@ -1,4 +1,4 @@
-// CsvTransformer テスト
+// CsvTransformer テスト — Teams出席レポート専用パーサー
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CsvTransformer } from '../../src/logic/csv-transformer.js';
 
@@ -11,14 +11,68 @@ vi.mock('papaparse', () => ({
 
 import Papa from 'papaparse';
 
+// テスト用: jsdom に不足している API のモック
+beforeEach(() => {
+  // crypto.subtle.digest のモック（SHA-256ハッシュ）
+  const mockDigest = vi.fn(async (_algo, data) => {
+    const bytes = new Uint8Array(data);
+    const hash = new Uint8Array(32);
+    for (let i = 0; i < bytes.length; i++) {
+      hash[i % 32] = (hash[i % 32] + bytes[i]) & 0xff;
+    }
+    return hash.buffer;
+  });
+  vi.stubGlobal('crypto', { subtle: { digest: mockDigest } });
+
+  // File.prototype.arrayBuffer のポリフィル（jsdom未サポート対策）
+  if (!File.prototype.arrayBuffer) {
+    File.prototype.arrayBuffer = function () {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsArrayBuffer(this);
+      });
+    };
+  }
+});
+
 /**
- * File相当のヘルパー
- * @param {string} content
- * @param {string} name
- * @returns {File}
+ * UTF-16LE エンコードされたバイナリデータを作成するヘルパー
+ * @param {string} text
+ * @returns {ArrayBuffer}
  */
-function createFile(content, name = 'test.csv') {
-  return new File([content], name, { type: 'text/csv' });
+function createUtf16leBuffer(text) {
+  const buf = new ArrayBuffer(text.length * 2);
+  const view = new Uint16Array(buf);
+  for (let i = 0; i < text.length; i++) {
+    view[i] = text.charCodeAt(i);
+  }
+  return buf;
+}
+
+/**
+ * Teams出席レポート形式の3セクション構成テキストを作成するヘルパー
+ */
+function createTeamsReportText({
+  title = 'もくもく勉強会',
+  startTime = '2026/1/15 19:00:00',
+  participants = [],
+} = {}) {
+  const lines = [];
+  lines.push('1. 要約');
+  lines.push(`会議のタイトル\t${title}`);
+  lines.push(`開始時刻\t${startTime}`);
+  lines.push('');
+  lines.push('2. 参加者');
+  lines.push('名前\tメール アドレス\t会議の長さ');
+  for (const p of participants) {
+    lines.push(`${p.name}\t${p.email}\t${p.duration}`);
+  }
+  lines.push('');
+  lines.push('3. 会議中のアクティビティ');
+  lines.push('なし');
+  return lines.join('\n');
 }
 
 describe('CsvTransformer', () => {
@@ -29,126 +83,306 @@ describe('CsvTransformer', () => {
     vi.clearAllMocks();
   });
 
-  describe('正常なCSVパース', () => {
-    it('正常なCSV文字列をパースしてDashboardItem配列を生成できること', async () => {
-      Papa.parse.mockImplementation((_file, config) => {
+  describe('セクション分割', () => {
+    it('3セクション構成（要約・参加者・アクティビティ）を正しく分割できること', async () => {
+      const text = createTeamsReportText({
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '30 分 0 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      // PapaParseのモック: 参加者セクションのTSVがパースされること
+      Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { id: 'item-101', title: '四半期売上', category: '製品A', amount: '2000000', count: '55' },
-            { id: 'item-102', title: '月次在庫', category: '部品B', amount: '0', count: '120' },
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' },
           ],
           errors: [],
         });
       });
 
-      const file = createFile('dummy');
       const result = await transformer.parse(file);
       expect(result.ok).toBe(true);
-      expect(result.dashboardItems).toHaveLength(2);
-      expect(result.dashboardItems[0].id).toBe('item-101');
-      expect(result.dashboardItems[0].title).toBe('四半期売上');
     });
 
-    it('正常なCSV文字列をパースしてItemDetail配列を生成できること', async () => {
-      Papa.parse.mockImplementation((_file, config) => {
-        config.complete({
-          data: [
-            { id: 'item-101', title: '四半期売上', category: '製品A', amount: '2000000', count: '55' },
-          ],
-          errors: [],
-        });
-      });
+    it('「2. 参加者」セクションが見つからない場合にフォーマットエラーを返すこと', async () => {
+      const text = '1. 要約\n会議のタイトル\t勉強会\n3. 会議中のアクティビティ\nなし';
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'bad.csv', { type: 'text/csv' });
 
-      const file = createFile('dummy');
       const result = await transformer.parse(file);
-      expect(result.ok).toBe(true);
-      expect(result.itemDetails).toHaveLength(1);
-      expect(result.itemDetails[0].id).toBe('item-101');
-      expect(result.itemDetails[0].title).toBe('四半期売上');
-      expect(result.itemDetails[0].data).toBeDefined();
-    });
-
-    it('各DashboardItemにsummaryが含まれること', async () => {
-      Papa.parse.mockImplementation((_file, config) => {
-        config.complete({
-          data: [
-            { id: 'x', title: 'X', category: 'C', amount: '100', count: '5' },
-          ],
-          errors: [],
-        });
-      });
-
-      const file = createFile('dummy');
-      const result = await transformer.parse(file);
-      expect(result.ok).toBe(true);
-      expect(result.dashboardItems[0].summary).toBeDefined();
-      expect(typeof result.dashboardItems[0].summary).toBe('object');
+      expect(result.ok).toBe(false);
+      expect(result.errors.some((e) => e.includes('Teams出席レポート形式'))).toBe(true);
     });
   });
 
-  describe('エラーケース', () => {
-    it('空のCSVファイルでエラー結果を返すこと', async () => {
-      Papa.parse.mockImplementation((_file, config) => {
+  describe('会議タイトルのクリーニング', () => {
+    it('ダブルクォート囲みと「で会議中」を除去してクリーニング済み勉強会名を得ること', async () => {
+      const text = createTeamsReportText({
+        title: '"""もくもく勉強会""で会議中"',
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '30 分 0 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      expect(result.mergeInput.studyGroupName).toBe('もくもく勉強会');
+    });
+
+    it('装飾のないタイトルはそのまま返すこと', async () => {
+      const text = createTeamsReportText({
+        title: 'もくもく勉強会',
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '30 分 0 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      expect(result.mergeInput.studyGroupName).toBe('もくもく勉強会');
+    });
+  });
+
+  describe('時間パース', () => {
+    it('「X 分 Y 秒」形式を秒数に変換できること', async () => {
+      const text = createTeamsReportText({
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '30 分 15 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 15 秒' },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      expect(result.sessionRecord.attendances[0].durationSeconds).toBe(1815);
+    });
+
+    it('「X 時間 Y 分 Z 秒」形式を秒数に変換できること', async () => {
+      const text = createTeamsReportText({
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '1 時間 30 分 0 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '1 時間 30 分 0 秒' },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      expect(result.sessionRecord.attendances[0].durationSeconds).toBe(5400);
+    });
+
+    it('パースできない時間形式は警告として記録しスキップすること', async () => {
+      const text = createTeamsReportText({
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '不正な形式' },
+          { name: 'テスト花子', email: 'hanako@example.com', duration: '10 分 0 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '不正な形式' },
+            { '名前': 'テスト花子', 'メール アドレス': 'hanako@example.com', '会議の長さ': '10 分 0 秒' },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      expect(result.warnings.length).toBeGreaterThan(0);
+      // 不正な行はスキップされ、正常な行のみ残る
+      expect(result.sessionRecord.attendances).toHaveLength(1);
+      expect(result.sessionRecord.attendances[0].durationSeconds).toBe(600);
+    });
+  });
+
+  describe('ID生成', () => {
+    it('SHA-256ハッシュ先頭8桁のIDが生成されること', async () => {
+      const text = createTeamsReportText({
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '10 分 0 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '10 分 0 秒' },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      // StudyGroup ID: 8桁hex
+      expect(result.mergeInput.studyGroupId).toMatch(/^[0-9a-f]{8}$/);
+      // Member ID: 8桁hex
+      expect(result.sessionRecord.attendances[0].memberId).toMatch(/^[0-9a-f]{8}$/);
+      // Session ID: groupId-YYYY-MM-DD
+      expect(result.sessionRecord.id).toMatch(/^[0-9a-f]{8}-\d{4}-\d{2}-\d{2}$/);
+    });
+  });
+
+  describe('開催日抽出', () => {
+    it('開始時刻フィールドからYYYY-MM-DD形式の開催日を取得できること', async () => {
+      const text = createTeamsReportText({
+        startTime: '2026/1/15 19:00:00',
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '10 分 0 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '10 分 0 秒' },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      expect(result.sessionRecord.date).toBe('2026-01-15');
+    });
+  });
+
+  describe('統合パイプライン', () => {
+    it('正常なCSVから SessionRecord と MergeInput を生成できること', async () => {
+      const text = createTeamsReportText({
+        title: 'もくもく勉強会',
+        startTime: '2026/1/15 19:00:00',
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '59 分 12 秒' },
+          { name: 'テスト花子', email: 'hanako@example.com', duration: '20 分 59 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '59 分 12 秒' },
+            { '名前': 'テスト花子', 'メール アドレス': 'hanako@example.com', '会議の長さ': '20 分 59 秒' },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+
+      // SessionRecord の検証
+      const { sessionRecord } = result;
+      expect(sessionRecord.studyGroupId).toMatch(/^[0-9a-f]{8}$/);
+      expect(sessionRecord.date).toBe('2026-01-15');
+      expect(sessionRecord.attendances).toHaveLength(2);
+      expect(sessionRecord.attendances[0].durationSeconds).toBe(3552);
+      expect(sessionRecord.attendances[1].durationSeconds).toBe(1259);
+
+      // MergeInput の検証
+      const { mergeInput } = result;
+      expect(mergeInput.studyGroupName).toBe('もくもく勉強会');
+      expect(mergeInput.sessionId).toBe(sessionRecord.id);
+      expect(mergeInput.date).toBe('2026-01-15');
+      expect(mergeInput.attendances).toHaveLength(2);
+      expect(mergeInput.attendances[0].memberName).toBe('テスト太郎');
+      expect(mergeInput.attendances[0].durationSeconds).toBe(3552);
+    });
+
+    it('参加者が0件の場合はエラーを返すこと', async () => {
+      const text = createTeamsReportText({ participants: [] });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [],
           errors: [],
         });
       });
 
-      const file = createFile('');
       const result = await transformer.parse(file);
       expect(result.ok).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors.some((e) => e.includes('参加者'))).toBe(true);
     });
 
-    it('PapaParseがエラーを返した場合にエラー結果を返すこと', async () => {
-      Papa.parse.mockImplementation((_file, config) => {
+    it('PapaParseがタブ区切り・ヘッダー付きで呼び出されること', async () => {
+      const text = createTeamsReportText({
+        participants: [
+          { name: 'テスト太郎', email: 'taro@example.com', duration: '10 分 0 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
         config.complete({
-          data: [],
-          errors: [{ message: 'UndetectableDelimiter', row: 0 }],
+          data: [
+            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '10 分 0 秒' },
+          ],
+          errors: [],
         });
       });
 
-      const file = createFile('bad data');
-      const result = await transformer.parse(file);
-      expect(result.ok).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
-    });
-
-    it('PapaParseのerrorコールバック時にエラー結果を返すこと', async () => {
-      Papa.parse.mockImplementation((_file, config) => {
-        config.error(new Error('パースエラー'));
-      });
-
-      const file = createFile('bad');
-      const result = await transformer.parse(file);
-      expect(result.ok).toBe(false);
-      expect(result.errors[0]).toContain('パースエラー');
-    });
-  });
-
-  describe('PapaParse呼び出し', () => {
-    it('PapaParseがheader:trueで呼び出されること', async () => {
-      Papa.parse.mockImplementation((_file, config) => {
-        config.complete({ data: [{ id: 'a', title: 'A' }], errors: [] });
-      });
-
-      const file = createFile('dummy');
       await transformer.parse(file);
-      expect(Papa.parse).toHaveBeenCalledTimes(1);
       const config = Papa.parse.mock.calls[0][1];
+      expect(config.delimiter).toBe('\t');
       expect(config.header).toBe(true);
-    });
-
-    it('PapaParseがworker:trueで呼び出されること（UIスレッド非ブロック）', async () => {
-      Papa.parse.mockImplementation((_file, config) => {
-        config.complete({ data: [{ id: 'a', title: 'A' }], errors: [] });
-      });
-
-      const file = createFile('dummy');
-      await transformer.parse(file);
-      const config = Papa.parse.mock.calls[0][1];
-      expect(config.worker).toBe(true);
     });
   });
 });

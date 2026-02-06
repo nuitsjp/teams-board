@@ -10,12 +10,12 @@ export class DataFetcher {
   }
 
   /**
-   * アイテム詳細JSONを取得する（キャッシュバスターなし、不変リソース）
-   * @param {string} itemId
+   * セッション詳細JSONを取得する（キャッシュバスターなし、不変リソース）
+   * @param {string} sessionId
    * @returns {Promise<{ok: true, data: object} | {ok: false, error: string}>}
    */
-  async fetchItem(itemId) {
-    const url = `data/items/${itemId}.json`;
+  async fetchSession(sessionId) {
+    const url = `data/sessions/${sessionId}.json`;
     return this.#fetchJson(url);
   }
 

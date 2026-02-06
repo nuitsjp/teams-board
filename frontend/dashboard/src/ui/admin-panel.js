@@ -1,19 +1,21 @@
-// AdminPanel — 管理者向け操作UI（CsvUploader, PreviewPanel, 進捗表示を統合）
-import { IndexMerger } from '../data/index-merger.js';
+// AdminPanel — 管理者向け操作UI（Teams出席レポートCSV対応）
+import { formatDuration } from './dashboard-view.js';
 
 export class AdminPanel {
   #container;
   #auth;
   #csvTransformer;
   #blobWriter;
+  #indexMerger;
   #currentParseResult = null;
   #currentFile = null;
 
-  constructor(container, auth, csvTransformer, blobWriter) {
+  constructor(container, auth, csvTransformer, blobWriter, indexMerger) {
     this.#container = container;
     this.#auth = auth;
     this.#csvTransformer = csvTransformer;
     this.#blobWriter = blobWriter;
+    this.#indexMerger = indexMerger;
   }
 
   /**
@@ -36,7 +38,7 @@ export class AdminPanel {
     this.#container.innerHTML = `
       <h2>管理者パネル</h2>
       <div class="csv-drop-zone" id="drop-zone">
-        CSVファイルをドラッグ&ドロップ、またはファイルを選択
+        Teams出席レポートCSVをドラッグ&ドロップ、またはファイルを選択
         <br><input type="file" accept=".csv" id="csv-file-input">
       </div>
       <div id="admin-content"></div>
@@ -45,13 +47,11 @@ export class AdminPanel {
     const dropZone = this.#container.querySelector('#drop-zone');
     const fileInput = this.#container.querySelector('#csv-file-input');
 
-    // ファイル選択イベント
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) this.#handleFile(file);
     });
 
-    // Drag&Dropイベント
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
       dropZone.classList.add('dragover');
@@ -88,31 +88,25 @@ export class AdminPanel {
   }
 
   /**
-   * プレビューと保存ボタンを描画する
+   * セッション情報のプレビューと保存ボタンを描画する
    * @param {HTMLElement} contentArea
    * @param {object} parseResult
    */
   #renderPreview(contentArea, parseResult) {
-    const { dashboardItems } = parseResult;
+    const { mergeInput } = parseResult;
 
-    // プレビューテーブル
-    let tableHtml = '<table class="preview-table"><thead><tr>';
-    if (dashboardItems.length > 0) {
-      tableHtml += '<th>ID</th><th>タイトル</th>';
-      const summaryKeys = Object.keys(dashboardItems[0].summary);
-      for (const key of summaryKeys) {
-        tableHtml += `<th>${key}</th>`;
-      }
-      tableHtml += '</tr></thead><tbody>';
-      for (const item of dashboardItems) {
-        tableHtml += `<tr><td>${item.id}</td><td>${item.title}</td>`;
-        for (const key of summaryKeys) {
-          tableHtml += `<td>${item.summary[key] ?? ''}</td>`;
-        }
-        tableHtml += '</tr>';
-      }
-      tableHtml += '</tbody></table>';
+    // プレビューテーブル: 勉強会名・開催日・参加者一覧
+    let tableHtml = '<table class="preview-table">';
+    tableHtml += '<thead><tr><th>勉強会名</th><th>開催日</th></tr></thead>';
+    tableHtml += `<tbody><tr><td>${mergeInput.studyGroupName}</td><td>${mergeInput.date}</td></tr></tbody>`;
+    tableHtml += '</table>';
+
+    // 参加者一覧
+    tableHtml += '<table class="preview-table"><thead><tr><th>参加者</th><th>学習時間</th></tr></thead><tbody>';
+    for (const a of mergeInput.attendances) {
+      tableHtml += `<tr><td>${a.memberName}</td><td>${formatDuration(a.durationSeconds)}</td></tr>`;
     }
+    tableHtml += '</tbody></table>';
 
     contentArea.innerHTML = `
       ${tableHtml}
@@ -129,9 +123,8 @@ export class AdminPanel {
    * @param {HTMLElement} contentArea
    */
   async #handleSave(contentArea) {
-    const { dashboardItems, itemDetails } = this.#currentParseResult;
+    const { sessionRecord, mergeInput } = this.#currentParseResult;
     const file = this.#currentFile;
-    const merger = new IndexMerger();
 
     contentArea.innerHTML = '<div class="loading">保存処理中...</div>';
 
@@ -142,16 +135,17 @@ export class AdminPanel {
       contentType: 'text/csv',
     } : undefined;
 
-    const newItems = itemDetails.map((detail) => ({
-      path: `data/items/${detail.id}.json`,
-      content: JSON.stringify(detail, null, 2),
+    const newItems = [{
+      path: `data/sessions/${sessionRecord.id}.json`,
+      content: JSON.stringify(sessionRecord, null, 2),
       contentType: 'application/json',
-    }));
+    }];
 
+    const merger = this.#indexMerger;
     const result = await this.#blobWriter.executeWriteSequence({
       rawCsv,
       newItems,
-      indexUpdater: (currentIndex) => merger.merge(currentIndex, dashboardItems),
+      indexUpdater: (currentIndex) => merger.merge(currentIndex, mergeInput).index,
     });
 
     this.#renderResults(contentArea, result);
