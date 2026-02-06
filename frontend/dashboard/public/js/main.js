@@ -22,7 +22,7 @@ const dashboardView = new DashboardView(appEl, fetcher, router);
 const memberDetailView = new MemberDetailView(appEl, fetcher, router);
 const adminPanel = new AdminPanel(
   document.getElementById('admin-panel'),
-  auth, csvTransformer, blobWriter, indexMerger
+  auth, csvTransformer, blobWriter, indexMerger, fetcher
 );
 
 // ルーティング

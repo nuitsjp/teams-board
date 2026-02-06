@@ -27,12 +27,51 @@ main { max-width: 960px; margin: 1rem auto; padding: 0 1rem; }
 .hidden { display: none; }
 #admin-panel { max-width: 960px; margin: 1rem auto; padding: 0 1rem; }
 
-/* CSVアップロード */
-.csv-drop-zone { border: 2px dashed #ccc; border-radius: 4px; padding: 2rem; text-align: center; color: #999; transition: border-color 0.2s; }
-.csv-drop-zone.dragover { border-color: #1a73e8; color: #1a73e8; }
+/* CSVアップロード — ドロップゾーン */
+.csv-drop-zone { border: 2px dashed #ccc; border-radius: 4px; padding: 2rem; text-align: center; color: #999; transition: border-color 0.2s, padding 0.3s, background-color 0.2s; }
+.csv-drop-zone.dragover { border-color: #1a73e8; color: #1a73e8; background-color: #e8f0fe; }
+.csv-drop-zone.compact { padding: 0.75rem; font-size: 0.875rem; }
+.drop-zone-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.csv-drop-zone.compact .drop-zone-icon { font-size: 1rem; margin-bottom: 0; display: inline; }
+.drop-zone-text { margin-bottom: 0.5rem; }
+
+/* ドロップアニメーション */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* キュー一覧 */
+.queue-list { list-style: none; margin: 0.75rem 0; }
+.queue-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: #fff; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 0.25rem; animation: fadeIn 0.3s ease; }
+.queue-item-name { font-weight: 500; }
+.queue-item-size { font-size: 0.8rem; color: #888; }
+.queue-item-error { font-size: 0.8rem; }
+.queue-item-warning { font-size: 0.8rem; }
+
+/* ステータスアイコン */
+.status-icon { font-size: 0.9rem; }
+.status-icon.success { color: #155724; }
+.status-icon.failure { color: #721c24; }
+.status-icon.pending { color: #856404; }
+.status-icon.warning { color: #856404; }
+
+/* メッセージスタイル */
+.msg-error { color: #721c24; background: #fdecea; padding: 0.125rem 0.375rem; border-radius: 2px; }
+.msg-warning { color: #856404; background: #fff3cd; padding: 0.125rem 0.375rem; border-radius: 2px; }
+.msg-success { color: #155724; background: #d4edda; padding: 0.125rem 0.375rem; border-radius: 2px; }
+
+/* サマリーカード */
+.preview-card { background: #fff; border: 1px solid #ddd; border-radius: 4px; margin: 0.5rem 0; animation: fadeIn 0.3s ease; }
+.summary-card { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.75rem 1rem; cursor: pointer; transition: background-color 0.15s; }
+.summary-card:hover { background-color: #f8f9fa; }
+.summary-group { font-weight: 600; }
+.summary-date { color: #666; }
+.summary-count, .summary-duration { font-size: 0.875rem; color: #555; }
+.preview-detail { padding: 0 1rem 0.75rem; }
 
 /* プレビューテーブル */
-.preview-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+.preview-table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
 .preview-table th, .preview-table td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; font-size: 0.875rem; }
 .preview-table th { background: #f0f0f0; }
 
@@ -43,9 +82,22 @@ main { max-width: 960px; margin: 1rem auto; padding: 0 1rem; }
 .progress-item.failure { color: #721c24; }
 .progress-item.pending { color: #856404; }
 
+/* プログレスバー */
+.save-progress { margin: 1rem 0; }
+.save-progress progress { width: 100%; height: 1.25rem; border-radius: 4px; }
+.save-progress progress::-webkit-progress-bar { background: #e9ecef; border-radius: 4px; }
+.save-progress progress::-webkit-progress-value { background: #1a73e8; border-radius: 4px; }
+.save-status { text-align: center; color: #666; margin-top: 0.5rem; font-size: 0.875rem; }
+
 /* ボタン */
 .btn { display: inline-block; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: #1a73e8; color: #fff; }
-.btn-primary:hover { background: #1557b0; }
+.btn-primary:hover:not(:disabled) { background: #1557b0; }
 .btn-danger { background: #dc3545; color: #fff; }
 .btn-retry { background: #ffc107; color: #333; }
+.btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+.btn-remove { background: #f8f9fa; color: #dc3545; border: 1px solid #ddd; }
+.btn-remove:hover { background: #fdecea; }
+.btn-approve { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+.btn-approve:hover { background: #ffc107; color: #333; }

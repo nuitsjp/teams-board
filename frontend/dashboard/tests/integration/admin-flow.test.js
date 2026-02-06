@@ -1,4 +1,4 @@
-// 管理者フロー結合テスト — ドメインモデル対応
+// 管理者フロー結合テスト — 複数ファイル対応版
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthManager } from '../../src/core/auth-manager.js';
 import { IndexMerger } from '../../src/data/index-merger.js';
@@ -48,6 +48,7 @@ describe('管理者フロー結合テスト', () => {
             return hash.buffer;
           }),
         },
+        randomUUID: () => `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       });
     }
 
@@ -64,7 +65,31 @@ describe('管理者フロー結合テスト', () => {
     }
   });
 
-  it('SAS付きURL → トークン取得 → 管理者UI表示のフローが動作すること', () => {
+  /**
+   * UTF-16LEエンコードのTeamsレポートCSVを作成するヘルパー
+   */
+  const createTeamsReportFile = (fileName = 'test.csv') => {
+    const reportText = '1. 要約\n会議のタイトル\tもくもく勉強会\n開始時刻\t2026/1/15 19:00:00\n\n2. 参加者\n名前\tメール アドレス\t会議の長さ\nテスト太郎\ttaro@example.com\t30 分 0 秒\n\n3. 会議中のアクティビティ\nなし';
+    const buf = new ArrayBuffer(reportText.length * 2);
+    const view = new Uint16Array(buf);
+    for (let i = 0; i < reportText.length; i++) {
+      view[i] = reportText.charCodeAt(i);
+    }
+    return new File([buf], fileName, { type: 'text/csv' });
+  };
+
+  const setupPapaParseMock = () => {
+    Papa.parse.mockImplementation((_input, config) => {
+      config.complete({
+        data: [
+          { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' },
+        ],
+        errors: [],
+      });
+    });
+  };
+
+  it('SAS付きURL → トークン取得 → 管理者UI表示のフローが動作すること', async () => {
     const auth = AuthManager.initialize('https://example.com/?token=test-sas-token');
     expect(auth.isAdminMode()).toBe(true);
     expect(auth.getSasToken()).toBe('test-sas-token');
@@ -74,14 +99,14 @@ describe('管理者フロー結合テスト', () => {
     const blobWriter = new BlobWriter(auth, 'https://test.blob.core.windows.net/$web');
     const indexMerger = new IndexMerger();
     const panel = new AdminPanel(container, auth, csvTransformer, blobWriter, indexMerger);
-    panel.initialize();
+    await panel.initialize();
 
     expect(container.classList.contains('hidden')).toBe(false);
     expect(container.querySelector('input[type="file"]')).not.toBeNull();
     expect(container.querySelector('.csv-drop-zone')).not.toBeNull();
   });
 
-  it('SASトークンなしでのアクセス時に管理者UIが非表示であること', () => {
+  it('SASトークンなしでのアクセス時に管理者UIが非表示であること', async () => {
     const auth = AuthManager.initialize('https://example.com/');
     expect(auth.isAdminMode()).toBe(false);
 
@@ -89,7 +114,7 @@ describe('管理者フロー結合テスト', () => {
     const blobWriter = new BlobWriter(auth, 'https://test.blob.core.windows.net/$web');
     const indexMerger = new IndexMerger();
     const panel = new AdminPanel(container, auth, csvTransformer, blobWriter, indexMerger);
-    panel.initialize();
+    await panel.initialize();
 
     expect(container.classList.contains('hidden')).toBe(true);
   });
@@ -100,39 +125,23 @@ describe('管理者フロー結合テスト', () => {
     const blobWriter = new BlobWriter(auth, 'https://test.blob.core.windows.net/$web');
     const indexMerger = new IndexMerger();
     const panel = new AdminPanel(container, auth, csvTransformer, blobWriter, indexMerger);
-    panel.initialize();
+    await panel.initialize();
 
-    // PapaParseモック設定（参加者セクションのTSVパース）
-    Papa.parse.mockImplementation((_input, config) => {
-      config.complete({
-        data: [
-          { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' },
-        ],
-        errors: [],
-      });
-    });
+    setupPapaParseMock();
 
-    // UTF-16LEエンコードのTeamsレポートCSVを作成
-    const reportText = '1. 要約\n会議のタイトル\tもくもく勉強会\n開始時刻\t2026/1/15 19:00:00\n\n2. 参加者\n名前\tメール アドレス\t会議の長さ\nテスト太郎\ttaro@example.com\t30 分 0 秒\n\n3. 会議中のアクティビティ\nなし';
-    const buf = new ArrayBuffer(reportText.length * 2);
-    const view = new Uint16Array(buf);
-    for (let i = 0; i < reportText.length; i++) {
-      view[i] = reportText.charCodeAt(i);
-    }
-
-    const file = new File([buf], 'test.csv', { type: 'text/csv' });
+    const file = createTeamsReportFile();
     const fileInput = container.querySelector('input[type="file"]');
     Object.defineProperty(fileInput, 'files', { value: [file] });
     fileInput.dispatchEvent(new Event('change'));
 
     await vi.waitFor(() => {
-      const tables = container.querySelectorAll('.preview-table');
-      expect(tables.length).toBeGreaterThanOrEqual(1);
-      expect(tables[0].textContent).toContain('もくもく勉強会');
-      expect(tables[0].textContent).toContain('2026-01-15');
+      const summaryCard = container.querySelector('.summary-card');
+      expect(summaryCard).not.toBeNull();
+      expect(summaryCard.textContent).toContain('もくもく勉強会');
+      expect(summaryCard.textContent).toContain('2026-01-15');
     });
 
-    expect(container.querySelector('.btn-primary')).not.toBeNull();
+    expect(container.querySelector('#save-all-btn')).not.toBeNull();
   });
 
   it('保存確定 → Blob書き込みシーケンスの順序が正しいこと', async () => {
@@ -141,36 +150,25 @@ describe('管理者フロー結合テスト', () => {
     const blobWriter = new BlobWriter(auth, 'https://test.blob.core.windows.net/$web');
     const indexMerger = new IndexMerger();
     const panel = new AdminPanel(container, auth, csvTransformer, blobWriter, indexMerger);
-    panel.initialize();
+    await panel.initialize();
 
-    Papa.parse.mockImplementation((_input, config) => {
-      config.complete({
-        data: [{ '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' }],
-        errors: [],
-      });
-    });
+    setupPapaParseMock();
 
-    const reportText = '1. 要約\n会議のタイトル\tもくもく勉強会\n開始時刻\t2026/1/15 19:00:00\n\n2. 参加者\n名前\tメール アドレス\t会議の長さ\nテスト太郎\ttaro@example.com\t30 分 0 秒\n\n3. 会議中のアクティビティ\nなし';
-    const buf = new ArrayBuffer(reportText.length * 2);
-    const view = new Uint16Array(buf);
-    for (let i = 0; i < reportText.length; i++) {
-      view[i] = reportText.charCodeAt(i);
-    }
-
-    const file = new File([buf], 'write-test.csv', { type: 'text/csv' });
+    const file = createTeamsReportFile('write-test.csv');
     const fileInput = container.querySelector('input[type="file"]');
     Object.defineProperty(fileInput, 'files', { value: [file] });
     fileInput.dispatchEvent(new Event('change'));
 
     await vi.waitFor(() => {
-      expect(container.querySelector('.btn-primary')).not.toBeNull();
+      expect(container.querySelector('#save-all-btn')).not.toBeNull();
     });
 
-    container.querySelector('.btn-primary').click();
+    container.querySelector('#save-all-btn').click();
 
     await vi.waitFor(() => {
-      const progressItems = container.querySelectorAll('.progress-item');
-      expect(progressItems.length).toBeGreaterThan(0);
+      // 保存完了後、キュー一覧にsavedアイテムが表示される
+      const savedItem = container.querySelector('.queue-item-saved');
+      expect(savedItem).not.toBeNull();
     });
 
     // 書き込み順序の検証: raw → sessions → (GET index) → PUT index
@@ -231,7 +229,7 @@ describe('管理者フロー結合テスト', () => {
     const blobWriter = new BlobWriter(auth, 'https://test.blob.core.windows.net/$web');
     const indexMerger = new IndexMerger();
     const panel = new AdminPanel(container, auth, csvTransformer, blobWriter, indexMerger);
-    panel.initialize();
+    await panel.initialize();
 
     Papa.parse.mockImplementation((_input, config) => {
       config.complete({
@@ -240,31 +238,23 @@ describe('管理者フロー結合テスト', () => {
       });
     });
 
-    const reportText = '1. 要約\n会議のタイトル\tもくもく勉強会\n開始時刻\t2026/1/15 19:00:00\n\n2. 参加者\n名前\tメール アドレス\t会議の長さ\nテスト太郎\ttaro@example.com\t10 分 0 秒\n\n3. 会議中のアクティビティ\nなし';
-    const buf = new ArrayBuffer(reportText.length * 2);
-    const view = new Uint16Array(buf);
-    for (let i = 0; i < reportText.length; i++) {
-      view[i] = reportText.charCodeAt(i);
-    }
-
-    const file = new File([buf], 'fail.csv', { type: 'text/csv' });
+    const file = createTeamsReportFile('fail.csv');
     const fileInput = container.querySelector('input[type="file"]');
     Object.defineProperty(fileInput, 'files', { value: [file] });
     fileInput.dispatchEvent(new Event('change'));
 
     await vi.waitFor(() => {
-      expect(container.querySelector('.btn-primary')).not.toBeNull();
+      expect(container.querySelector('#save-all-btn')).not.toBeNull();
     });
 
-    container.querySelector('.btn-primary').click();
+    container.querySelector('#save-all-btn').click();
 
     await vi.waitFor(() => {
-      const failItem = container.querySelector('.progress-item.failure');
-      expect(failItem).not.toBeNull();
-      expect(failItem.textContent).toContain('index.json');
+      const failedItem = container.querySelector('.queue-item-save_failed');
+      expect(failedItem).not.toBeNull();
     });
 
-    const retryBtn = container.querySelector('.btn-retry');
+    const retryBtn = container.querySelector('#retry-btn');
     expect(retryBtn).not.toBeNull();
   });
 });
