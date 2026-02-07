@@ -1,6 +1,6 @@
 // ConversionReporter テスト — 変換実行結果のレポーティング
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConversionReporter } from '../../local-batch/conversion-reporter.js';
+import { ConversionReporter } from '../../src/local-batch/conversion-reporter.js';
 
 /**
  * テスト用のfsモックを生成する

@@ -1,6 +1,6 @@
 // SessionAggregationService テスト — 複数CSV変換結果をセッション集約する
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SessionAggregationService } from '../../local-batch/session-aggregation-service.js';
+import { SessionAggregationService } from '../../src/local-batch/session-aggregation-service.js';
 
 /**
  * テスト用のIndexMergerモックを生成する

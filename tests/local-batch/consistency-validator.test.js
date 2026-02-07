@@ -1,6 +1,6 @@
 // ConsistencyValidator テスト — 集計値と明細値の整合性検証
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ConsistencyValidator } from '../../local-batch/consistency-validator.js';
+import { ConsistencyValidator } from '../../src/local-batch/consistency-validator.js';
 
 describe('ConsistencyValidator', () => {
   let validator;

@@ -1,5 +1,5 @@
 // SessionAggregationService — 複数CSV変換結果をセッション集約する
-import { IndexMerger } from '../src/services/index-merger.js';
+import { IndexMerger } from '../services/index-merger.js';
 
 export class SessionAggregationService {
   /**
