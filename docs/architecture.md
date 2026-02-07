@@ -53,7 +53,7 @@ graph TD
     SPA -->|PUT/GET with SAS| BLOB
     BLOB -->|raw/*.csv / data/*.json| SPA
 
-    D -->|npm run convert:local-data| CMD
+    D -->|pnpm run convert:local-data| CMD
     SAMPLE --> CMD
     CMD --> LB
     LB --> PUBLIC
@@ -212,7 +212,7 @@ sequenceDiagram
   participant VAL as Validators
   participant W as AtomicPublicDataWriter
 
-  D->>CMD: npm run convert:local-data
+  D->>CMD: pnpm run convert:local-data
   CMD->>ADP: CSVごとに parse
   CMD->>CMD: SessionAggregationServiceで集約
   CMD->>VAL: 契約検証 + 整合検証

@@ -77,7 +77,7 @@ Push-Location $appRoot
 try {
     # テスト実行
     Write-Host "テストを実行しています..." -ForegroundColor Cyan
-    & npx vitest run
+    & pnpm run test
     if ($LASTEXITCODE -ne 0) {
         throw "テストに失敗しました (exit code: $LASTEXITCODE)。デプロイを中断します。"
     }
@@ -85,7 +85,7 @@ try {
 
     # プロダクションビルド実行
     Write-Host "プロダクションビルドを実行しています..." -ForegroundColor Cyan
-    & npm run build
+    & pnpm run build
     if ($LASTEXITCODE -ne 0) {
         throw "ビルドに失敗しました (exit code: $LASTEXITCODE)"
     }
