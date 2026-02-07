@@ -9,9 +9,8 @@ import { CsvTransformer } from '../services/csv-transformer.js';
 import { BlobWriter } from '../services/blob-writer.js';
 import { IndexMerger } from '../services/index-merger.js';
 import { DataFetcher } from '../services/data-fetcher.js';
+import { APP_CONFIG } from '../config/app-config.js';
 import { ArrowLeft, Upload, RotateCcw } from 'lucide-react';
-
-const BLOB_BASE_URL = 'https://strjstudylogprod.blob.core.windows.net/$web';
 
 /**
  * 管理者パネル — CSVインポート・プレビュー・一括保存機能
@@ -22,7 +21,7 @@ export function AdminPage() {
   const authAdapter = useMemo(() => createAuthAdapter(auth), [auth]);
 
   const csvTransformer = useMemo(() => new CsvTransformer(), []);
-  const blobWriter = useMemo(() => new BlobWriter(authAdapter, BLOB_BASE_URL), [authAdapter]);
+  const blobWriter = useMemo(() => new BlobWriter(authAdapter, APP_CONFIG.blobBaseUrl), [authAdapter]);
   const indexMerger = useMemo(() => new IndexMerger(), []);
   const dataFetcher = useMemo(() => new DataFetcher(), []);
 

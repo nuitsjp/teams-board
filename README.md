@@ -68,6 +68,8 @@ npm run test:e2e:headed   # ブラウザ表示付き実行
 | `npm run preview` | ビルド済みアプリのプレビューサーバー |
 | `npm test` | Vitest でユニット／統合テストを実行 |
 | `npm run test:e2e` | Playwright E2E テストを実行 |
+| `npm run lint` | ESLint で静的解析を実行 |
+| `npm run format` | Prettier でコード整形を実行 |
 
 ## アーキテクチャ概要
 
