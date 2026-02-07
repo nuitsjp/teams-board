@@ -221,6 +221,46 @@ if (-not $policyExists) {
 }
 
 # ============================================================
+# Step 7: data/index.json の初期配置
+# ============================================================
+Write-Host "`n=== Step 7: data/index.json の初期配置 ===" -ForegroundColor Cyan
+
+$existingIndex = az storage blob show `
+    --container-name '$web' `
+    --name 'data/index.json' `
+    --account-name $StorageAccountName `
+    --account-key $accountKey 2>$null
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "data/index.json が存在しません。空の初期データを配置します..."
+    $updatedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+    $indexContent = @{
+        studyGroups = @()
+        members     = @()
+        updatedAt   = $updatedAt
+    } | ConvertTo-Json -Depth 2
+
+    $tempFile = Join-Path $env:TEMP "study-log-empty-index.json"
+    try {
+        [System.IO.File]::WriteAllText($tempFile, $indexContent, [System.Text.UTF8Encoding]::new($false))
+        az storage blob upload `
+            --file $tempFile `
+            --container-name '$web' `
+            --name 'data/index.json' `
+            --content-type 'application/json; charset=utf-8' `
+            --account-name $StorageAccountName `
+            --account-key $accountKey `
+            --overwrite | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "data/index.json の配置に失敗しました" }
+        Write-Host "data/index.json を初期配置しました (updatedAt: $updatedAt)" -ForegroundColor Green
+    } finally {
+        if (Test-Path $tempFile) { Remove-Item $tempFile -Force }
+    }
+} else {
+    Write-Host "data/index.json は既に存在します。スキップします。" -ForegroundColor Yellow
+}
+
+# ============================================================
 # 完了サマリー
 # ============================================================
 Write-Host "`n=== プロビジョニング完了 ===" -ForegroundColor Cyan
