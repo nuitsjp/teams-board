@@ -30,14 +30,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # setup-node の pnpm キャッシュは pnpm コマンドを呼ぶため、先に pnpm を用意する
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: pnpm を有効化
-        run: corepack enable
 
       - name: 依存パッケージのインストール
         run: pnpm install --frozen-lockfile
