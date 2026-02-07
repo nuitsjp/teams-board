@@ -51,15 +51,6 @@ if ($LASTEXITCODE -ne 0) { throw "Storageアカウント '$StorageAccountName' �
 $accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
 if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
 
-# クライアントIPをネットワークルールに一時追加（データプレーン操作のため）
-$clientIp = (Invoke-RestMethod -Uri "https://api.ipify.org")
-az storage account network-rule add `
-    --resource-group $ResourceGroupName `
-    --account-name $StorageAccountName `
-    --ip-address $clientIp | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "ネットワークルールへのIP追加に失敗しました" }
-Start-Sleep -Seconds 30
-
 # SASトークン生成（Policyから権限を継承）
 $sasToken = (az storage container generate-sas `
     --name '$web' `
@@ -69,15 +60,6 @@ $sasToken = (az storage container generate-sas `
     --account-key $accountKey `
     --output tsv)
 if ($LASTEXITCODE -ne 0) { throw "SASトークンの生成に失敗しました" }
-
-# クライアントIPをネットワークルールから削除
-az storage account network-rule remove `
-    --resource-group $ResourceGroupName `
-    --account-name $StorageAccountName `
-    --ip-address $clientIp | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "警告: クライアントIPの削除に失敗しました。手動で削除してください。" -ForegroundColor Yellow
-}
 
 # 静的サイトエンドポイントURLの取得
 $webEndpoint = (az storage account show --resource-group $ResourceGroupName --name $StorageAccountName --query "primaryEndpoints.web" --output tsv)

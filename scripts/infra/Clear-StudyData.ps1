@@ -58,18 +58,6 @@ $accountKey = (az storage account keys list --resource-group $ResourceGroupName 
 if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
 Write-Host "Storageアカウントに接続しました" -ForegroundColor Green
 
-# クライアントIPをネットワークルールに一時追加（データプレーン操作のため）
-$clientIp = (Invoke-RestMethod -Uri "https://api.ipify.org")
-Write-Host "クライアントIP ($clientIp) をネットワークルールに一時追加しています..."
-az storage account network-rule add `
-    --resource-group $ResourceGroupName `
-    --account-name $StorageAccountName `
-    --ip-address $clientIp | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "ネットワークルールへのIP追加に失敗しました" }
-Write-Host "クライアントIPを追加しました: $clientIp" -ForegroundColor Green
-Write-Host "ネットワークルールの反映を待機しています (30秒)..."
-Start-Sleep -Seconds 30
-
 # ============================================================
 # Step 2: data/ 配下のBlob削除
 # ============================================================
@@ -146,18 +134,6 @@ try {
         Remove-Item $tempFile -Force
         Write-Host "一時ファイルを削除しました"
     }
-}
-
-# クライアントIPをネットワークルールから削除
-Write-Host "`nクライアントIP ($clientIp) をネットワークルールから削除しています..."
-az storage account network-rule remove `
-    --resource-group $ResourceGroupName `
-    --account-name $StorageAccountName `
-    --ip-address $clientIp | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "警告: クライアントIPの削除に失敗しました。手動で削除してください。" -ForegroundColor Yellow
-} else {
-    Write-Host "クライアントIPを削除しました" -ForegroundColor Green
 }
 
 # ============================================================

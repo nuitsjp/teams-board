@@ -110,32 +110,18 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "Storageアカウントの設定を上書きしました: StorageV2 / Standard_LRS / Hot / TLS1.2 / HTTPS only" -ForegroundColor Green
 }
 
-# ネットワークアクセス制限の設定（Azure Policy準拠: defaultAction=Deny）
-Write-Host "ネットワークルールを設定しています (defaultAction=Deny, bypass=AzureServices)..."
+# ネットワークルール: 静的サイトへのパブリックアクセスを許可
+Write-Host "ネットワークルールを設定しています (defaultAction=Allow)..."
 az storage account update `
     --resource-group $ResourceGroupName `
     --name $StorageAccountName `
-    --default-action Deny `
-    --bypass AzureServices | Out-Null
+    --default-action Allow | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "ネットワークルールの設定に失敗しました" }
-Write-Host "ネットワークアクセス制限を適用しました" -ForegroundColor Green
+Write-Host "ネットワークルールを適用しました" -ForegroundColor Green
 
 # アカウントキーを取得（Step 4以降のデータプレーン操作に使用）
 $accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
 if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
-
-# クライアントIPをネットワークルールに一時追加（データプレーン操作のため）
-$clientIp = (Invoke-RestMethod -Uri "https://api.ipify.org")
-Write-Host "クライアントIP ($clientIp) をネットワークルールに一時追加しています..."
-az storage account network-rule add `
-    --resource-group $ResourceGroupName `
-    --account-name $StorageAccountName `
-    --ip-address $clientIp | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "ネットワークルールへのIP追加に失敗しました" }
-Write-Host "クライアントIPを追加しました: $clientIp" -ForegroundColor Green
-# ネットワークルールの反映を待機
-Write-Host "ネットワークルールの反映を待機しています (30秒)..."
-Start-Sleep -Seconds 30
 
 # ============================================================
 # Step 4: 静的サイトホスティングの有効化
@@ -232,18 +218,6 @@ if (-not $policyExists) {
         --account-key $accountKey | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Stored Access Policyの更新に失敗しました" }
     Write-Host "Stored Access Policyを更新しました: $PolicyName (権限: rcwl, 有効期限: $expiryTime)" -ForegroundColor Green
-}
-
-# クライアントIPをネットワークルールから削除
-Write-Host "`nクライアントIP ($clientIp) をネットワークルールから削除しています..."
-az storage account network-rule remove `
-    --resource-group $ResourceGroupName `
-    --account-name $StorageAccountName `
-    --ip-address $clientIp | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "警告: クライアントIPの削除に失敗しました。手動で削除してください。" -ForegroundColor Yellow
-} else {
-    Write-Host "クライアントIPを削除しました" -ForegroundColor Green
 }
 
 # ============================================================
