@@ -3,7 +3,7 @@
     静的ファイルをAzure Blob Storage ($web コンテナ) にアップロードする
 
 .DESCRIPTION
-    frontend/dashboard/dist/ 配下のビルド成果物を $web コンテナにアップロードする。
+    dist/ 配下のビルド成果物を $web コンテナにアップロードする。
     ファイル拡張子に基づいて適切なContent-Typeを設定し、
     ディレクトリ構造を維持してBlob名を生成する。
     Viteプロダクションビルド出力（React SPA）をデプロイする。
@@ -25,7 +25,7 @@
     アップロード元のディレクトリとBlobプレフィックスの配列。
     各要素は "ローカルパス:Blobプレフィックス" 形式。
     Blobプレフィックスが空の場合はルートにアップロード。
-    例: @("frontend/dashboard/dist:")
+    例: @("dist:")
 #>
 param(
     [string]$SubscriptionId = "9f8bb535-5bea-4687-819e-7605b47941b5",
@@ -36,6 +36,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# リポジトリルートをスクリプト位置から算出（scripts/infra から2階層上）
+$repoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 
 # MIME型マッピングテーブル
 $mimeTypes = @{
@@ -60,7 +63,7 @@ if ($SourcePaths.Count -eq 0) {
     if ($SourcePath -eq "") {
         # デフォルト: dist/ をルートにデプロイ（Viteビルド成果物）
         $SourcePaths = @(
-            "frontend/dashboard/dist:"
+            "dist:"
         )
     } else {
         # 従来の単一パス指定（ルートにアップロード）
@@ -69,8 +72,8 @@ if ($SourcePaths.Count -eq 0) {
 }
 
 # テスト実行・プロダクションビルド
-$dashboardDir = Join-Path (Split-Path $PSScriptRoot -Parent) "frontend/dashboard"
-Push-Location $dashboardDir
+$appRoot = $repoRoot
+Push-Location $appRoot
 try {
     # テスト実行
     Write-Host "テストを実行しています..." -ForegroundColor Cyan
@@ -102,9 +105,6 @@ $ctx = $sa.Context
 
 $totalUploadCount = 0
 $totalFileCount = 0
-
-# リポジトリルートをスクリプト位置から算出（カレントディレクトリに依存しない）
-$repoRoot = Split-Path $PSScriptRoot -Parent
 
 foreach ($sourceEntry in $SourcePaths) {
     # "ローカルパス:Blobプレフィックス" を分割
