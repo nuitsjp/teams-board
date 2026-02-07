@@ -3,11 +3,10 @@
 ## 1. 目的と前提
 
 本ドキュメントは、`study-log` の**現在の実装**を基準に、構成・責務・データフロー・運用フローを整理したものです。  
-対象は以下の3系統です。
+対象は以下の2系統です。
 
 - 閲覧系フロー（一般ユーザー）
 - 管理者更新フロー（SASトークン付きブラウザ更新）
-- ローカル変換フロー（`data/sample` → `public/data` の検証付き置換）
 
 本システムは、Azure Blob Storage の静的サイト配信を中心に運用し、常時稼働バックエンドなしで成立する構成を採用しています。
 
@@ -18,7 +17,6 @@
 - フロントエンド: React SPA（`src/`）
 - 配信基盤: Azure Blob Storage Static Website（`$web`）
 - 更新書き込み先: Blob Service Endpoint（SAS必須）
-- ローカル変換: Node.js バッチ（`src/local-batch/`）
 
 ## 3. 全体アーキテクチャ
 
@@ -26,7 +24,6 @@
 graph TD
     U[一般ユーザー]
     A[管理者]
-    D[開発者]
 
     subgraph Browser["ブラウザ実行環境"]
         SPA[React SPA<br/>App + Pages + Hooks + Services]
@@ -37,26 +34,11 @@ graph TD
         BLOB["Blob Service Endpoint<br/>(*.blob.core.windows.net/$web)"]
     end
 
-    subgraph Local["ローカル変換バッチ"]
-        CMD[LocalConvertCommand]
-        LB[Validators + AtomicPublicDataWriter]
-    end
-
-    subgraph Repo["リポジトリデータ"]
-        SAMPLE["data/sample/*.csv"]
-        PUBLIC["public/data"]
-    end
-
     U -->|GET| WEB
     WEB -->|index.json / sessions| SPA
     A -->|token付きURLでアクセス| WEB
     SPA -->|PUT/GET with SAS| BLOB
     BLOB -->|raw/*.csv / data/*.json| SPA
-
-    D -->|pnpm run convert:local-data| CMD
-    SAMPLE --> CMD
-    CMD --> LB
-    LB --> PUBLIC
 ```
 
 ## 4. フロントエンド構成（React SPA）
@@ -202,28 +184,6 @@ sequenceDiagram
   end
 ```
 
-### 7.3 ローカル変換フロー（開発者）
-
-```mermaid
-sequenceDiagram
-  actor D as Developer
-  participant CMD as LocalConvertCommand
-  participant ADP as CsvTransformerAdapter
-  participant VAL as Validators
-  participant W as AtomicPublicDataWriter
-
-  D->>CMD: pnpm run convert:local-data
-  CMD->>ADP: CSVごとに parse
-  CMD->>CMD: SessionAggregationServiceで集約
-  CMD->>VAL: 契約検証 + 整合検証
-  alt 検証失敗
-    CMD-->>D: failure report（置換なし）
-  else 検証成功
-    CMD->>W: staging経由で public/data を置換
-    CMD-->>D: success/partial report
-  end
-```
-
 ## 8. デプロイと運用
 
 ### 8.1 デプロイサイクル分離
@@ -244,7 +204,6 @@ sequenceDiagram
 
 - `scripts/infra/New-SasToken.ps1`: 管理者用 URL 発行
 - `scripts/infra/Clear-StudyData.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
-- `scripts/convert-local-data.mjs`: ローカル変換実行
 
 ## 9. セキュリティ方針（現行実装）
 
@@ -257,9 +216,8 @@ sequenceDiagram
 
 ## 10. テスト構成
 
-- 単体/結合: Vitest + jsdom（`tests/data`, `tests/logic`, `tests/react`, `tests/local-batch`）
+- 単体/結合: Vitest + jsdom（`tests/data`, `tests/logic`, `tests/react`）
 - 画面E2E: Playwright（`e2e`）
-- ローカル変換検証: `local-batch` の統合テストで契約検証・整合検証・原子的置換を確認
 
 ## 11. 既知の制約
 
@@ -271,19 +229,16 @@ sequenceDiagram
 
 ```text
 study-log/
-├── src/                                 # React SPA + ローカルバッチ
+├── src/                                 # React SPA
 │   ├── components/                      # UIコンポーネント
 │   ├── pages/                           # 画面コンポーネント
 │   ├── hooks/                           # カスタムHook
 │   ├── services/                        # ビジネスロジック層
-│   ├── utils/                           # ユーティリティ
-│   └── local-batch/                     # ローカル変換パイプライン
+│   └── utils/                           # ユーティリティ
 ├── tests/                               # ユニット・統合テスト
 ├── e2e/                                 # E2Eテスト
 ├── public/data/                         # 配信データ（ローカル）
-├── data/sample/                         # ローカル変換入力CSV
 ├── scripts/
-│   ├── convert-local-data.mjs           # ローカル変換実行
 │   └── infra/                           # Azure運用スクリプト
 ├── docs/                                # ドキュメント
 └── .kiro/                               # スペック駆動開発設定
