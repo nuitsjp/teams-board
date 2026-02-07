@@ -77,6 +77,75 @@ test.describe('画面遷移', () => {
   });
 });
 
+test.describe('勉強会詳細画面', () => {
+  test('トップページから勉強会をクリックして詳細画面に遷移できること', async ({ page }) => {
+    await page.goto('/');
+
+    // 勉強会行が表示されるまで待つ
+    const groupRow = page.getByTestId('study-group-row').first();
+    await expect(groupRow).toBeVisible();
+
+    // 勉強会名を取得
+    const groupName = await groupRow.locator('h3').textContent();
+
+    // クリック
+    await groupRow.click();
+
+    // 詳細画面に遷移 — 勉強会名がヘッダーに表示される
+    await expect(page.getByRole('heading', { name: groupName })).toBeVisible();
+
+    // 「一覧へ戻る」ボタンが表示されること
+    await expect(page.getByText('一覧へ戻る')).toBeVisible();
+  });
+
+  test('勉強会詳細画面でセッション一覧が表示されること', async ({ page }) => {
+    // もくもく勉強会（10回開催）の詳細ページへ
+    await page.goto('/#/study-groups/52664958');
+
+    // 勉強会名が表示される
+    await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
+
+    // 開催回数が表示される
+    await expect(page.getByText(/10回開催/)).toBeVisible();
+
+    // セッション日付が表示される（複数あるので折りたたみ状態）
+    await expect(page.locator('table')).toHaveCount(0);
+  });
+
+  test('セッションをクリックして参加者詳細を展開・折りたたみできること', async ({ page }) => {
+    await page.goto('/#/study-groups/52664958');
+
+    // セッション日付が表示されるまで待つ
+    await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
+
+    // セッションをクリックして展開
+    const sessionHeadings = page.getByRole('heading', { level: 3 });
+    await sessionHeadings.first().click();
+    await expect(page.locator('table')).toBeVisible();
+
+    // テーブルに名前列と学習時間列がある
+    await expect(page.getByRole('columnheader', { name: '名前' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: '学習時間' })).toBeVisible();
+
+    // 再クリックで折りたたみ
+    await sessionHeadings.first().click();
+    await expect(page.locator('table')).toHaveCount(0);
+  });
+
+  test('勉強会詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
+    await page.goto('/#/study-groups/52664958');
+
+    // 詳細画面が表示されるまで待つ
+    await expect(page.getByText('一覧へ戻る')).toBeVisible();
+
+    // 「一覧へ戻る」をクリック
+    await page.getByText('一覧へ戻る').click();
+
+    // ダッシュボードに戻る
+    await expect(page.getByRole('heading', { name: '勉強会グループ' })).toBeVisible();
+  });
+});
+
 test.describe('メンバー詳細画面 — 勉強会別表示', () => {
   test('複数勉強会に参加しているメンバーで勉強会別サマリーカードが表示されること', async ({ page }) => {
     // 中村さん（もくもく勉強会、React読書会、アーキテクチャ設計塾に参加）の詳細ページへ
