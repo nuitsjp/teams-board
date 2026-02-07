@@ -27,13 +27,13 @@ URL: [https://strjstudylogprod.z11.web.core.windows.net/](https://strjstudylogpr
 ### 前提条件
 
 - **Node.js** v20 以上
-- **npm**
+- **pnpm**（Node.js v20 以上の場合は `corepack enable` で利用可能）
 
 ### セットアップとテスト実行
 
 ```bash
-npm install
-npm test
+pnpm install
+pnpm test
 ```
 
 全テストが pass することを確認してください。
@@ -42,34 +42,34 @@ npm test
 
 ```bash
 # 開発サーバー（HMR 付き）
-npm run dev
+pnpm run dev
 
 # または、プロダクションビルドを確認する場合
-npm run build
-npm run preview
+pnpm run build
+pnpm run preview
 ```
 
-`npm run dev` でブラウザが開き、ダッシュボード一覧が表示されます（デフォルト: `http://localhost:5173`）。
+`pnpm run dev` でブラウザが開き、ダッシュボード一覧が表示されます（デフォルト: `http://localhost:5173`）。
 
 ### E2E テスト
 
 ```bash
-npx playwright install    # 初回のみ
-npm run test:e2e          # ヘッドレス実行
-npm run test:e2e:headed   # ブラウザ表示付き実行
+pnpm exec playwright install    # 初回のみ
+pnpm run test:e2e               # ヘッドレス実行
+pnpm run test:e2e:headed        # ブラウザ表示付き実行
 ```
 
-### npm scripts 一覧
+### pnpm scripts 一覧
 
 | コマンド | 説明 |
 |---------|------|
-| `npm run dev` | Vite 開発サーバー起動（HMR 付き） |
-| `npm run build` | プロダクションビルド（`dist/` に出力） |
-| `npm run preview` | ビルド済みアプリのプレビューサーバー |
-| `npm test` | Vitest でユニット／統合テストを実行 |
-| `npm run test:e2e` | Playwright E2E テストを実行 |
-| `npm run lint` | ESLint で静的解析を実行 |
-| `npm run format` | Prettier でコード整形を実行 |
+| `pnpm run dev` | Vite 開発サーバー起動（HMR 付き） |
+| `pnpm run build` | プロダクションビルド（`dist/` に出力） |
+| `pnpm run preview` | ビルド済みアプリのプレビューサーバー |
+| `pnpm test` | Vitest でユニット／統合テストを実行 |
+| `pnpm run test:e2e` | Playwright E2E テストを実行 |
+| `pnpm run lint` | ESLint で静的解析を実行 |
+| `pnpm run format` | Prettier でコード整形を実行 |
 
 ## アーキテクチャ概要
 
@@ -195,7 +195,7 @@ az storage container generate-sas \
 プロダクションビルドを実行し、`dist/` 配下のファイルを `$web` コンテナにアップロードします。
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ```bash

@@ -9,6 +9,7 @@ on:
       - "src/**"
       - "tests/**"
       - "package.json"
+      - "pnpm-lock.yaml"
       - "vite.config.js"
       - ".github/workflows/test.yml"
   pull_request:
@@ -17,6 +18,7 @@ on:
       - "src/**"
       - "tests/**"
       - "package.json"
+      - "pnpm-lock.yaml"
       - "vite.config.js"
       - ".github/workflows/test.yml"
 
@@ -28,17 +30,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # setup-node の pnpm キャッシュは pnpm コマンドを呼ぶため、先に pnpm を用意する
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: 依存パッケージのインストール
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: ユニットテスト実行
-        run: npm run test
+        run: pnpm run test
 
       - name: ビルド検証
-        run: npm run build
+        run: pnpm run build

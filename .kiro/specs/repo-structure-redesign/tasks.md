@@ -81,14 +81,14 @@
 
 - [x] 5. 検証とビルド確認
 - [x] 5.1 依存パッケージを再インストールし、全テストを実行する
-  - ルート直下で `npm install` を実行し、`node_modules` が正しく生成されることを確認する
-  - `npm run test` で全ユニットテスト・統合テストがパスすることを確認する
+  - ルート直下で `pnpm install` を実行し、`node_modules` が正しく生成されることを確認する
+  - `pnpm run test` で全ユニットテスト・統合テストがパスすることを確認する
   - テスト実行で `Module not found` エラーが発生しないことを確認する
   - _Requirements: 6.2, 2.3_
 
 - [x] 5.2 ビルドとバッチ実行を検証する
-  - `npm run build` でViteビルドがエラーなく完了し、`dist/` に出力されることを確認する
-  - `npm run convert:local-data` でローカル変換バッチが正常動作し、`data/sample/` から読み取り `public/data/` へ出力することを確認する
+  - `pnpm run build` でViteビルドがエラーなく完了し、`dist/` に出力されることを確認する
+  - `pnpm run convert:local-data` でローカル変換バッチが正常動作し、`data/sample/` から読み取り `public/data/` へ出力することを確認する
   - _Requirements: 6.1, 4.4, 5.3_
 
 - [x] 5.3 最終的なディレクトリ構造を検証する

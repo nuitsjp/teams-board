@@ -60,7 +60,7 @@ For each task, verify:
 #### Test Coverage Check
 - Tests exist for task-related functionality
 - Tests pass (no failures or errors)
-- Use Bash to run test commands (e.g., `npm test`, `pytest`)
+- Use Bash to run test commands (e.g., `pnpm test`, `pytest`)
 - If tests fail or don't exist, flag as "Test coverage issue"
 
 #### Requirements Traceability
