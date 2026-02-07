@@ -2,25 +2,25 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
-import { ArrowLeft, Clock, Calendar, Loader2 } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
 /**
- * メンバー詳細画面 — セッション参加履歴を表示
+ * メンバー詳細画面 — 勉強会別サマリーと出席履歴を表示
  */
 export function MemberDetailPage() {
   const { memberId } = useParams();
   const navigate = useNavigate();
   const [member, setMember] = useState(null);
-  const [attendanceList, setAttendanceList] = useState([]);
+  const [studyGroupAttendances, setStudyGroupAttendances] = useState([]);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // DashboardIndex から該当メンバーのsessionIdsを取得
       const indexResult = await fetcher.fetchIndex();
       if (cancelled) return;
       if (!indexResult.ok) {
@@ -39,16 +39,13 @@ export function MemberDetailPage() {
 
       setMember(found);
 
-      // 勉強会名のルックアップマップ
       const groupNameMap = new Map(studyGroups.map((g) => [g.id, g.name]));
 
-      // sessionIdsに対応するSessionRecordを並列取得
       const sessionResults = await Promise.all(
         found.sessionIds.map((sid) => fetcher.fetchSession(sid))
       );
       if (cancelled) return;
 
-      // エラーチェック
       const failedSessions = sessionResults.filter((r) => !r.ok);
       if (failedSessions.length === sessionResults.length) {
         setError('セッションデータの取得に失敗しました');
@@ -56,26 +53,62 @@ export function MemberDetailPage() {
         return;
       }
 
-      // 該当メンバーの出席記録を抽出して開催日降順でソート
-      const list = [];
+      // 勉強会別にグルーピング
+      const groupMap = new Map();
       for (const result of sessionResults) {
         if (!result.ok) continue;
         const session = result.data;
         const attendance = session.attendances.find((a) => a.memberId === memberId);
-        if (attendance) {
-          list.push({
-            studyGroupName: groupNameMap.get(session.studyGroupId) || '不明',
-            date: session.date,
-            durationSeconds: attendance.durationSeconds,
+        if (!attendance) continue;
+
+        const groupId = session.studyGroupId;
+        if (!groupMap.has(groupId)) {
+          groupMap.set(groupId, {
+            studyGroupId: groupId,
+            studyGroupName: groupNameMap.get(groupId) || '不明',
+            totalDurationSeconds: 0,
+            sessions: [],
           });
         }
+        const group = groupMap.get(groupId);
+        group.totalDurationSeconds += attendance.durationSeconds;
+        group.sessions.push({
+          date: session.date,
+          durationSeconds: attendance.durationSeconds,
+        });
       }
-      list.sort((a, b) => b.date.localeCompare(a.date));
-      setAttendanceList(list);
+
+      // 各勉強会内のセッションを日付降順でソート、勉強会名の日本語ロケール順でソート
+      const grouped = Array.from(groupMap.values());
+      for (const group of grouped) {
+        group.sessions.sort((a, b) => b.date.localeCompare(a.date));
+        group.sessionCount = group.sessions.length;
+      }
+      grouped.sort((a, b) => a.studyGroupName.localeCompare(b.studyGroupName, 'ja'));
+
+      setStudyGroupAttendances(grouped);
+
+      // 勉強会が1つのみの場合はデフォルトで展開
+      if (grouped.length === 1) {
+        setExpandedGroups(new Set([grouped[0].studyGroupId]));
+      }
+
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [memberId]);
+
+  const toggleGroup = (groupId) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -134,33 +167,66 @@ export function MemberDetailPage() {
         </div>
       </div>
 
-      {/* 出席履歴テーブル */}
-      <div className="bg-surface rounded-xl border border-border-light overflow-hidden">
-        <div className="p-6 border-b border-border-light bg-surface-muted">
-          <h3 className="text-lg font-bold text-text-primary">出席履歴</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border-light bg-surface-muted text-left text-sm text-text-secondary">
-                <th className="px-6 py-3 font-medium">日付</th>
-                <th className="px-6 py-3 font-medium">勉強会</th>
-                <th className="px-6 py-3 font-medium text-right">学習時間</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-light">
-              {attendanceList.map((item, i) => (
-                <tr key={i} className="text-sm">
-                  <td className="px-6 py-3 text-text-primary">{item.date}</td>
-                  <td className="px-6 py-3 text-text-secondary">{item.studyGroupName}</td>
-                  <td className="px-6 py-3 text-text-primary text-right font-medium">
-                    {formatDuration(item.durationSeconds)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* 勉強会別サマリー＋アコーディオン */}
+      <div className="space-y-4">
+        {studyGroupAttendances.map((group) => {
+          const isExpanded = expandedGroups.has(group.studyGroupId);
+          return (
+            <div key={group.studyGroupId} className="bg-surface rounded-xl border border-border-light overflow-hidden">
+              {/* サマリーカード */}
+              <button
+                onClick={() => toggleGroup(group.studyGroupId)}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-surface-muted transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  {isExpanded
+                    ? <ChevronDown className="w-5 h-5 text-text-muted" />
+                    : <ChevronRight className="w-5 h-5 text-text-muted" />
+                  }
+                  <div>
+                    <h3 className="text-base font-bold text-text-primary">{group.studyGroupName}</h3>
+                    <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-text-muted" />
+                        {group.sessionCount}回参加
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-text-muted" />
+                        {formatDuration(group.totalDurationSeconds)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {/* 出席履歴テーブル（アコーディオン展開） */}
+              {isExpanded && (
+                <div className="border-t border-border-light">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border-light bg-surface-muted text-left text-sm text-text-secondary">
+                          <th className="px-6 py-3 font-medium">日付</th>
+                          <th className="px-6 py-3 font-medium text-right">学習時間</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border-light">
+                        {group.sessions.map((session) => (
+                          <tr key={session.date} className="text-sm">
+                            <td className="px-6 py-3 text-text-primary">{session.date}</td>
+                            <td className="px-6 py-3 text-text-primary text-right font-medium">
+                              {formatDuration(session.durationSeconds)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
