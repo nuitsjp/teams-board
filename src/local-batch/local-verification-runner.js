@@ -1,5 +1,5 @@
 // LocalVerificationRunner — 置換後データでの画面動作を検証する
-import { DataFetcher } from '../src/services/data-fetcher.js';
+import { DataFetcher } from '../services/data-fetcher.js';
 
 export class LocalVerificationRunner {
   /**

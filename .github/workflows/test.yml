@@ -6,17 +6,19 @@ on:
   push:
     branches: [main]
     paths:
-      - "frontend/dashboard/**"
+      - "src/**"
+      - "tests/**"
+      - "package.json"
+      - "vite.config.js"
       - ".github/workflows/test.yml"
   pull_request:
     branches: [main]
     paths:
-      - "frontend/dashboard/**"
+      - "src/**"
+      - "tests/**"
+      - "package.json"
+      - "vite.config.js"
       - ".github/workflows/test.yml"
-
-defaults:
-  run:
-    working-directory: frontend/dashboard
 
 jobs:
   test:
@@ -30,7 +32,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/dashboard/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: 依存パッケージのインストール
         run: npm ci

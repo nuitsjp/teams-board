@@ -15,15 +15,10 @@
 
 ### 2.1 稼働境界
 
-- フロントエンド: React SPA（`frontend/dashboard`）
+- フロントエンド: React SPA（`src/`）
 - 配信基盤: Azure Blob Storage Static Website（`$web`）
 - 更新書き込み先: Blob Service Endpoint（SAS必須）
-- ローカル変換: Node.js バッチ（`frontend/dashboard/local-batch`）
-
-### 2.2 非対象（現行フローでは未使用）
-
-- `backend/` 配下の Azure Functions 実行フロー
-- DB 接続を使うサーバーサイド集計
+- ローカル変換: Node.js バッチ（`src/local-batch/`）
 
 ## 3. 全体アーキテクチャ
 
@@ -49,7 +44,7 @@ graph TD
 
     subgraph Repo["リポジトリデータ"]
         SAMPLE["data/sample/*.csv"]
-        PUBLIC["frontend/dashboard/public/data"]
+        PUBLIC["public/data"]
     end
 
     U -->|GET| WEB
@@ -233,13 +228,13 @@ sequenceDiagram
 
 ### 8.1 デプロイサイクル分離
 
-- `scripts/Deploy-StaticFiles.ps1`
-- `frontend/dashboard/dist` を `$web` にアップロード
+- `scripts/infra/Deploy-StaticFiles.ps1`
+- `dist/` を `$web` にアップロード
 - `data/*` は除外（コード配備時にデータを上書きしない）
 
 ### 8.2 インフラ管理
 
-- `scripts/Deploy-Infrastructure.ps1`
+- `scripts/infra/Deploy-Infrastructure.ps1`
 - 静的サイト有効化
 - Blob CORS 設定
 - Stored Access Policy 設定
@@ -247,9 +242,9 @@ sequenceDiagram
 
 ### 8.3 運用支援スクリプト
 
-- `scripts/New-SasToken.ps1`: 管理者用 URL 発行
-- `scripts/Clear-StudyData.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
-- `frontend/dashboard/scripts/convert-local-data.mjs`: ローカル変換実行
+- `scripts/infra/New-SasToken.ps1`: 管理者用 URL 発行
+- `scripts/infra/Clear-StudyData.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
+- `scripts/convert-local-data.mjs`: ローカル変換実行
 
 ## 9. セキュリティ方針（現行実装）
 
@@ -258,7 +253,7 @@ sequenceDiagram
 - トークン取り扱い: URL から即時除去し、メモリ内のみで保持
 - CORS: `GET, PUT, HEAD` と `x-ms-blob-type`, `x-ms-version` などを許可
 
-補足: `frontend/staticwebapp.config.json` は Azure Static Web Apps 向け設定であり、Blob Static Website 単体運用では適用されません。
+補足: `staticwebapp.config.json` は Azure Static Web Apps 向け設定であり、Blob Static Website 単体運用では適用されません。
 
 ## 10. テスト構成
 
@@ -271,21 +266,25 @@ sequenceDiagram
 - `AdminPage` の `BLOB_BASE_URL` はコード内固定値
 - 同時更新の排他制御はアプリ側で未実装（最終書き込み勝ち）
 - `memberId` はメール依存のため、メール欠落時は識別精度が低下
-- `backend/` は本アーキテクチャの実行経路に含まれない
 
 ## 12. ディレクトリ要約
 
 ```text
 study-log/
-├── docs/architecture.md
+├── src/                                 # React SPA + ローカルバッチ
+│   ├── components/                      # UIコンポーネント
+│   ├── pages/                           # 画面コンポーネント
+│   ├── hooks/                           # カスタムHook
+│   ├── services/                        # ビジネスロジック層
+│   ├── utils/                           # ユーティリティ
+│   └── local-batch/                     # ローカル変換パイプライン
+├── tests/                               # ユニット・統合テスト
+├── e2e/                                 # E2Eテスト
+├── public/data/                         # 配信データ（ローカル）
 ├── data/sample/                         # ローカル変換入力CSV
-├── frontend/
-│   ├── dashboard/
-│   │   ├── src/                         # React SPA
-│   │   ├── local-batch/                 # ローカル変換パイプライン
-│   │   ├── public/data/                 # 配信データ（ローカル）
-│   │   └── scripts/convert-local-data.mjs
-│   └── staticwebapp.config.json         # SWA向け設定（Blob運用では未適用）
-├── scripts/                             # Azure運用スクリプト
-└── backend/                             # 現行フローでは未使用
+├── scripts/
+│   ├── convert-local-data.mjs           # ローカル変換実行
+│   └── infra/                           # Azure運用スクリプト
+├── docs/                                # ドキュメント
+└── .kiro/                               # スペック駆動開発設定
 ```

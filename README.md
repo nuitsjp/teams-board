@@ -32,7 +32,6 @@ URL: [https://strjstudylogprod.z11.web.core.windows.net/](https://strjstudylogpr
 ### セットアップとテスト実行
 
 ```bash
-cd frontend/dashboard
 npm install
 npm test
 ```
@@ -42,8 +41,6 @@ npm test
 ### ローカルで画面を確認する
 
 ```bash
-cd frontend/dashboard
-
 # 開発サーバー（HMR 付き）
 npm run dev
 
@@ -57,7 +54,6 @@ npm run preview
 ### E2E テスト
 
 ```bash
-cd frontend/dashboard
 npx playwright install    # 初回のみ
 npm run test:e2e          # ヘッドレス実行
 npm run test:e2e:headed   # ブラウザ表示付き実行
@@ -197,13 +193,12 @@ az storage container generate-sas \
 プロダクションビルドを実行し、`dist/` 配下のファイルを `$web` コンテナにアップロードします。
 
 ```bash
-cd frontend/dashboard
 npm run build
 ```
 
 ```bash
 # PowerShell スクリプトによるデプロイ
-.\scripts\Deploy-StaticFiles.ps1
+.\scripts\infra\Deploy-StaticFiles.ps1
 ```
 
 ```bash
@@ -211,7 +206,7 @@ npm run build
 az storage blob upload-batch \
   --account-name <ACCOUNT_NAME> \
   --destination '$web' \
-  --source frontend/dashboard/dist
+  --source dist
 ```
 
 > **注意**: `data/` ディレクトリはデータのライフサイクルが異なるため、デプロイスクリプトでは除外されます。

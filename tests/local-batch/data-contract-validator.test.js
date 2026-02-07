@@ -1,6 +1,6 @@
 // DataContractValidator テスト — 出力JSONの契約検証
 import { describe, it, expect } from 'vitest';
-import { DataContractValidator } from '../../local-batch/data-contract-validator.js';
+import { DataContractValidator } from '../../src/local-batch/data-contract-validator.js';
 
 describe('DataContractValidator', () => {
   let validator;

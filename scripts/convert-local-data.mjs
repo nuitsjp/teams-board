@@ -3,17 +3,16 @@
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { LocalConvertCommand } from '../local-batch/local-convert-command.js';
-import { ConversionReporter } from '../local-batch/conversion-reporter.js';
+import { LocalConvertCommand } from '../src/local-batch/local-convert-command.js';
+import { ConversionReporter } from '../src/local-batch/conversion-reporter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // デフォルトパス（プロジェクトルートからの相対）
-const projectRoot = resolve(__dirname, '..', '..', '..');
-const dashboardRoot = resolve(__dirname, '..');
+const projectRoot = resolve(__dirname, '..');
 
 const inputDir = resolve(projectRoot, 'data', 'sample');
-const outputDir = resolve(dashboardRoot, 'public', 'data');
+const outputDir = resolve(projectRoot, 'public', 'data');
 
 console.log('=== ローカルデータ変換 ===');
 console.log(`入力: ${inputDir}`);
