@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useEffect } from 'react';
+import { useReducer, useCallback, useEffect, useMemo } from 'react';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -130,38 +130,38 @@ export function useFileQueue(csvTransformer) {
     existingSessionIds: new Set(),
   });
 
+  const parsePendingItem = useCallback(async (item) => {
+    const error = validateFile(item.file);
+    if (error) {
+      dispatch({ type: 'VALIDATE_ERROR', payload: { id: item.id, errors: [error] } });
+      return;
+    }
+
+    dispatch({ type: 'VALIDATE_START', payload: item.id });
+
+    const result = await csvTransformer.parse(item.file);
+    if (!result.ok) {
+      dispatch({ type: 'VALIDATE_ERROR', payload: { id: item.id, errors: result.errors } });
+      return;
+    }
+
+    const sessionId = result.sessionRecord.id;
+    if (state.existingSessionIds.has(sessionId)) {
+      dispatch({ type: 'DUPLICATE_DETECTED', payload: { id: item.id, result } });
+    } else {
+      dispatch({ type: 'VALIDATE_SUCCESS', payload: { id: item.id, result } });
+    }
+  }, [csvTransformer, state.existingSessionIds]);
+
   // pending状態のアイテムを自動パース
   useEffect(() => {
     const pendingItems = state.queue.filter((item) => item.status === 'pending');
     if (pendingItems.length === 0) return;
 
     for (const item of pendingItems) {
-      // バリデーション
-      const error = validateFile(item.file);
-      if (error) {
-        dispatch({ type: 'VALIDATE_ERROR', payload: { id: item.id, errors: [error] } });
-        continue;
-      }
-
-      dispatch({ type: 'VALIDATE_START', payload: item.id });
-
-      // 非同期パース実行
-      csvTransformer.parse(item.file).then((result) => {
-        if (!result.ok) {
-          dispatch({ type: 'VALIDATE_ERROR', payload: { id: item.id, errors: result.errors } });
-          return;
-        }
-
-        // 重複チェック
-        const sessionId = result.sessionRecord.id;
-        if (state.existingSessionIds.has(sessionId)) {
-          dispatch({ type: 'DUPLICATE_DETECTED', payload: { id: item.id, result } });
-        } else {
-          dispatch({ type: 'VALIDATE_SUCCESS', payload: { id: item.id, result } });
-        }
-      });
+      void parsePendingItem(item);
     }
-  }, [state.queue, state.existingSessionIds, csvTransformer]);
+  }, [state.queue, parsePendingItem]);
 
   const addFiles = useCallback((files) => {
     dispatch({ type: 'ADD_FILES', payload: Array.from(files) });
@@ -193,8 +193,19 @@ export function useFileQueue(csvTransformer) {
       case 'ready':
         dispatch({ type: 'RESET_TO_READY', payload: fileId });
         break;
+      default:
+        break;
     }
   }, []);
+
+  const readyItems = useMemo(
+    () => state.queue.filter((item) => item.status === 'ready'),
+    [state.queue]
+  );
+  const failedItems = useMemo(
+    () => state.queue.filter((item) => item.status === 'save_failed'),
+    [state.queue]
+  );
 
   return {
     queue: state.queue,
@@ -203,7 +214,7 @@ export function useFileQueue(csvTransformer) {
     approveDuplicate,
     setExistingSessionIds,
     updateStatus,
-    readyItems: state.queue.filter((item) => item.status === 'ready'),
-    failedItems: state.queue.filter((item) => item.status === 'save_failed'),
+    readyItems,
+    failedItems,
   };
 }

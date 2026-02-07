@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatDuration } from '../utils/format-duration';
 import { User, Clock, ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -7,15 +7,17 @@ export function MemberList({ members }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredMembers = members.filter((member) =>
-    searchQuery === ''
-      ? true
-      : member.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMembers = useMemo(() => {
+    if (searchQuery === '') return members;
+    const loweredQuery = searchQuery.toLowerCase();
+    return members.filter((member) =>
+      member.name.toLowerCase().includes(loweredQuery)
+    );
+  }, [members, searchQuery]);
 
-  const sortedMembers = [...filteredMembers].sort((a, b) =>
-    a.name.localeCompare(b.name, 'ja')
-  );
+  const sortedMembers = useMemo(() => (
+    [...filteredMembers].sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+  ), [filteredMembers]);
 
   return (
     <div className="bg-surface rounded-xl border border-border-light overflow-hidden">

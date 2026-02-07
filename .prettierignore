@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+playwright-report
+public/data
+data
+package-lock.json
