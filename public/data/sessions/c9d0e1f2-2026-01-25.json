@@ -1,0 +1,19 @@
+{
+  "id": "c9d0e1f2-2026-01-25",
+  "studyGroupId": "c9d0e1f2",
+  "date": "2026-01-25",
+  "attendances": [
+    {
+      "memberId": "90df7918",
+      "durationSeconds": 3600
+    },
+    {
+      "memberId": "7a974eca",
+      "durationSeconds": 4200
+    },
+    {
+      "memberId": "44c5651e",
+      "durationSeconds": 3000
+    }
+  ]
+}

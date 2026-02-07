@@ -66,7 +66,9 @@ describe('MemberDetailPage', () => {
       expect(screen.getByText('テスト太郎')).toBeInTheDocument();
     });
 
+    // 勉強会が1つのみなのでデフォルト展開され、セッション日付が表示される
     expect(screen.getByText(/2026-01-15/)).toBeInTheDocument();
+    // 勉強会名がサマリーカードに表示される
     expect(screen.getByText(/もくもく勉強会/)).toBeInTheDocument();
   });
 
