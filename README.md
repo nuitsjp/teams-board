@@ -70,6 +70,10 @@ pnpm run test:e2e:headed        # ブラウザ表示付き実行
 | `pnpm run test:e2e` | Playwright E2E テストを実行 |
 | `pnpm run lint` | ESLint で静的解析を実行 |
 | `pnpm run format` | Prettier でコード整形を実行 |
+| `pnpm run infra:deploy` | Azure インフラのプロビジョニング |
+| `pnpm run infra:publish` | 静的ファイルを Azure にデプロイ |
+| `pnpm run infra:sas` | SAS トークンの生成 |
+| `pnpm run infra:clear` | 勉強会データのクリア |
 
 ## アーキテクチャ概要
 
@@ -150,6 +154,29 @@ pnpm run test:e2e:headed        # ブラウザ表示付き実行
 | E2E テスト | Playwright | ブラウザベースの画面遷移・管理者フロー検証 |
 | ホスティング | Azure Blob Storage 静的サイト | 最小コスト、閉域環境対応 |
 
+## Azure 環境設定
+
+### ローカル設定ファイル（`local.settings.json`）
+
+インフラスクリプトは `local.settings.json` から環境固有のパラメータを読み込みます。テンプレートをコピーして作成してください。
+
+```bash
+cp local.settings.template.json local.settings.json
+```
+
+必要に応じて値を変更します。
+
+```json
+{
+  "subscriptionId": "<AzureサブスクリプションID>",
+  "resourceGroupName": "<リソースグループ名>",
+  "storageAccountName": "<ストレージアカウント名>",
+  "location": "japaneast"
+}
+```
+
+> **注意**: `local.settings.json` は `.gitignore` に含まれているため、リポジトリにコミットされません。ファイルが存在しない場合は、各スクリプトのデフォルト値が使用されます。
+
 ## Azure 環境の準備
 
 本アプリケーションを Azure にデプロイするには以下の設定が必要です。
@@ -195,16 +222,13 @@ az storage container generate-sas \
 プロダクションビルドを実行し、`dist/` 配下のファイルを `$web` コンテナにアップロードします。
 
 ```bash
-pnpm run build
-```
-
-```bash
-# PowerShell スクリプトによるデプロイ
-.\scripts\infra\Deploy-StaticFiles.ps1
+# pnpm scripts によるデプロイ（テスト・ビルド・アップロードを一括実行）
+pnpm run infra:publish
 ```
 
 ```bash
 # または Azure CLI で手動デプロイ
+pnpm run build
 az storage blob upload-batch \
   --account-name <ACCOUNT_NAME> \
   --destination '$web' \

@@ -37,6 +37,18 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# local.settings.json からの設定読み込み
+. (Join-Path $PSScriptRoot "Load-LocalSettings.ps1")
+$localSettings = Load-LocalSettings
+$applied = Apply-LocalSettings -Settings $localSettings -BoundParameters $PSBoundParameters -ParameterMap @{
+    "SubscriptionId"     = "subscriptionId"
+    "ResourceGroupName"  = "resourceGroupName"
+    "StorageAccountName" = "storageAccountName"
+}
+foreach ($key in $applied.Keys) {
+    Set-Variable -Name $key -Value $applied[$key]
+}
+
 # リポジトリルートをスクリプト位置から算出（scripts/infra から2階層上）
 $repoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 
@@ -96,12 +108,29 @@ try {
 
 # サブスクリプション切替
 Write-Host "サブスクリプションを切り替えています..." -ForegroundColor Cyan
-Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
+az account set --subscription $SubscriptionId
+if ($LASTEXITCODE -ne 0) { throw "サブスクリプションの切り替えに失敗しました" }
 
-# Storageアカウントのコンテキスト取得
+# Storageアカウントの接続確認
 Write-Host "Storageアカウント '$StorageAccountName' に接続しています..." -ForegroundColor Cyan
-$sa = Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName
-$ctx = $sa.Context
+az storage account show --resource-group $ResourceGroupName --name $StorageAccountName | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "Storageアカウント '$StorageAccountName' が見つかりません" }
+
+# アカウントキーを取得してBlob操作に使用
+$accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
+if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
+
+# クライアントIPをネットワークルールに一時追加（データプレーン操作のため）
+$clientIp = (Invoke-RestMethod -Uri "https://api.ipify.org")
+Write-Host "クライアントIP ($clientIp) をネットワークルールに一時追加しています..."
+az storage account network-rule add `
+    --resource-group $ResourceGroupName `
+    --account-name $StorageAccountName `
+    --ip-address $clientIp | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "ネットワークルールへのIP追加に失敗しました" }
+Write-Host "クライアントIPを追加しました: $clientIp" -ForegroundColor Green
+Write-Host "ネットワークルールの反映を待機しています (30秒)..."
+Start-Sleep -Seconds 30
 
 $totalUploadCount = 0
 $totalFileCount = 0
@@ -159,13 +188,15 @@ foreach ($sourceEntry in $SourcePaths) {
         }
 
         # アップロード
-        Set-AzStorageBlobContent `
-            -File $file.FullName `
-            -Container '$web' `
-            -Blob $blobName `
-            -Properties @{ ContentType = $contentType } `
-            -Context $ctx `
-            -Force | Out-Null
+        az storage blob upload `
+            --file $file.FullName `
+            --container-name '$web' `
+            --name $blobName `
+            --content-type $contentType `
+            --account-name $StorageAccountName `
+            --account-key $accountKey `
+            --overwrite | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "Blobアップロードに失敗しました: $blobName" }
 
         $uploadCount++
         $totalUploadCount++
@@ -173,8 +204,20 @@ foreach ($sourceEntry in $SourcePaths) {
     }
 }
 
+# クライアントIPをネットワークルールから削除
+Write-Host "`nクライアントIP ($clientIp) をネットワークルールから削除しています..."
+az storage account network-rule remove `
+    --resource-group $ResourceGroupName `
+    --account-name $StorageAccountName `
+    --ip-address $clientIp | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "警告: クライアントIPの削除に失敗しました。手動で削除してください。" -ForegroundColor Yellow
+} else {
+    Write-Host "クライアントIPを削除しました" -ForegroundColor Green
+}
+
 # 静的サイトURL取得
-$webEndpoint = $sa.PrimaryEndpoints.Web
+$webEndpoint = (az storage account show --resource-group $ResourceGroupName --name $StorageAccountName --query "primaryEndpoints.web" --output tsv)
 
 # 結果出力
 Write-Host ""

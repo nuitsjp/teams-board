@@ -1,11 +1,10 @@
 <#
 .SYNOPSIS
-    Stored Access Policyに紐づくContainer SASトークンを生成し、管理者用URLを出力する
+    利用者用URLおよび管理者用URL（SASトークン付き）を表示する
 
 .DESCRIPTION
-    blob-static-dashboardの管理者向けSASトークンを生成し、
-    静的サイトエンドポイントを含む完全なアクセスURLを出力する。
-    SASトークンはStored Access Policyから権限を継承する。
+    静的サイトの利用者用エンドポイントURLと、
+    Stored Access Policyに基づくSASトークン付きの管理者用URLを表示する。
 
 .PARAMETER SubscriptionId
     対象のAzureサブスクリプションID（デフォルト: 9f8bb535-5bea-4687-819e-7605b47941b5）
@@ -41,12 +40,10 @@ foreach ($key in $applied.Keys) {
 }
 
 # サブスクリプション切替
-Write-Host "サブスクリプションを切り替えています..." -ForegroundColor Cyan
 az account set --subscription $SubscriptionId
 if ($LASTEXITCODE -ne 0) { throw "サブスクリプションの切り替えに失敗しました" }
 
 # Storageアカウントの接続確認
-Write-Host "Storageアカウント '$StorageAccountName' に接続しています..." -ForegroundColor Cyan
 az storage account show --resource-group $ResourceGroupName --name $StorageAccountName | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Storageアカウント '$StorageAccountName' が見つかりません" }
 
@@ -56,18 +53,14 @@ if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗
 
 # クライアントIPをネットワークルールに一時追加（データプレーン操作のため）
 $clientIp = (Invoke-RestMethod -Uri "https://api.ipify.org")
-Write-Host "クライアントIP ($clientIp) をネットワークルールに一時追加しています..."
 az storage account network-rule add `
     --resource-group $ResourceGroupName `
     --account-name $StorageAccountName `
     --ip-address $clientIp | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "ネットワークルールへのIP追加に失敗しました" }
-Write-Host "クライアントIPを追加しました: $clientIp" -ForegroundColor Green
-Write-Host "ネットワークルールの反映を待機しています (30秒)..."
 Start-Sleep -Seconds 30
 
 # SASトークン生成（Policyから権限を継承）
-Write-Host "SASトークンを生成しています (Policy: $PolicyName)..." -ForegroundColor Cyan
 $sasToken = (az storage container generate-sas `
     --name '$web' `
     --policy-name $PolicyName `
@@ -78,39 +71,29 @@ $sasToken = (az storage container generate-sas `
 if ($LASTEXITCODE -ne 0) { throw "SASトークンの生成に失敗しました" }
 
 # クライアントIPをネットワークルールから削除
-Write-Host "クライアントIP ($clientIp) をネットワークルールから削除しています..."
 az storage account network-rule remove `
     --resource-group $ResourceGroupName `
     --account-name $StorageAccountName `
     --ip-address $clientIp | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "警告: クライアントIPの削除に失敗しました。手動で削除してください。" -ForegroundColor Yellow
-} else {
-    Write-Host "クライアントIPを削除しました" -ForegroundColor Green
 }
 
 # 静的サイトエンドポイントURLの取得
 $webEndpoint = (az storage account show --resource-group $ResourceGroupName --name $StorageAccountName --query "primaryEndpoints.web" --output tsv)
 $webEndpoint = $webEndpoint.TrimEnd('/')
 
-# az CLI の SAS トークンは先頭に `?` がないため、そのまま使用
-$sasTokenClean = $sasToken
-
-# 管理者用完全URLの組み立て
-$adminUrl = "${webEndpoint}/index.html?token=${sasTokenClean}"
+# URL組み立て
+$userUrl = "${webEndpoint}/index.html"
+$adminUrl = "${webEndpoint}/index.html?token=${sasToken}"
 
 # 結果出力
 Write-Host ""
-Write-Host "=== SASトークン生成完了 ===" -ForegroundColor Green
-Write-Host "Storageアカウント: $StorageAccountName"
-Write-Host "Policy: $PolicyName"
+Write-Host "=== ダッシュボードURL ===" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "--- SASトークン ---"
-Write-Host $sasToken
+Write-Host "--- 利用者用URL ---" -ForegroundColor Green
+Write-Host $userUrl
 Write-Host ""
-Write-Host "--- 管理者用URL ---"
+Write-Host "--- 管理者用URL ---" -ForegroundColor Green
 Write-Host $adminUrl
 Write-Host ""
-
-# パイプライン出力用にURLを返す
-Write-Output $adminUrl
