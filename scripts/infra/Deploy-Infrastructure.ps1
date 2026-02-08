@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    TeamsBoard用Azureインフラストラクチャをプロビジョニングするスクリプト
+    Teams Board用Azureインフラストラクチャをプロビジョニングするスクリプト
 
 .DESCRIPTION
     Azure Storage Account（静的サイトホスティング、CORS、Stored Access Policy）を

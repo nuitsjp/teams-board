@@ -1,8 +1,8 @@
 ## 1. 環境変数によるサイトヘッダー設定機能
 
-- [x] 1.1 プロジェクトルートに `.env` ファイルを作成し `VITE_APP_TITLE=TeamsBoard` を定義する
-- [x] 1.2 `index.html` の `<title>Study Log</title>` を `<title>TeamsBoard</title>` に変更する（※Viteビルド時に環境変数で上書き可能な構成を検討）
-- [x] 1.3 `src/App.jsx` のヘッダーテキスト `Study Log` を `import.meta.env.VITE_APP_TITLE || 'TeamsBoard'` に変更する
+- [x] 1.1 プロジェクトルートに `.env` ファイルを作成し `VITE_APP_TITLE=Teams Board` を定義する
+- [x] 1.2 `index.html` の `<title>Study Log</title>` を `<title>Teams Board</title>` に変更する（※Viteビルド時に環境変数で上書き可能な構成を検討）
+- [x] 1.3 `src/App.jsx` のヘッダーテキスト `Study Log` を `import.meta.env.VITE_APP_TITLE || 'Teams Board'` に変更する
 - [x] 1.4 `.gitignore` に `.env.local` が含まれていることを確認する
 
 ## 2. ドメインモデル名のリネーム（studyGroups → groups）
@@ -37,9 +37,9 @@
 
 ## 6. 設定ファイル・ドキュメントの更新
 
-- [x] 6.1 `package.json` の `name` を `teams-board` に、`description` を `TeamsBoard — Teamsレポート集計ダッシュボード` に変更する
-- [x] 6.2 `README.md` のプロジェクト名・説明をTeamsBoardに更新する
-- [x] 6.3 `docs/architecture.md` の「Study Log」「study-log」をTeamsBoardに更新する
+- [x] 6.1 `package.json` の `name` を `teams-board` に、`description` を `Teams Board — Teamsレポート集計ダッシュボード` に変更する
+- [x] 6.2 `README.md` のプロジェクト名・説明をTeams Boardに更新する
+- [x] 6.3 `docs/architecture.md` の「Study Log」「study-log」をTeams Boardに更新する
 
 ## 7. テスト実行・動作確認
 

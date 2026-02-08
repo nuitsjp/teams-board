@@ -6,7 +6,7 @@ test.describe('ダッシュボード画面', () => {
     await page.goto('/');
 
     // ヘッダーが表示されること
-    await expect(page.locator('header')).toContainText('TeamsBoard');
+    await expect(page.locator('header')).toContainText('Teams Board');
 
     // グループセクションが表示されること
     await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();

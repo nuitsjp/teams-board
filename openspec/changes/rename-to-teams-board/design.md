@@ -1,6 +1,6 @@
 ## Context
 
-本プロジェクトは React 19 + Vite + Tailwind CSS 4.1 で構築された静的サイト（Azure Blob Storage ホスティング）で、Teamsの参加者レポートを集計・閲覧するダッシュボードツールである。現在「Study Log」「勉強会」というドメイン固有の名称がコードベース全体に浸透しているため、製品名を「TeamsBoard」に変更し、ドメインモデル名を汎用化する。
+本プロジェクトは React 19 + Vite + Tailwind CSS 4.1 で構築された静的サイト（Azure Blob Storage ホスティング）で、Teamsの参加者レポートを集計・閲覧するダッシュボードツールである。現在「Study Log」「勉強会」というドメイン固有の名称がコードベース全体に浸透しているため、製品名を「Teams Board」に変更し、ドメインモデル名を汎用化する。
 
 ### 現在の構成
 
@@ -13,7 +13,7 @@
 ## Goals / Non-Goals
 
 **Goals:**
-- 製品名を「Study Log」から「TeamsBoard」に統一的に変更する
+- 製品名を「Study Log」から「Teams Board」に統一的に変更する
 - ドメインモデル名を `studyGroups` から汎用的な `groups` に変更する
 - コンポーネント名・ファイル名を汎用的なものにリネームする
 - サイトヘッダーのタイトルをビルド時の環境変数で設定可能にする
@@ -59,12 +59,12 @@
 - ランタイムでJSONファイルを読み込む — 静的サイトとしては過剰
 - `index.html` をビルド時にテンプレート処理 — Viteプラグインが必要で複雑
 
-**理由**: Viteは `VITE_` プレフィックスの環境変数を自動的に `import.meta.env` に展開する。追加の依存関係なしで実現可能。デフォルト値を「TeamsBoard」としておけば、環境変数未設定でも動作する。
+**理由**: Viteは `VITE_` プレフィックスの環境変数を自動的に `import.meta.env` に展開する。追加の依存関係なしで実現可能。デフォルト値を「Teams Board」としておけば、環境変数未設定でも動作する。
 
 **実装方針**:
-- `index.html` の `<title>` は Viteの `transformIndexHtml` フックを使い `VITE_APP_TITLE` で差し替え、またはデフォルトの「TeamsBoard」をハードコード
-- `App.jsx` のヘッダーテキストは `import.meta.env.VITE_APP_TITLE || 'TeamsBoard'` を参照
-- `.env` ファイルにデフォルト値 `VITE_APP_TITLE=TeamsBoard` を設定
+- `index.html` の `<title>` は Viteの `transformIndexHtml` フックを使い `VITE_APP_TITLE` で差し替え、またはデフォルトの「Teams Board」をハードコード
+- `App.jsx` のヘッダーテキストは `import.meta.env.VITE_APP_TITLE || 'Teams Board'` を参照
+- `.env` ファイルにデフォルト値 `VITE_APP_TITLE=Teams Board` を設定
 
 ### 4. データ構造（index.json）のキー名変更
 
@@ -88,7 +88,7 @@
 ### 7. package.jsonの更新
 
 - `name`: `blob-static-dashboard` → `teams-board`
-- `description`: `Azure Blob Storage Static website ダッシュボード` → `TeamsBoard — Teamsレポート集計ダッシュボード`
+- `description`: `Azure Blob Storage Static website ダッシュボード` → `Teams Board — Teamsレポート集計ダッシュボード`
 - `infra:clear` スクリプト名: ファイル名変更に合わせて更新（`Clear-StudyData.ps1` → `Clear-Data.ps1`）
 
 ## Risks / Trade-offs

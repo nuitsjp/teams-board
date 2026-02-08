@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "TeamsBoard — Teamsレポート集計ダッシュボード",
+  "description": "Teams Board — Teamsレポート集計ダッシュボード",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
