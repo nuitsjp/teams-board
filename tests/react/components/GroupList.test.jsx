@@ -13,8 +13,8 @@ vi.mock('react-router-dom', async () => {
 });
 
 const mockGroups = [
-  { id: 'g1', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['s1', 's2'] },
-  { id: 'g2', name: 'React読書会', totalDurationSeconds: 1800, sessionIds: ['s3'] },
+  { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['s1', 's2'] },
+  { id: 'g2', name: 'TypeScript読書会', totalDurationSeconds: 1800, sessionIds: ['s3'] },
 ];
 
 const renderGroupList = (groups = mockGroups) => {
@@ -33,8 +33,8 @@ describe('GroupList', () => {
   it('グループ一覧が表示されること', () => {
     renderGroupList();
 
-    expect(screen.getByText('もくもく勉強会')).toBeInTheDocument();
-    expect(screen.getByText('React読書会')).toBeInTheDocument();
+    expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+    expect(screen.getByText('TypeScript読書会')).toBeInTheDocument();
   });
 
   it('グループをクリックすると詳細ページに遷移すること', () => {

@@ -12,7 +12,7 @@ test.describe('ダッシュボード画面', () => {
     await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();
 
     // グループが4つ存在すること
-    const groupNames = ['もくもく勉強会', 'React読書会', 'アーキテクチャ設計塾', 'クラウド技術研究会'];
+    const groupNames = ['フロントエンド勉強会', 'TypeScript読書会', 'ソフトウェア設計勉強会', 'インフラ技術研究会'];
     for (const name of groupNames) {
       await expect(page.getByText(name).first()).toBeVisible();
     }
@@ -99,11 +99,11 @@ test.describe('グループ詳細画面', () => {
   });
 
   test('グループ詳細画面でセッション一覧が表示されること', async ({ page }) => {
-    // もくもく勉強会（10回開催）の詳細ページへ
+    // フロントエンド勉強会（10回開催）の詳細ページへ
     await page.goto('/#/groups/52664958');
 
     // グループ名が表示される
-    await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
 
     // 開催回数が表示される
     await expect(page.getByText(/10回開催/)).toBeVisible();
@@ -116,7 +116,7 @@ test.describe('グループ詳細画面', () => {
     await page.goto('/#/groups/52664958');
 
     // セッション日付が表示されるまで待つ
-    await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
 
     // セッションをクリックして展開
     const sessionHeadings = page.getByRole('heading', { level: 3 });
@@ -148,28 +148,28 @@ test.describe('グループ詳細画面', () => {
 
 test.describe('メンバー詳細画面 — グループ別表示', () => {
   test('複数グループに参加しているメンバーでグループ別サマリーカードが表示されること', async ({ page }) => {
-    // 中村さん（もくもく勉強会、React読書会、アーキテクチャ設計塾に参加）の詳細ページへ
+    // 鈴木さん（フロントエンド勉強会、TypeScript読書会、ソフトウェア設計勉強会に参加）の詳細ページへ
     await page.goto('/#/members/c6606539');
 
     // メンバー名が表示される
-    await expect(page.getByRole('heading', { name: /中村 充志/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /鈴木 太郎/ })).toBeVisible();
 
     // 3つのグループサマリーカードが表示される
-    await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'React読書会' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'アーキテクチャ設計塾' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'TypeScript読書会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'ソフトウェア設計勉強会' })).toBeVisible();
   });
 
   test('グループカードをクリックして出席履歴を展開・折りたたみできること', async ({ page }) => {
     await page.goto('/#/members/c6606539');
 
     // 初期状態では出席履歴テーブルが表示されていない（複数グループなので折りたたみ）
-    await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
     const tables = page.locator('table');
     await expect(tables).toHaveCount(0);
 
-    // 「もくもく勉強会」カードをクリックして展開
-    await page.getByRole('heading', { name: 'もくもく勉強会' }).click();
+    // 「フロントエンド勉強会」カードをクリックして展開
+    await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();
     await expect(page.locator('table')).toBeVisible();
 
     // テーブルに日付列と学習時間列がある
@@ -177,7 +177,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     await expect(page.getByRole('columnheader', { name: '学習時間' })).toBeVisible();
 
     // 再クリックで折りたたみ
-    await page.getByRole('heading', { name: 'もくもく勉強会' }).click();
+    await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();
     await expect(page.locator('table')).toHaveCount(0);
   });
 
@@ -187,7 +187,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     await page.goto('/#/members/c6606539');
 
     // 複数グループのメンバーでは初期状態でテーブルが表示されていない
-    await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
     await expect(page.locator('table')).toHaveCount(0);
   });
 
@@ -195,8 +195,8 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     await page.goto('/#/members/c6606539');
 
     // 2つのグループを展開
-    await page.getByRole('heading', { name: 'もくもく勉強会' }).click();
-    await page.getByRole('heading', { name: 'React読書会' }).click();
+    await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();
+    await page.getByRole('heading', { name: 'TypeScript読書会' }).click();
 
     // 2つのテーブルが表示される
     await expect(page.locator('table')).toHaveCount(2);

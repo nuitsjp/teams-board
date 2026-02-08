@@ -484,7 +484,7 @@ parse(file)
   "studyGroups": [
     {
       "id": "a3f2b1c9",            // SHA-256先頭8桁（クリーニング済みタイトル）
-      "name": "もくもく勉強会",
+      "name": "フロントエンド勉強会",
       "totalDurationSeconds": 28800,
       "sessionIds": ["a3f2b1c9-2026-01-15", "a3f2b1c9-2026-01-16"]
     }
@@ -492,7 +492,7 @@ parse(file)
   "members": [
     {
       "id": "e5d4c3b2",            // SHA-256先頭8桁（メールアドレス）
-      "name": "Nakamura Atsushi A (中村 充志)",
+      "name": "Suzuki Taro A (鈴木 太郎)",
       "totalDurationSeconds": 25200,
       "sessionIds": ["a3f2b1c9-2026-01-15", "a3f2b1c9-2026-01-16"]
     }

@@ -55,7 +55,7 @@ function createUtf16leBuffer(text) {
  * Teams出席レポート形式の3セクション構成テキストを作成するヘルパー
  */
 function createTeamsReportText({
-  title = 'もくもく勉強会',
+  title = 'フロントエンド勉強会',
   startTime = '2026/1/15 19:00:00',
   participants = [],
 } = {}) {
@@ -87,7 +87,7 @@ describe('CsvTransformer', () => {
     it('3セクション構成（要約・参加者・アクティビティ）を正しく分割できること', async () => {
       const text = createTeamsReportText({
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '30 分 0 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '30 分 0 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -97,7 +97,7 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '30 分 0 秒' },
           ],
           errors: [],
         });
@@ -121,9 +121,9 @@ describe('CsvTransformer', () => {
   describe('会議タイトルのクリーニング', () => {
     it('ダブルクォート囲みと「で会議中」を除去してクリーニング済み勉強会名を得ること', async () => {
       const text = createTeamsReportText({
-        title: '"""もくもく勉強会""で会議中"',
+        title: '"""フロントエンド勉強会""で会議中"',
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '30 分 0 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '30 分 0 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -132,7 +132,7 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '30 分 0 秒' },
           ],
           errors: [],
         });
@@ -140,14 +140,14 @@ describe('CsvTransformer', () => {
 
       const result = await transformer.parse(file);
       expect(result.ok).toBe(true);
-      expect(result.mergeInput.groupName).toBe('もくもく勉強会');
+      expect(result.mergeInput.groupName).toBe('フロントエンド勉強会');
     });
 
     it('装飾のないタイトルはそのまま返すこと', async () => {
       const text = createTeamsReportText({
-        title: 'もくもく勉強会',
+        title: 'フロントエンド勉強会',
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '30 分 0 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '30 分 0 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -156,7 +156,7 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 0 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '30 分 0 秒' },
           ],
           errors: [],
         });
@@ -164,7 +164,7 @@ describe('CsvTransformer', () => {
 
       const result = await transformer.parse(file);
       expect(result.ok).toBe(true);
-      expect(result.mergeInput.groupName).toBe('もくもく勉強会');
+      expect(result.mergeInput.groupName).toBe('フロントエンド勉強会');
     });
   });
 
@@ -172,7 +172,7 @@ describe('CsvTransformer', () => {
     it('「X 分 Y 秒」形式を秒数に変換できること', async () => {
       const text = createTeamsReportText({
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '30 分 15 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '30 分 15 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -181,7 +181,7 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '30 分 15 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '30 分 15 秒' },
           ],
           errors: [],
         });
@@ -195,7 +195,7 @@ describe('CsvTransformer', () => {
     it('「X 時間 Y 分 Z 秒」形式を秒数に変換できること', async () => {
       const text = createTeamsReportText({
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '1 時間 30 分 0 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '1 時間 30 分 0 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -204,7 +204,7 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '1 時間 30 分 0 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '1 時間 30 分 0 秒' },
           ],
           errors: [],
         });
@@ -218,8 +218,8 @@ describe('CsvTransformer', () => {
     it('パースできない時間形式は警告として記録しスキップすること', async () => {
       const text = createTeamsReportText({
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '不正な形式' },
-          { name: 'テスト花子', email: 'hanako@example.com', duration: '10 分 0 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '不正な形式' },
+          { name: '高橋 美咲', email: 'misaki.takahashi@example.com', duration: '10 分 0 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -228,8 +228,8 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '不正な形式' },
-            { '名前': 'テスト花子', 'メール アドレス': 'hanako@example.com', '会議の長さ': '10 分 0 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '不正な形式' },
+            { '名前': '高橋 美咲', 'メール アドレス': 'misaki.takahashi@example.com', '会議の長さ': '10 分 0 秒' },
           ],
           errors: [],
         });
@@ -248,7 +248,7 @@ describe('CsvTransformer', () => {
     it('SHA-256ハッシュ先頭8桁のIDが生成されること', async () => {
       const text = createTeamsReportText({
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '10 分 0 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '10 分 0 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -257,7 +257,7 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '10 分 0 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '10 分 0 秒' },
           ],
           errors: [],
         });
@@ -279,7 +279,7 @@ describe('CsvTransformer', () => {
       const text = createTeamsReportText({
         startTime: '2026/1/15 19:00:00',
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '10 分 0 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '10 分 0 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -288,7 +288,7 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '10 分 0 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '10 分 0 秒' },
           ],
           errors: [],
         });
@@ -303,11 +303,11 @@ describe('CsvTransformer', () => {
   describe('統合パイプライン', () => {
     it('正常なCSVから SessionRecord と MergeInput を生成できること', async () => {
       const text = createTeamsReportText({
-        title: 'もくもく勉強会',
+        title: 'フロントエンド勉強会',
         startTime: '2026/1/15 19:00:00',
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '59 分 12 秒' },
-          { name: 'テスト花子', email: 'hanako@example.com', duration: '20 分 59 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '59 分 12 秒' },
+          { name: '高橋 美咲', email: 'misaki.takahashi@example.com', duration: '20 分 59 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -316,8 +316,8 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '59 分 12 秒' },
-            { '名前': 'テスト花子', 'メール アドレス': 'hanako@example.com', '会議の長さ': '20 分 59 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '59 分 12 秒' },
+            { '名前': '高橋 美咲', 'メール アドレス': 'misaki.takahashi@example.com', '会議の長さ': '20 分 59 秒' },
           ],
           errors: [],
         });
@@ -336,11 +336,11 @@ describe('CsvTransformer', () => {
 
       // MergeInput の検証
       const { mergeInput } = result;
-      expect(mergeInput.groupName).toBe('もくもく勉強会');
+      expect(mergeInput.groupName).toBe('フロントエンド勉強会');
       expect(mergeInput.sessionId).toBe(sessionRecord.id);
       expect(mergeInput.date).toBe('2026-01-15');
       expect(mergeInput.attendances).toHaveLength(2);
-      expect(mergeInput.attendances[0].memberName).toBe('テスト太郎');
+      expect(mergeInput.attendances[0].memberName).toBe('佐藤 一郎');
       expect(mergeInput.attendances[0].durationSeconds).toBe(3552);
     });
 
@@ -364,7 +364,7 @@ describe('CsvTransformer', () => {
     it('PapaParseがタブ区切り・ヘッダー付きで呼び出されること', async () => {
       const text = createTeamsReportText({
         participants: [
-          { name: 'テスト太郎', email: 'taro@example.com', duration: '10 分 0 秒' },
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '10 分 0 秒' },
         ],
       });
       const buffer = createUtf16leBuffer(text);
@@ -373,7 +373,7 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': 'テスト太郎', 'メール アドレス': 'taro@example.com', '会議の長さ': '10 分 0 秒' },
+            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '10 分 0 秒' },
           ],
           errors: [],
         });

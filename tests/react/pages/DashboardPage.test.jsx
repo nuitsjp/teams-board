@@ -15,11 +15,11 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 
 const mockIndexData = {
   groups: [
-    { id: 'g1', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['s1'] },
+    { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['s1'] },
   ],
   members: [
-    { id: 'm1', name: 'テスト太郎', totalDurationSeconds: 1800, sessionIds: ['s1'] },
-    { id: 'm2', name: 'テスト花子', totalDurationSeconds: 3600, sessionIds: ['s1'] },
+    { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 1800, sessionIds: ['s1'] },
+    { id: 'm2', name: '高橋 美咲', totalDurationSeconds: 3600, sessionIds: ['s1'] },
   ],
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -51,11 +51,11 @@ describe('DashboardPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('もくもく勉強会')).toBeInTheDocument();
+      expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('テスト太郎')).toBeInTheDocument();
-    expect(screen.getByText('テスト花子')).toBeInTheDocument();
+    expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+    expect(screen.getByText('高橋 美咲')).toBeInTheDocument();
   });
 
   it('メンバーが合計時間の降順でソートされること', async () => {
@@ -68,13 +68,13 @@ describe('DashboardPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('テスト花子')).toBeInTheDocument();
+      expect(screen.getByText('高橋 美咲')).toBeInTheDocument();
     });
 
     // 花子（3600秒）が太郎（1800秒）より先に表示される
     const rows = screen.getAllByTestId('member-row');
-    expect(rows[0]).toHaveTextContent('テスト花子');
-    expect(rows[1]).toHaveTextContent('テスト太郎');
+    expect(rows[0]).toHaveTextContent('高橋 美咲');
+    expect(rows[1]).toHaveTextContent('佐藤 一郎');
   });
 
   it('データ取得エラー時にエラーメッセージを表示すること', async () => {

@@ -64,9 +64,9 @@ describe('AdminPage — ソースファイル保存パス', () => {
       mergeInput: {
         sessionId: 'abc12345-2026-02-08',
         groupId: 'abc12345',
-        groupName: 'テスト勉強会',
+        groupName: 'サンプル勉強会',
         date: '2026-02-08',
-        attendances: [{ memberId: 'mem001', memberName: 'テスト太郎', durationSeconds: 3600 }],
+        attendances: [{ memberId: 'mem001', memberName: '佐藤 一郎', durationSeconds: 3600 }],
       },
       warnings: [],
     });

@@ -22,16 +22,16 @@ describe('IndexMerger', () => {
       const newSession = {
         sessionId: 'abc12345-2026-01-15',
         groupId: 'abc12345',
-        groupName: 'もくもく勉強会',
+        groupName: 'フロントエンド勉強会',
         date: '2026-01-15',
         attendances: [
-          { memberId: 'mem00001', memberName: 'テスト太郎', durationSeconds: 3600 },
+          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 3600 },
         ],
       };
       const result = merger.merge(emptyIndex, newSession);
       expect(result.index.groups).toHaveLength(1);
       expect(result.index.groups[0].id).toBe('abc12345');
-      expect(result.index.groups[0].name).toBe('もくもく勉強会');
+      expect(result.index.groups[0].name).toBe('フロントエンド勉強会');
       expect(result.index.groups[0].totalDurationSeconds).toBe(3600);
       expect(result.index.groups[0].sessionIds).toContain('abc12345-2026-01-15');
     });
@@ -41,20 +41,20 @@ describe('IndexMerger', () => {
     it('既存のGroupSummaryにセッションを追加するとtotalDurationSecondsが加算されること', () => {
       const currentIndex = {
         groups: [
-          { id: 'abc12345', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          { id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
         ],
         members: [
-          { id: 'mem00001', name: 'テスト太郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          { id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
         ],
         updatedAt: '2026-01-15T00:00:00+09:00',
       };
       const newSession = {
         sessionId: 'abc12345-2026-01-22',
         groupId: 'abc12345',
-        groupName: 'もくもく勉強会',
+        groupName: 'フロントエンド勉強会',
         date: '2026-01-22',
         attendances: [
-          { memberId: 'mem00001', memberName: 'テスト太郎', durationSeconds: 1800 },
+          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 1800 },
         ],
       };
       const result = merger.merge(currentIndex, newSession);
@@ -68,17 +68,17 @@ describe('IndexMerger', () => {
       const newSession = {
         sessionId: 'abc12345-2026-01-15',
         groupId: 'abc12345',
-        groupName: 'もくもく勉強会',
+        groupName: 'フロントエンド勉強会',
         date: '2026-01-15',
         attendances: [
-          { memberId: 'mem00001', memberName: 'テスト太郎', durationSeconds: 3600 },
-          { memberId: 'mem00002', memberName: 'テスト花子', durationSeconds: 1800 },
+          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 3600 },
+          { memberId: 'mem00002', memberName: '高橋 美咲', durationSeconds: 1800 },
         ],
       };
       const result = merger.merge(emptyIndex, newSession);
       expect(result.index.members).toHaveLength(2);
       expect(result.index.members[0].id).toBe('mem00001');
-      expect(result.index.members[0].name).toBe('テスト太郎');
+      expect(result.index.members[0].name).toBe('佐藤 一郎');
       expect(result.index.members[0].totalDurationSeconds).toBe(3600);
       expect(result.index.members[0].sessionIds).toContain('abc12345-2026-01-15');
       expect(result.index.members[1].totalDurationSeconds).toBe(1800);
@@ -89,20 +89,20 @@ describe('IndexMerger', () => {
     it('既存メンバーのtotalDurationSecondsとsessionIdsが更新されること', () => {
       const currentIndex = {
         groups: [
-          { id: 'abc12345', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          { id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
         ],
         members: [
-          { id: 'mem00001', name: 'テスト太郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          { id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
         ],
         updatedAt: '2026-01-15T00:00:00+09:00',
       };
       const newSession = {
         sessionId: 'abc12345-2026-01-22',
         groupId: 'abc12345',
-        groupName: 'もくもく勉強会',
+        groupName: 'フロントエンド勉強会',
         date: '2026-01-22',
         attendances: [
-          { memberId: 'mem00001', memberName: 'テスト太郎', durationSeconds: 2400 },
+          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 2400 },
         ],
       };
       const result = merger.merge(currentIndex, newSession);
@@ -115,20 +115,20 @@ describe('IndexMerger', () => {
     it('重複セッションIDが検出された場合にwarningsを返し上書きしないこと', () => {
       const currentIndex = {
         groups: [
-          { id: 'abc12345', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          { id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
         ],
         members: [
-          { id: 'mem00001', name: 'テスト太郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          { id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
         ],
         updatedAt: '2026-01-15T00:00:00+09:00',
       };
       const newSession = {
         sessionId: 'abc12345-2026-01-15',
         groupId: 'abc12345',
-        groupName: 'もくもく勉強会',
+        groupName: 'フロントエンド勉強会',
         date: '2026-01-15',
         attendances: [
-          { memberId: 'mem00001', memberName: 'テスト太郎', durationSeconds: 9999 },
+          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 9999 },
         ],
       };
       const result = merger.merge(currentIndex, newSession);
@@ -144,10 +144,10 @@ describe('IndexMerger', () => {
       const newSession = {
         sessionId: 'abc12345-2026-01-15',
         groupId: 'abc12345',
-        groupName: 'もくもく勉強会',
+        groupName: 'フロントエンド勉強会',
         date: '2026-01-15',
         attendances: [
-          { memberId: 'mem00001', memberName: 'テスト太郎', durationSeconds: 3600 },
+          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 3600 },
         ],
       };
       const result = merger.merge(emptyIndex, newSession);
@@ -159,10 +159,10 @@ describe('IndexMerger', () => {
     it('元のindexオブジェクトが変更されないこと', () => {
       const currentIndex = {
         groups: [
-          { id: 'abc12345', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          { id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
         ],
         members: [
-          { id: 'mem00001', name: 'テスト太郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          { id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
         ],
         updatedAt: '2026-01-15T00:00:00+09:00',
       };
@@ -170,10 +170,10 @@ describe('IndexMerger', () => {
       const newSession = {
         sessionId: 'abc12345-2026-01-22',
         groupId: 'abc12345',
-        groupName: 'もくもく勉強会',
+        groupName: 'フロントエンド勉強会',
         date: '2026-01-22',
         attendances: [
-          { memberId: 'mem00002', memberName: 'テスト花子', durationSeconds: 2400 },
+          { memberId: 'mem00002', memberName: '高橋 美咲', durationSeconds: 2400 },
         ],
       };
       merger.merge(currentIndex, newSession);
@@ -186,11 +186,11 @@ describe('IndexMerger', () => {
       const newSession = {
         sessionId: 'abc12345-2026-01-15',
         groupId: 'abc12345',
-        groupName: 'もくもく勉強会',
+        groupName: 'フロントエンド勉強会',
         date: '2026-01-15',
         attendances: [
-          { memberId: 'mem00001', memberName: 'テスト太郎', durationSeconds: 3600 },
-          { memberId: 'mem00002', memberName: 'テスト花子', durationSeconds: 1800 },
+          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 3600 },
+          { memberId: 'mem00002', memberName: '高橋 美咲', durationSeconds: 1800 },
         ],
       };
       const result = merger.merge(emptyIndex, newSession);
