@@ -14,7 +14,12 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "infra:deploy": "pwsh -ExecutionPolicy Bypass -File scripts/infra/Deploy-Infrastructure.ps1",
+    "infra:publish": "pwsh -ExecutionPolicy Bypass -File scripts/infra/Deploy-StaticFiles.ps1",
+    "infra:sas": "pwsh -ExecutionPolicy Bypass -File scripts/infra/New-SasToken.ps1",
+    "infra:clear": "pwsh -ExecutionPolicy Bypass -File scripts/infra/Clear-StudyData.ps1",
+    "infra:urls": "pwsh -ExecutionPolicy Bypass -File scripts/infra/Show-Urls.ps1"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

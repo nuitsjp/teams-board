@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Azure Blob Storage ($web コンテナ) のセッションデータをクリアするスクリプト
 
@@ -28,17 +28,34 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# local.settings.json からの設定読み込み
+. (Join-Path $PSScriptRoot "Load-LocalSettings.ps1")
+$localSettings = Load-LocalSettings
+$applied = Apply-LocalSettings -Settings $localSettings -BoundParameters $PSBoundParameters -ParameterMap @{
+    "SubscriptionId"     = "subscriptionId"
+    "ResourceGroupName"  = "resourceGroupName"
+    "StorageAccountName" = "storageAccountName"
+}
+foreach ($key in $applied.Keys) {
+    Set-Variable -Name $key -Value $applied[$key]
+}
+
 # ============================================================
 # Step 1: Azure接続
 # ============================================================
 Write-Host "=== Step 1: Azure接続 ===" -ForegroundColor Cyan
 Write-Host "対象サブスクリプション: $SubscriptionId"
-Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
+az account set --subscription $SubscriptionId
+if ($LASTEXITCODE -ne 0) { throw "サブスクリプションの切り替えに失敗しました" }
 Write-Host "サブスクリプションを切り替えました" -ForegroundColor Green
 
 Write-Host "Storageアカウント '$StorageAccountName' に接続しています..."
-$sa = Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName
-$ctx = $sa.Context
+az storage account show --resource-group $ResourceGroupName --name $StorageAccountName | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "Storageアカウント '$StorageAccountName' が見つかりません" }
+
+# アカウントキーを取得
+$accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
+if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
 Write-Host "Storageアカウントに接続しました" -ForegroundColor Green
 
 # ============================================================
@@ -47,7 +64,13 @@ Write-Host "Storageアカウントに接続しました" -ForegroundColor Green
 Write-Host "`n=== Step 2: data/ 配下のBlob削除 ===" -ForegroundColor Cyan
 
 # data/ 配下のBlob一覧を取得
-$blobs = Get-AzStorageBlob -Container '$web' -Prefix 'data/' -Context $ctx
+$blobsJson = az storage blob list `
+    --container-name '$web' `
+    --prefix 'data/' `
+    --account-name $StorageAccountName `
+    --account-key $accountKey `
+    --output json
+$blobs = $blobsJson | ConvertFrom-Json
 
 if ($null -eq $blobs -or @($blobs).Count -eq 0) {
     Write-Host "data/ 配下にBlobが存在しません。スキップします。" -ForegroundColor Yellow
@@ -58,13 +81,18 @@ if ($null -eq $blobs -or @($blobs).Count -eq 0) {
     # data/index.json 以外のBlobを削除
     $deleteCount = 0
     foreach ($blob in $blobs) {
-        if ($blob.Name -eq "data/index.json") {
-            Write-Host "  [スキップ] $($blob.Name) (Step 3で上書き)"
+        if ($blob.name -eq "data/index.json") {
+            Write-Host "  [スキップ] $($blob.name) (Step 3で上書き)"
             continue
         }
-        Remove-AzStorageBlob -Blob $blob.Name -Container '$web' -Context $ctx -Force
+        az storage blob delete `
+            --container-name '$web' `
+            --name $blob.name `
+            --account-name $StorageAccountName `
+            --account-key $accountKey | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "Blobの削除に失敗しました: $($blob.name)" }
         $deleteCount++
-        Write-Host "  [削除] $($blob.Name)"
+        Write-Host "  [削除] $($blob.name)"
     }
     Write-Host "削除完了: $deleteCount 件のBlobを削除しました" -ForegroundColor Green
 }
@@ -89,14 +117,15 @@ try {
     Write-Host "一時ファイルを作成しました: $tempFile"
 
     # Azure上のdata/index.jsonを上書き
-    $blobProperties = @{ ContentType = 'application/json; charset=utf-8' }
-    Set-AzStorageBlobContent `
-        -File $tempFile `
-        -Container '$web' `
-        -Blob 'data/index.json' `
-        -Properties $blobProperties `
-        -Context $ctx `
-        -Force | Out-Null
+    az storage blob upload `
+        --file $tempFile `
+        --container-name '$web' `
+        --name 'data/index.json' `
+        --content-type 'application/json; charset=utf-8' `
+        --account-name $StorageAccountName `
+        --account-key $accountKey `
+        --overwrite | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "data/index.json のアップロードに失敗しました" }
     Write-Host "data/index.json を初期状態で上書きしました" -ForegroundColor Green
     Write-Host "  updatedAt: $updatedAt"
 } finally {
@@ -110,7 +139,7 @@ try {
 # ============================================================
 # Step 4: 結果サマリー
 # ============================================================
-$webEndpoint = $sa.PrimaryEndpoints.Web
+$webEndpoint = (az storage account show --resource-group $ResourceGroupName --name $StorageAccountName --query "primaryEndpoints.web" --output tsv)
 
 Write-Host "`n=== データクリア完了 ===" -ForegroundColor Cyan
 Write-Host "Storageアカウント:         $StorageAccountName"
