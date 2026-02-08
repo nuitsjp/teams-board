@@ -1,26 +1,19 @@
 # TeamsBoard
 
-Azure Blob Storage の静的サイトホスティング機能を利用した、Teamsレポート集計ダッシュボード／ドリルダウン閲覧・更新システム。
+Microsoft Teams の出席レポートを集計・可視化するダッシュボードです。グループごとの参加状況やメンバーの活動時間を一覧表示し、CSV ファイルのインポートでデータを更新できます。
 
-URL: [https://strjstudylogprod.z11.web.core.windows.net/](https://strjstudylogprod.z11.web.core.windows.net/)
+## 技術スタック
 
-管理者用URL（SASトークン付き、有効期限: 2026-03-31）: [管理者モード](https://strjstudylogprod.z11.web.core.windows.net/?token=se%3D2026-03-31T00%253A00%253A00Z%26sp%3Drcwl%26spr%3Dhttps%26sv%3D2026-02-06%26sr%3Dc%26sig%3DxF1sZpLJVwo6h7rx%252BsVRQl7fOTzidTgNJb2qy7T5JdM%253D)
-<!-- token有効期限: 2026-03-31 / 権限: read,create,write,list -->
+| 要素 | 選択 | 選定理由 |
+|------|------|----------|
+| ホスティング | [Azure Blob Storage 静的サイト](https://learn.microsoft.com/ja-jp/azure/storage/blobs/storage-blob-static-website) | 静的コンテンツとデータを単一ストレージアカウントで管理でき、閉域網のアクセス制御が容易。従量課金のみで低頻度運用のコストを最小化できる |
+| フロントエンド | React 19 + Vite | 宣言的 UI と高速ビルド |
+| ルーティング | react-router-dom（HashRouter） | 静的サイトホスティングとの相性が良いハッシュベースルーティング |
+| CSS | Tailwind CSS 4 | ユーティリティファーストで迅速なスタイリング |
+| テスト | Vitest + Playwright | ユニットテストと E2E テストの両立 |
+| データ更新認可 | SAS トークン（URL パラメータ） | 閉域ネットワーク前提のため簡易方式で十分 |
 
-## 目的
-
-利用頻度が低くDB・常時稼働バックエンドを持つのがコストに見合わないケースにおいて、**静的ファイル配信のみ**でダッシュボード閲覧と CSV によるデータ更新を実現する。
-
-| 目標 | 実現方法 |
-|------|---------|
-| 閲覧の安定 UX | 静的配信のみ（コールドスタートなし） |
-| 最小コスト・最小運用 | Azure Blob Storage + `$web` コンテナのみ |
-| 更新の省力化 | CSV 投入 → ブラウザ変換 → JSON 配信 |
-| シンプルな権限制御 | 閉域ネットワーク ＋ SAS トークンによる簡易分離 |
-
-## アーキテクチャ
-
-- [アーキテクチャ概要](./docs/architecture.md)
+詳細は [アーキテクチャドキュメント](./docs/architecture.md) を参照してください。
 
 ## クイックスタート
 
@@ -74,168 +67,6 @@ pnpm run test:e2e:headed        # ブラウザ表示付き実行
 | `pnpm run infra:publish` | 静的ファイルを Azure にデプロイ |
 | `pnpm run infra:sas` | SAS トークンの生成 |
 | `pnpm run infra:clear` | セッションデータのクリア |
-
-## アーキテクチャ概要
-
-```
-┌───────────────────────────────────────────────────────────┐
-│  ブラウザ（React SPA）                                      │
-│                                                           │
-│  ┌─ Pages ──────────────────────────────────────────────┐ │
-│  │  DashboardPage    MemberDetailPage    AdminPage      │ │
-│  └──────┬───────────────────┬──────────────┬────────────┘ │
-│         │                   │              │              │
-│  ┌─ Hooks ──────────────────┼──────────────┤              │
-│  │  useAuth                 │     useFileQueue            │
-│  └──────────────────────────┤──────────────┤              │
-│                             │              │              │
-│  ┌─ Services（再利用） ──────┴──────────────┴────────────┐ │
-│  │  DataFetcher    BlobWriter    IndexMerger             │ │
-│  │  (GET, キャッシュ制御)  (PUT + SAS)  CsvTransformer    │ │
-│  └──────────┬───────────────────────────┬────────────────┘ │
-└─────────────┼───────────────────────────┼─────────────────┘
-              │                           │
-     GET (静的サイト EP)           PUT (Blob サービス EP)
-              │                           │
-     ┌────────▼───────────────────────────▼──────────┐
-     │        Azure Blob Storage ($web コンテナ)       │
-     │  data/index.json  data/sessions/*.json  raw/*  │
-     └────────────────────────────────────────────────┘
-```
-
-### 閲覧フロー（一般ユーザー）
-
-1. ブラウザで SPA にアクセス（ハッシュルーティング: `#/`）
-2. DataFetcher が `data/index.json` をキャッシュバスター付きで取得し、グループ・メンバー一覧を表示
-3. メンバーカードクリックで `#/members/<id>` に遷移し、セッション参加履歴を詳細表示
-
-### 更新フロー（管理者）
-
-1. `?token=<SAS>` 付き URL でアクセス → 管理者モード有効化（useAuth Hook）
-2. CSV ファイルをドラッグ&ドロップまたはファイル選択で投入
-3. CsvTransformer（PapaParse）が CSV → JSON に変換、プレビュー表示
-4. 「一括保存」で BlobWriter が書き込み（順序: `raw/*.csv` → `data/sessions/*.json` → `data/index.json`）
-
-## コンポーネント構成
-
-### Pages（画面コンポーネント）
-
-| コンポーネント | 責務 |
-|---------------|------|
-| DashboardPage | グループ一覧・メンバー一覧表示、メンバーカードクリックで詳細遷移 |
-| MemberDetailPage | メンバーのセッション参加履歴を日付降順で詳細表示 |
-| AdminPage | CSV インポート・プレビュー・一括保存の管理者機能 |
-
-### Hooks（カスタム Hook）
-
-| Hook | 責務 |
-|------|------|
-| useAuth | SAS トークン抽出、管理者モード判定、URL からの token 除去 |
-| useFileQueue | ファイルキュー状態管理（useReducer）、バリデーション、重複検出 |
-
-### Services（ビジネスロジック層、移行前のコードを再利用）
-
-| サービス | 責務 |
-|---------|------|
-| DataFetcher | JSON データ取得（index.json, session 詳細）、キャッシュバスター制御 |
-| BlobWriter | Azure Blob Storage への PUT、書き込み順序制御、リトライ |
-| IndexMerger | index.json のマージ、重複セッション ID 検出 |
-| CsvTransformer | Teams 出席レポート CSV パース（PapaParse）、JSON 変換、UTF-16LE 対応 |
-
-## 技術スタック
-
-| 要素 | 選択 | 理由 |
-|------|------|------|
-| フレームワーク | React 19 + ReactDOM 19 | 宣言的 UI による保守性向上 |
-| ビルドツール | Vite + @vitejs/plugin-react | HMR、高速ビルド、JSX 変換 |
-| ルーティング | react-router-dom（HashRouter） | SPA ハッシュベースルーティング |
-| CSV パーサー | PapaParse | Teams 出席レポートの UTF-16LE CSV 解析 |
-| ユニットテスト | Vitest + React Testing Library | jsdom 環境、コンポーネントテスト |
-| E2E テスト | Playwright | ブラウザベースの画面遷移・管理者フロー検証 |
-| ホスティング | Azure Blob Storage 静的サイト | 最小コスト、閉域環境対応 |
-
-## Azure 環境設定
-
-### ローカル設定ファイル（`local.settings.json`）
-
-インフラスクリプトは `local.settings.json` から環境固有のパラメータを読み込みます。テンプレートをコピーして作成してください。
-
-```bash
-cp local.settings.template.json local.settings.json
-```
-
-必要に応じて値を変更します。
-
-```json
-{
-  "subscriptionId": "<AzureサブスクリプションID>",
-  "resourceGroupName": "<リソースグループ名>",
-  "storageAccountName": "<ストレージアカウント名>",
-  "location": "japaneast"
-}
-```
-
-> **注意**: `local.settings.json` は `.gitignore` に含まれているため、リポジトリにコミットされません。ファイルが存在しない場合は、各スクリプトのデフォルト値が使用されます。
-
-## Azure 環境の準備
-
-本アプリケーションを Azure にデプロイするには以下の設定が必要です。
-
-### 1. Storage アカウントの静的サイトホスティング有効化
-
-```bash
-az storage blob service-properties update \
-  --account-name <ACCOUNT_NAME> \
-  --static-website \
-  --index-document index.html
-```
-
-### 2. CORS 設定（Blob サービス）
-
-管理者のブラウザから Blob サービスエンドポイントへ PUT するため、CORS ルールが必要です。
-
-```bash
-az storage cors add \
-  --account-name <ACCOUNT_NAME> \
-  --services b \
-  --methods PUT GET HEAD \
-  --origins "https://<ACCOUNT_NAME>.<ZONE>.web.core.windows.net" \
-  --allowed-headers "x-ms-blob-type,x-ms-blob-content-type,content-type,x-ms-version" \
-  --exposed-headers "x-ms-meta-*"
-```
-
-### 3. SAS トークン発行（管理者用）
-
-```bash
-az storage container generate-sas \
-  --account-name <ACCOUNT_NAME> \
-  --name '$web' \
-  --permissions rwc \
-  --expiry <EXPIRY_DATE> \
-  --https-only
-```
-
-発行された SAS トークンを URL の `?token=` パラメータとして管理者に配布します。
-
-### 4. デプロイ
-
-プロダクションビルドを実行し、`dist/` 配下のファイルを `$web` コンテナにアップロードします。
-
-```bash
-# pnpm scripts によるデプロイ（テスト・ビルド・アップロードを一括実行）
-pnpm run infra:publish
-```
-
-```bash
-# または Azure CLI で手動デプロイ
-pnpm run build
-az storage blob upload-batch \
-  --account-name <ACCOUNT_NAME> \
-  --destination '$web' \
-  --source dist
-```
-
-> **注意**: `data/` ディレクトリはデータのライフサイクルが異なるため、デプロイスクリプトでは除外されます。
 
 ## 仕様書
 
