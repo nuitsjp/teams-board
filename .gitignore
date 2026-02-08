@@ -78,9 +78,6 @@ web_modules/
 .env.*
 !.env.example
 
-# ローカル設定ファイル（環境固有のAzureパラメータ）
-local.settings.json
-
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

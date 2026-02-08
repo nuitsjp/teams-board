@@ -28,13 +28,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# local.settings.json からの設定読み込み
-. (Join-Path $PSScriptRoot "Load-LocalSettings.ps1")
-$localSettings = Load-LocalSettings
-$applied = Apply-LocalSettings -Settings $localSettings -BoundParameters $PSBoundParameters -ParameterMap @{
-    "SubscriptionId"     = "subscriptionId"
-    "ResourceGroupName"  = "resourceGroupName"
-    "StorageAccountName" = "storageAccountName"
+# .env からの設定読み込み
+. (Join-Path $PSScriptRoot "Load-EnvSettings.ps1")
+$envSettings = Load-EnvSettings
+$applied = Apply-EnvSettings -Settings $envSettings -BoundParameters $PSBoundParameters -ParameterMap @{
+    "SubscriptionId"     = "AZURE_SUBSCRIPTION_ID"
+    "ResourceGroupName"  = "AZURE_RESOURCE_GROUP_NAME"
+    "StorageAccountName" = "AZURE_STORAGE_ACCOUNT_NAME"
 }
 foreach ($key in $applied.Keys) {
     Set-Variable -Name $key -Value $applied[$key]
