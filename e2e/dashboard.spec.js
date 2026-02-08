@@ -2,16 +2,16 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('ダッシュボード画面', () => {
-  test('勉強会グループ一覧が表示されること', async ({ page }) => {
+  test('グループ一覧が表示されること', async ({ page }) => {
     await page.goto('/');
 
     // ヘッダーが表示されること
-    await expect(page.locator('header')).toContainText('Study Log');
+    await expect(page.locator('header')).toContainText('TeamsBoard');
 
-    // 勉強会グループセクションが表示されること
-    await expect(page.getByRole('heading', { name: '勉強会グループ' })).toBeVisible();
+    // グループセクションが表示されること
+    await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();
 
-    // 勉強会グループが4つ存在すること
+    // グループが4つ存在すること
     const groupNames = ['もくもく勉強会', 'React読書会', 'アーキテクチャ設計塾', 'クラウド技術研究会'];
     for (const name of groupNames) {
       await expect(page.getByText(name).first()).toBeVisible();
@@ -73,36 +73,36 @@ test.describe('画面遷移', () => {
     await page.goto('/#/nonexistent-route');
 
     // ダッシュボードが表示されること
-    await expect(page.getByRole('heading', { name: '勉強会グループ' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();
   });
 });
 
-test.describe('勉強会詳細画面', () => {
-  test('トップページから勉強会をクリックして詳細画面に遷移できること', async ({ page }) => {
+test.describe('グループ詳細画面', () => {
+  test('トップページからグループをクリックして詳細画面に遷移できること', async ({ page }) => {
     await page.goto('/');
 
-    // 勉強会行が表示されるまで待つ
-    const groupRow = page.getByTestId('study-group-row').first();
+    // グループ行が表示されるまで待つ
+    const groupRow = page.getByTestId('group-row').first();
     await expect(groupRow).toBeVisible();
 
-    // 勉強会名を取得
+    // グループ名を取得
     const groupName = await groupRow.locator('h3').textContent();
 
     // クリック
     await groupRow.click();
 
-    // 詳細画面に遷移 — 勉強会名がヘッダーに表示される
+    // 詳細画面に遷移 — グループ名がヘッダーに表示される
     await expect(page.getByRole('heading', { name: groupName })).toBeVisible();
 
     // 「一覧へ戻る」ボタンが表示されること
     await expect(page.getByText('一覧へ戻る')).toBeVisible();
   });
 
-  test('勉強会詳細画面でセッション一覧が表示されること', async ({ page }) => {
+  test('グループ詳細画面でセッション一覧が表示されること', async ({ page }) => {
     // もくもく勉強会（10回開催）の詳細ページへ
-    await page.goto('/#/study-groups/52664958');
+    await page.goto('/#/groups/52664958');
 
-    // 勉強会名が表示される
+    // グループ名が表示される
     await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
 
     // 開催回数が表示される
@@ -113,7 +113,7 @@ test.describe('勉強会詳細画面', () => {
   });
 
   test('セッションをクリックして参加者詳細を展開・折りたたみできること', async ({ page }) => {
-    await page.goto('/#/study-groups/52664958');
+    await page.goto('/#/groups/52664958');
 
     // セッション日付が表示されるまで待つ
     await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
@@ -132,8 +132,8 @@ test.describe('勉強会詳細画面', () => {
     await expect(page.locator('table')).toHaveCount(0);
   });
 
-  test('勉強会詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
-    await page.goto('/#/study-groups/52664958');
+  test('グループ詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
+    await page.goto('/#/groups/52664958');
 
     // 詳細画面が表示されるまで待つ
     await expect(page.getByText('一覧へ戻る')).toBeVisible();
@@ -142,28 +142,28 @@ test.describe('勉強会詳細画面', () => {
     await page.getByText('一覧へ戻る').click();
 
     // ダッシュボードに戻る
-    await expect(page.getByRole('heading', { name: '勉強会グループ' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();
   });
 });
 
-test.describe('メンバー詳細画面 — 勉強会別表示', () => {
-  test('複数勉強会に参加しているメンバーで勉強会別サマリーカードが表示されること', async ({ page }) => {
+test.describe('メンバー詳細画面 — グループ別表示', () => {
+  test('複数グループに参加しているメンバーでグループ別サマリーカードが表示されること', async ({ page }) => {
     // 中村さん（もくもく勉強会、React読書会、アーキテクチャ設計塾に参加）の詳細ページへ
     await page.goto('/#/members/c6606539');
 
     // メンバー名が表示される
     await expect(page.getByRole('heading', { name: /中村 充志/ })).toBeVisible();
 
-    // 3つの勉強会サマリーカードが表示される
+    // 3つのグループサマリーカードが表示される
     await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'React読書会' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'アーキテクチャ設計塾' })).toBeVisible();
   });
 
-  test('勉強会カードをクリックして出席履歴を展開・折りたたみできること', async ({ page }) => {
+  test('グループカードをクリックして出席履歴を展開・折りたたみできること', async ({ page }) => {
     await page.goto('/#/members/c6606539');
 
-    // 初期状態では出席履歴テーブルが表示されていない（複数勉強会なので折りたたみ）
+    // 初期状態では出席履歴テーブルが表示されていない（複数グループなので折りたたみ）
     await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
     const tables = page.locator('table');
     await expect(tables).toHaveCount(0);
@@ -181,24 +181,20 @@ test.describe('メンバー詳細画面 — 勉強会別表示', () => {
     await expect(page.locator('table')).toHaveCount(0);
   });
 
-  test('勉強会が1つのみのメンバーではデフォルトで展開されること', async ({ page }) => {
-    // 谷戸さんのsessionIdsを確認：もくもく勉強会1回、アーキテクチャ設計塾2回、クラウド技術研究会1回
-    // → 複数勉強会なので折りたたみ状態
-    // 代わりに、勉強会が1つだけのケースを確認するため別アプローチ
-    // 現データでは全メンバーが複数勉強会に参加しているため、
-    // 「展開状態でテーブルが見える」ことを確認する代わりに
-    // 複数勉強会の場合に折りたたまれていることを確認する
+  test('グループが1つのみのメンバーではデフォルトで展開されること', async ({ page }) => {
+    // 現データでは全メンバーが複数グループに参加しているため、
+    // 複数グループの場合に折りたたまれていることを確認する
     await page.goto('/#/members/c6606539');
 
-    // 複数勉強会のメンバーでは初期状態でテーブルが表示されていない
+    // 複数グループのメンバーでは初期状態でテーブルが表示されていない
     await expect(page.getByRole('heading', { name: 'もくもく勉強会' })).toBeVisible();
     await expect(page.locator('table')).toHaveCount(0);
   });
 
-  test('複数の勉強会カードを同時に展開できること', async ({ page }) => {
+  test('複数のグループカードを同時に展開できること', async ({ page }) => {
     await page.goto('/#/members/c6606539');
 
-    // 2つの勉強会を展開
+    // 2つのグループを展開
     await page.getByRole('heading', { name: 'もくもく勉強会' }).click();
     await page.getByRole('heading', { name: 'React読書会' }).click();
 

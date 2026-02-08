@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    blob-static-dashboard用Azureインフラストラクチャをプロビジョニングするスクリプト
+    TeamsBoard用Azureインフラストラクチャをプロビジョニングするスクリプト
 
 .DESCRIPTION
     Azure Storage Account（静的サイトホスティング、CORS、Stored Access Policy）を
@@ -235,12 +235,12 @@ if ($LASTEXITCODE -ne 0) {
     Write-Host "data/index.json が存在しません。空の初期データを配置します..."
     $updatedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
     $indexContent = @{
-        studyGroups = @()
-        members     = @()
-        updatedAt   = $updatedAt
+        groups    = @()
+        members   = @()
+        updatedAt = $updatedAt
     } | ConvertTo-Json -Depth 2
 
-    $tempFile = Join-Path $env:TEMP "study-log-empty-index.json"
+    $tempFile = Join-Path $env:TEMP "teams-board-empty-index.json"
     try {
         [System.IO.File]::WriteAllText($tempFile, $indexContent, [System.Text.UTF8Encoding]::new($false))
         az storage blob upload `

@@ -25,7 +25,7 @@ vi.mock('../../../src/services/csv-transformer.js', () => ({
 vi.mock('../../../src/services/index-merger.js', () => ({
   IndexMerger: vi.fn().mockImplementation(() => ({
     merge: vi.fn().mockReturnValue({
-      index: { studyGroups: [], members: [], updatedAt: '' },
+      index: { groups: [], members: [], updatedAt: '' },
       warnings: [],
     }),
   })),
@@ -36,7 +36,7 @@ vi.mock('../../../src/services/data-fetcher.js', () => ({
   DataFetcher: vi.fn().mockImplementation(() => ({
     fetchIndex: vi.fn().mockResolvedValue({
       ok: true,
-      data: { studyGroups: [], members: [], updatedAt: '' },
+      data: { groups: [], members: [], updatedAt: '' },
     }),
   })),
 }));
@@ -57,14 +57,14 @@ describe('AdminPage — ソースファイル保存パス', () => {
       ok: true,
       sessionRecord: {
         id: 'abc12345-2026-02-08',
-        studyGroupId: 'abc12345',
+        groupId: 'abc12345',
         date: '2026-02-08',
         attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
       },
       mergeInput: {
         sessionId: 'abc12345-2026-02-08',
-        studyGroupId: 'abc12345',
-        studyGroupName: 'テスト勉強会',
+        groupId: 'abc12345',
+        groupName: 'テスト勉強会',
         date: '2026-02-08',
         attendances: [{ memberId: 'mem001', memberName: 'テスト太郎', durationSeconds: 3600 }],
       },

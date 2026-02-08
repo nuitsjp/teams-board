@@ -1,7 +1,7 @@
 // IndexMerger — DashboardIndexのマージロジック（ドメインモデル対応）
 export class IndexMerger {
   /**
-   * 新セッション追加に伴いDashboardIndexのStudyGroupSummaryとMemberSummaryを更新する
+   * 新セッション追加に伴いDashboardIndexのGroupSummaryとMemberSummaryを更新する
    * @param {object} currentIndex - 現在のDashboardIndex
    * @param {object} newSession - 追加するセッション情報（MergeInput）
    * @returns {{ index: object, warnings: string[] }}
@@ -11,13 +11,13 @@ export class IndexMerger {
 
     // 重複セッションID検出
     const allSessionIds = new Set([
-      ...currentIndex.studyGroups.flatMap((g) => g.sessionIds),
+      ...currentIndex.groups.flatMap((g) => g.sessionIds),
     ]);
     if (allSessionIds.has(newSession.sessionId)) {
       warnings.push(`重複セッションID検出: ${newSession.sessionId} は既に存在します`);
       return {
         index: {
-          studyGroups: currentIndex.studyGroups.map((g) => ({ ...g, sessionIds: [...g.sessionIds] })),
+          groups: currentIndex.groups.map((g) => ({ ...g, sessionIds: [...g.sessionIds] })),
           members: currentIndex.members.map((m) => ({ ...m, sessionIds: [...m.sessionIds] })),
           updatedAt: new Date().toISOString(),
         },
@@ -25,22 +25,22 @@ export class IndexMerger {
       };
     }
 
-    // StudyGroupSummary の更新
+    // GroupSummary の更新
     const sessionTotalDuration = newSession.attendances.reduce(
       (sum, a) => sum + a.durationSeconds, 0
     );
-    const studyGroups = currentIndex.studyGroups.map((g) => ({
+    const groups = currentIndex.groups.map((g) => ({
       ...g,
       sessionIds: [...g.sessionIds],
     }));
-    const existingGroup = studyGroups.find((g) => g.id === newSession.studyGroupId);
+    const existingGroup = groups.find((g) => g.id === newSession.groupId);
     if (existingGroup) {
       existingGroup.totalDurationSeconds += sessionTotalDuration;
       existingGroup.sessionIds.push(newSession.sessionId);
     } else {
-      studyGroups.push({
-        id: newSession.studyGroupId,
-        name: newSession.studyGroupName,
+      groups.push({
+        id: newSession.groupId,
+        name: newSession.groupName,
         totalDurationSeconds: sessionTotalDuration,
         sessionIds: [newSession.sessionId],
       });
@@ -68,7 +68,7 @@ export class IndexMerger {
 
     return {
       index: {
-        studyGroups,
+        groups,
         members,
         updatedAt: new Date().toISOString(),
       },

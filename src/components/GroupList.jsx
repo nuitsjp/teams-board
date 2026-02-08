@@ -2,7 +2,7 @@ import { formatDuration } from '../utils/format-duration';
 import { Users, Clock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export function StudyGroupList({ groups }) {
+export function GroupList({ groups }) {
   const navigate = useNavigate();
 
   return (
@@ -10,15 +10,15 @@ export function StudyGroupList({ groups }) {
       <div className="p-6 border-b border-border-light bg-surface-muted">
         <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
           <Users className="w-5 h-5 text-primary-600" />
-          勉強会グループ
+          グループ
         </h2>
       </div>
       <div className="divide-y divide-border-light">
         {groups.map((group) => (
           <div
             key={group.id}
-            data-testid="study-group-row"
-            onClick={() => navigate(`/study-groups/${group.id}`)}
+            data-testid="group-row"
+            onClick={() => navigate(`/groups/${group.id}`)}
             className="p-5 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group"
           >
             <div>

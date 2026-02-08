@@ -135,7 +135,7 @@ export function FileQueueCard({ item, onRemove, onApproveDuplicate }) {
                 ? <ChevronDown className="w-4 h-4 text-text-muted" />
                 : <ChevronRight className="w-4 h-4 text-text-muted" />
             )}
-            <span className="font-semibold text-text-primary">{mergeInput.studyGroupName}</span>
+            <span className="font-semibold text-text-primary">{mergeInput.groupName}</span>
             <span className="text-text-secondary text-sm">{mergeInput.date}</span>
             <span className="text-sm text-text-secondary">参加者: {mergeInput.attendances.length}名</span>
             <span className="text-sm text-text-secondary">合計: {formatDuration(totalDuration)}</span>

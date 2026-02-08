@@ -2,7 +2,7 @@ import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { DashboardPage } from './pages/DashboardPage.jsx';
 import { MemberDetailPage } from './pages/MemberDetailPage.jsx';
-import { StudyGroupDetailPage } from './pages/StudyGroupDetailPage.jsx';
+import { GroupDetailPage } from './pages/GroupDetailPage.jsx';
 import { AdminPage } from './pages/AdminPage.jsx';
 import { BookOpen, Settings } from 'lucide-react';
 
@@ -10,7 +10,7 @@ import { BookOpen, Settings } from 'lucide-react';
 const router = createHashRouter([
   { path: '/', element: <DashboardPage /> },
   { path: '/members/:memberId', element: <MemberDetailPage /> },
-  { path: '/study-groups/:studyGroupId', element: <StudyGroupDetailPage /> },
+  { path: '/groups/:groupId', element: <GroupDetailPage /> },
   { path: '/admin', element: <AdminPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ]);
@@ -28,7 +28,7 @@ function AppLayout() {
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <a href="#/" className="flex items-center gap-2.5 text-text-primary hover:text-primary-700 transition-colors">
             <BookOpen className="w-5 h-5 text-primary-600" />
-            <span className="text-lg font-bold tracking-tight">Study Log</span>
+            <span className="text-lg font-bold tracking-tight">{import.meta.env.VITE_APP_TITLE || 'TeamsBoard'}</span>
           </a>
           {isAdmin && (
             <a

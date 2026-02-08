@@ -1,14 +1,24 @@
-# Study Log アーキテクチャ（現行実装）
+# TeamsBoard アーキテクチャ（現行実装）
 
 ## 1. 目的と前提
 
-本ドキュメントは、`study-log` の**現在の実装**を基準に、構成・責務・データフロー・運用フローを整理したものです。  
+本ドキュメントは、TeamsBoard の**現在の実装**を基準に、構成・責務・データフロー・運用フローを整理したものです。  
 対象は以下の2系統です。
 
 - 閲覧系フロー（一般ユーザー）
 - 管理者更新フロー（SASトークン付きブラウザ更新）
 
 本システムは、Azure Blob Storage の静的サイト配信を中心に運用し、常時稼働バックエンドなしで成立する構成を採用しています。
+
+### ホスティング選定の背景
+
+Teams の出席情報は社内情報であるため、閉域ネットワーク内での低コスト運用が求められます。
+
+| 候補 | 評価 |
+|------|------|
+| Azure Static Web Apps (SWA) | パブリックネットワークへの接続が前提であり、ネットワークレベルのアクセス制御が困難 |
+| Azure App Service | VNet 統合にはBasic 以上のプランが必要で、低頻度利用に対してコストが見合わない |
+| **Azure Blob Storage 静的サイト** | 静的コンテンツとデータを単一ストレージアカウントで管理でき、閉域網のアクセス制御が容易。従量課金のみで低頻度運用のコストを最小化できる |
 
 ## 2. システム境界
 
@@ -79,7 +89,7 @@ graph TD
 
 ```json
 {
-  "studyGroups": [
+  "groups": [
     {
       "id": "52664958",
       "name": "もくもく勉強会",
@@ -104,7 +114,7 @@ graph TD
 ```json
 {
   "id": "52664958-2026-02-06",
-  "studyGroupId": "52664958",
+  "groupId": "52664958",
   "date": "2026-02-06",
   "attendances": [
     { "memberId": "c6606539", "durationSeconds": 3645 }
@@ -134,13 +144,13 @@ graph TD
 
 ### 6.2 ID 生成規則
 
-- `studyGroupId`: クリーニング済み会議タイトルの SHA-256 先頭8桁
+- `groupId`: クリーニング済み会議タイトルの SHA-256 先頭8桁
 - `memberId`: メールアドレスの SHA-256 先頭8桁
-- `sessionId`: `${studyGroupId}-${YYYY-MM-DD}`
+- `sessionId`: `${groupId}-${YYYY-MM-DD}`
 
 ### 6.3 インデックス更新（`IndexMerger`）
 
-- `studyGroups` と `members` をイミュータブルに更新
+- `groups` と `members` をイミュータブルに更新
 - 重複 `sessionId` は警告扱いで追加しない
 - `updatedAt` を更新
 
@@ -203,7 +213,7 @@ sequenceDiagram
 ### 8.3 運用支援スクリプト
 
 - `scripts/infra/New-SasToken.ps1`: 管理者用 URL 発行
-- `scripts/infra/Clear-StudyData.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
+- `scripts/infra/Clear-Data.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
 
 ## 9. セキュリティ方針（現行実装）
 
@@ -214,21 +224,33 @@ sequenceDiagram
 
 補足: `staticwebapp.config.json` は Azure Static Web Apps 向け設定であり、Blob Static Website 単体運用では適用されません。
 
-## 10. テスト構成
+## 10. 技術スタック
+
+| 要素 | 選択 | 理由 |
+|------|------|------|
+| フレームワーク | React 19 + ReactDOM 19 | 宣言的 UI による保守性向上 |
+| ビルドツール | Vite + @vitejs/plugin-react | HMR、高速ビルド、JSX 変換 |
+| ルーティング | react-router-dom（HashRouter） | SPA ハッシュベースルーティング |
+| CSV パーサー | PapaParse | Teams 出席レポートの UTF-16LE CSV 解析 |
+| ユニットテスト | Vitest + React Testing Library | jsdom 環境、コンポーネントテスト |
+| E2E テスト | Playwright | ブラウザベースの画面遷移・管理者フロー検証 |
+| ホスティング | Azure Blob Storage 静的サイト | 最小コスト、閉域環境対応 |
+
+## 11. テスト構成
 
 - 単体/結合: Vitest + jsdom（`tests/data`, `tests/logic`, `tests/react`）
 - 画面E2E: Playwright（`e2e`）
 
-## 11. 既知の制約
+## 12. 既知の制約
 
 - `AdminPage` の `BLOB_BASE_URL` はコード内固定値
 - 同時更新の排他制御はアプリ側で未実装（最終書き込み勝ち）
 - `memberId` はメール依存のため、メール欠落時は識別精度が低下
 
-## 12. ディレクトリ要約
+## 13. ディレクトリ要約
 
 ```text
-study-log/
+teams-board/
 ├── src/                                 # React SPA
 │   ├── components/                      # UIコンポーネント
 │   ├── pages/                           # 画面コンポーネント

@@ -7,12 +7,12 @@ import { ArrowLeft, Clock, Calendar, Users, Loader2, ChevronDown, ChevronRight }
 const fetcher = new DataFetcher();
 
 /**
- * 勉強会詳細画面 — セッション一覧と参加者詳細を表示
+ * グループ詳細画面 — セッション一覧と参加者詳細を表示
  */
-export function StudyGroupDetailPage() {
-  const { studyGroupId } = useParams();
+export function GroupDetailPage() {
+  const { groupId } = useParams();
   const navigate = useNavigate();
-  const [studyGroup, setStudyGroup] = useState(null);
+  const [group, setGroup] = useState(null);
   const [sessionDetails, setSessionDetails] = useState([]);
   const [expandedSessions, setExpandedSessions] = useState(new Set());
   const [error, setError] = useState(null);
@@ -29,15 +29,15 @@ export function StudyGroupDetailPage() {
         return;
       }
 
-      const { studyGroups, members } = indexResult.data;
-      const found = studyGroups.find((g) => g.id === studyGroupId);
+      const { groups, members } = indexResult.data;
+      const found = groups.find((g) => g.id === groupId);
       if (!found) {
-        setError('勉強会が見つかりません');
+        setError('グループが見つかりません');
         setLoading(false);
         return;
       }
 
-      setStudyGroup(found);
+      setGroup(found);
 
       const memberNameMap = new Map(members.map((m) => [m.id, m.name]));
 
@@ -88,7 +88,7 @@ export function StudyGroupDetailPage() {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [studyGroupId]);
+  }, [groupId]);
 
   const toggleSession = (sessionId) => {
     setExpandedSessions((prev) => {
@@ -139,21 +139,21 @@ export function StudyGroupDetailPage() {
         一覧へ戻る
       </button>
 
-      {/* 勉強会ヘッダーカード */}
+      {/* グループヘッダーカード */}
       <div className="bg-surface rounded-xl border border-border-light p-6 flex items-center gap-6">
         <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center text-primary-700 font-bold text-xl">
           <Users className="w-7 h-7" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-text-primary">{studyGroup.name}</h2>
+          <h2 className="text-xl font-bold text-text-primary">{group.name}</h2>
           <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
             <span className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4 text-text-muted" />
-              {studyGroup.sessionIds.length}回開催
+              {group.sessionIds.length}回開催
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-text-muted" />
-              合計 {formatDuration(studyGroup.totalDurationSeconds)}
+              合計 {formatDuration(group.totalDurationSeconds)}
             </span>
           </div>
         </div>

@@ -105,12 +105,12 @@ Write-Host "`n=== Step 3: index.json の初期化 ===" -ForegroundColor Cyan
 # 空のindex.jsonを一時ファイルとして生成
 $updatedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
 $indexContent = @{
-    studyGroups = @()
-    members     = @()
-    updatedAt   = $updatedAt
+    groups    = @()
+    members   = @()
+    updatedAt = $updatedAt
 } | ConvertTo-Json -Depth 2
 
-$tempFile = Join-Path $env:TEMP "study-log-empty-index.json"
+$tempFile = Join-Path $env:TEMP "teams-board-empty-index.json"
 try {
     # BOMなしUTF-8で書き込み
     [System.IO.File]::WriteAllText($tempFile, $indexContent, [System.Text.UTF8Encoding]::new($false))

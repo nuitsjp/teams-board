@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { StudyGroupDetailPage } from '../../../src/pages/StudyGroupDetailPage.jsx';
+import { GroupDetailPage } from '../../../src/pages/GroupDetailPage.jsx';
 
 // モック用の関数参照を保持する
 const mockFetchIndex = vi.fn();
@@ -16,7 +16,7 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 });
 
 const mockIndexData = {
-  studyGroups: [
+  groups: [
     { id: 'g1', name: 'もくもく勉強会', totalDurationSeconds: 5400, sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'] },
     { id: 'g2', name: 'React読書会', totalDurationSeconds: 3600, sessionIds: ['g2-2026-01-18'] },
   ],
@@ -29,7 +29,7 @@ const mockIndexData = {
 
 const mockSessionData1 = {
   id: 'g1-2026-01-15',
-  studyGroupId: 'g1',
+  groupId: 'g1',
   date: '2026-01-15',
   attendances: [
     { memberId: 'm1', durationSeconds: 1800 },
@@ -39,7 +39,7 @@ const mockSessionData1 = {
 
 const mockSessionData2 = {
   id: 'g1-2026-01-20',
-  studyGroupId: 'g1',
+  groupId: 'g1',
   date: '2026-01-20',
   attendances: [
     { memberId: 'm2', durationSeconds: 2400 },
@@ -48,24 +48,24 @@ const mockSessionData2 = {
 
 const mockSessionDataSingle = {
   id: 'g2-2026-01-18',
-  studyGroupId: 'g2',
+  groupId: 'g2',
   date: '2026-01-18',
   attendances: [
     { memberId: 'm1', durationSeconds: 3600 },
   ],
 };
 
-function renderWithRouter(studyGroupId) {
+function renderWithRouter(groupId) {
   return render(
-    <MemoryRouter initialEntries={[`/study-groups/${studyGroupId}`]}>
+    <MemoryRouter initialEntries={[`/groups/${groupId}`]}>
       <Routes>
-        <Route path="/study-groups/:studyGroupId" element={<StudyGroupDetailPage />} />
+        <Route path="/groups/:groupId" element={<GroupDetailPage />} />
       </Routes>
     </MemoryRouter>
   );
 }
 
-describe('StudyGroupDetailPage', () => {
+describe('GroupDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -77,7 +77,7 @@ describe('StudyGroupDetailPage', () => {
     expect(screen.getByText('読み込み中...')).toBeInTheDocument();
   });
 
-  it('勉強会情報とセッション一覧を表示すること', async () => {
+  it('グループ情報とセッション一覧を表示すること', async () => {
     mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
     mockFetchSession.mockImplementation((sid) => {
       if (sid === 'g1-2026-01-15') return Promise.resolve({ ok: true, data: mockSessionData1 });
@@ -144,13 +144,13 @@ describe('StudyGroupDetailPage', () => {
     expect(screen.getByText('テスト太郎')).toBeInTheDocument();
   });
 
-  it('存在しない勉強会IDの場合にエラーを表示すること', async () => {
+  it('存在しないグループIDの場合にエラーを表示すること', async () => {
     mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
 
     renderWithRouter('unknown-id');
 
     await waitFor(() => {
-      expect(screen.getByText('勉強会が見つかりません')).toBeInTheDocument();
+      expect(screen.getByText('グループが見つかりません')).toBeInTheDocument();
     });
   });
 
