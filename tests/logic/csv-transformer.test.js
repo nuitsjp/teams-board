@@ -140,7 +140,7 @@ describe('CsvTransformer', () => {
 
       const result = await transformer.parse(file);
       expect(result.ok).toBe(true);
-      expect(result.mergeInput.studyGroupName).toBe('もくもく勉強会');
+      expect(result.mergeInput.groupName).toBe('もくもく勉強会');
     });
 
     it('装飾のないタイトルはそのまま返すこと', async () => {
@@ -164,7 +164,7 @@ describe('CsvTransformer', () => {
 
       const result = await transformer.parse(file);
       expect(result.ok).toBe(true);
-      expect(result.mergeInput.studyGroupName).toBe('もくもく勉強会');
+      expect(result.mergeInput.groupName).toBe('もくもく勉強会');
     });
   });
 
@@ -265,8 +265,8 @@ describe('CsvTransformer', () => {
 
       const result = await transformer.parse(file);
       expect(result.ok).toBe(true);
-      // StudyGroup ID: 8桁hex
-      expect(result.mergeInput.studyGroupId).toMatch(/^[0-9a-f]{8}$/);
+      // Group ID: 8桁hex
+      expect(result.mergeInput.groupId).toMatch(/^[0-9a-f]{8}$/);
       // Member ID: 8桁hex
       expect(result.sessionRecord.attendances[0].memberId).toMatch(/^[0-9a-f]{8}$/);
       // Session ID: groupId-YYYY-MM-DD
@@ -328,7 +328,7 @@ describe('CsvTransformer', () => {
 
       // SessionRecord の検証
       const { sessionRecord } = result;
-      expect(sessionRecord.studyGroupId).toMatch(/^[0-9a-f]{8}$/);
+      expect(sessionRecord.groupId).toMatch(/^[0-9a-f]{8}$/);
       expect(sessionRecord.date).toBe('2026-01-15');
       expect(sessionRecord.attendances).toHaveLength(2);
       expect(sessionRecord.attendances[0].durationSeconds).toBe(3552);
@@ -336,7 +336,7 @@ describe('CsvTransformer', () => {
 
       // MergeInput の検証
       const { mergeInput } = result;
-      expect(mergeInput.studyGroupName).toBe('もくもく勉強会');
+      expect(mergeInput.groupName).toBe('もくもく勉強会');
       expect(mergeInput.sessionId).toBe(sessionRecord.id);
       expect(mergeInput.date).toBe('2026-01-15');
       expect(mergeInput.attendances).toHaveLength(2);

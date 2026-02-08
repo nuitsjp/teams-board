@@ -16,7 +16,7 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 });
 
 const mockIndexData = {
-  studyGroups: [
+  groups: [
     { id: 'g1', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['g1-2026-01-15'] },
   ],
   members: [
@@ -27,7 +27,7 @@ const mockIndexData = {
 
 const mockSessionData = {
   id: 'g1-2026-01-15',
-  studyGroupId: 'g1',
+  groupId: 'g1',
   date: '2026-01-15',
   attendances: [
     { memberId: 'm1', durationSeconds: 1800 },
@@ -66,9 +66,9 @@ describe('MemberDetailPage', () => {
       expect(screen.getByText('テスト太郎')).toBeInTheDocument();
     });
 
-    // 勉強会が1つのみなのでデフォルト展開され、セッション日付が表示される
+    // グループが1つのみなのでデフォルト展開され、セッション日付が表示される
     expect(screen.getByText(/2026-01-15/)).toBeInTheDocument();
-    // 勉強会名がサマリーカードに表示される
+    // グループ名がサマリーカードに表示される
     expect(screen.getByText(/もくもく勉強会/)).toBeInTheDocument();
   });
 

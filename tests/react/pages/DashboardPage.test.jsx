@@ -14,7 +14,7 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 });
 
 const mockIndexData = {
-  studyGroups: [
+  groups: [
     { id: 'g1', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['s1'] },
   ],
   members: [

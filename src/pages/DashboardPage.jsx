@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { SummaryCard } from '../components/SummaryCard';
-import { StudyGroupList } from '../components/StudyGroupList';
+import { GroupList } from '../components/GroupList';
 import { MemberList } from '../components/MemberList';
 import { Clock, Users, User, Loader2 } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
 /**
- * ダッシュボード画面 — 勉強会グループ一覧とメンバー一覧を表示
+ * ダッシュボード画面 — グループ一覧とメンバー一覧を表示
  */
 export function DashboardPage() {
   const [data, setData] = useState(null);
@@ -48,10 +48,10 @@ export function DashboardPage() {
     );
   }
 
-  const { studyGroups, members } = data;
+  const { groups, members } = data;
 
-  const totalSessions = studyGroups.reduce((acc, g) => acc + g.sessionIds.length, 0);
-  const totalDuration = studyGroups.reduce((acc, g) => acc + g.totalDurationSeconds, 0);
+  const totalSessions = groups.reduce((acc, g) => acc + g.sessionIds.length, 0);
+  const totalDuration = groups.reduce((acc, g) => acc + g.totalDurationSeconds, 0);
 
   return (
     <div className="space-y-8">
@@ -80,9 +80,9 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* 左カラム: 勉強会グループ */}
+        {/* 左カラム: グループ */}
         <div className="lg:col-span-5">
-          <StudyGroupList groups={studyGroups} />
+          <GroupList groups={groups} />
         </div>
 
         {/* 右カラム: メンバー一覧 */}

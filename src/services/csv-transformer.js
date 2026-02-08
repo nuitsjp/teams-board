@@ -36,8 +36,8 @@ export class CsvTransformer {
       }
 
       // ID生成
-      const studyGroupId = await this.#generateId(cleanedTitle);
-      const sessionId = `${studyGroupId}-${date}`;
+      const groupId = await this.#generateId(cleanedTitle);
+      const sessionId = `${groupId}-${date}`;
 
       // 出席記録の構築
       const warnings = [];
@@ -63,15 +63,15 @@ export class CsvTransformer {
 
       const sessionRecord = {
         id: sessionId,
-        studyGroupId,
+        groupId,
         date,
         attendances,
       };
 
       const mergeInput = {
         sessionId,
-        studyGroupId,
-        studyGroupName: cleanedTitle,
+        groupId,
+        groupName: cleanedTitle,
         date,
         attendances: mergeAttendances,
       };

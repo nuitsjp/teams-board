@@ -7,13 +7,13 @@ import { ArrowLeft, Clock, Calendar, Loader2, ChevronDown, ChevronRight } from '
 const fetcher = new DataFetcher();
 
 /**
- * メンバー詳細画面 — 勉強会別サマリーと出席履歴を表示
+ * メンバー詳細画面 — グループ別サマリーと出席履歴を表示
  */
 export function MemberDetailPage() {
   const { memberId } = useParams();
   const navigate = useNavigate();
   const [member, setMember] = useState(null);
-  const [studyGroupAttendances, setStudyGroupAttendances] = useState([]);
+  const [groupAttendances, setGroupAttendances] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export function MemberDetailPage() {
         return;
       }
 
-      const { studyGroups, members } = indexResult.data;
+      const { groups, members } = indexResult.data;
       const found = members.find((m) => m.id === memberId);
       if (!found) {
         setError('参加者が見つかりません');
@@ -39,7 +39,7 @@ export function MemberDetailPage() {
 
       setMember(found);
 
-      const groupNameMap = new Map(studyGroups.map((g) => [g.id, g.name]));
+      const groupNameMap = new Map(groups.map((g) => [g.id, g.name]));
 
       const sessionResults = await Promise.all(
         found.sessionIds.map((sid) => fetcher.fetchSession(sid))
@@ -53,7 +53,7 @@ export function MemberDetailPage() {
         return;
       }
 
-      // 勉強会別にグルーピング
+      // グループ別にグルーピング
       const groupMap = new Map();
       for (const result of sessionResults) {
         if (!result.ok) continue;
@@ -61,11 +61,11 @@ export function MemberDetailPage() {
         const attendance = session.attendances.find((a) => a.memberId === memberId);
         if (!attendance) continue;
 
-        const groupId = session.studyGroupId;
+        const groupId = session.groupId;
         if (!groupMap.has(groupId)) {
           groupMap.set(groupId, {
-            studyGroupId: groupId,
-            studyGroupName: groupNameMap.get(groupId) || '不明',
+            groupId: groupId,
+            groupName: groupNameMap.get(groupId) || '不明',
             totalDurationSeconds: 0,
             sessions: [],
           });
@@ -78,19 +78,19 @@ export function MemberDetailPage() {
         });
       }
 
-      // 各勉強会内のセッションを日付降順でソート、勉強会名の日本語ロケール順でソート
+      // 各グループ内のセッションを日付降順でソート、グループ名の日本語ロケール順でソート
       const grouped = Array.from(groupMap.values());
       for (const group of grouped) {
         group.sessions.sort((a, b) => b.date.localeCompare(a.date));
         group.sessionCount = group.sessions.length;
       }
-      grouped.sort((a, b) => a.studyGroupName.localeCompare(b.studyGroupName, 'ja'));
+      grouped.sort((a, b) => a.groupName.localeCompare(b.groupName, 'ja'));
 
-      setStudyGroupAttendances(grouped);
+      setGroupAttendances(grouped);
 
-      // 勉強会が1つのみの場合はデフォルトで展開
+      // グループが1つのみの場合はデフォルトで展開
       if (grouped.length === 1) {
-        setExpandedGroups(new Set([grouped[0].studyGroupId]));
+        setExpandedGroups(new Set([grouped[0].groupId]));
       }
 
       setLoading(false);
@@ -167,15 +167,15 @@ export function MemberDetailPage() {
         </div>
       </div>
 
-      {/* 勉強会別サマリー＋アコーディオン */}
+      {/* グループ別サマリー＋アコーディオン */}
       <div className="space-y-4">
-        {studyGroupAttendances.map((group) => {
-          const isExpanded = expandedGroups.has(group.studyGroupId);
+        {groupAttendances.map((group) => {
+          const isExpanded = expandedGroups.has(group.groupId);
           return (
-            <div key={group.studyGroupId} className="bg-surface rounded-xl border border-border-light overflow-hidden">
+            <div key={group.groupId} className="bg-surface rounded-xl border border-border-light overflow-hidden">
               {/* サマリーカード */}
               <button
-                onClick={() => toggleGroup(group.studyGroupId)}
+                onClick={() => toggleGroup(group.groupId)}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-surface-muted transition-colors"
               >
                 <div className="flex items-center gap-4">
@@ -184,7 +184,7 @@ export function MemberDetailPage() {
                     : <ChevronRight className="w-5 h-5 text-text-muted" />
                   }
                   <div>
-                    <h3 className="text-base font-bold text-text-primary">{group.studyGroupName}</h3>
+                    <h3 className="text-base font-bold text-text-primary">{group.groupName}</h3>
                     <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                       <span className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-text-muted" />

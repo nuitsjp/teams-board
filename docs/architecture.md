@@ -1,8 +1,8 @@
-# Study Log アーキテクチャ（現行実装）
+# TeamsBoard アーキテクチャ（現行実装）
 
 ## 1. 目的と前提
 
-本ドキュメントは、`study-log` の**現在の実装**を基準に、構成・責務・データフロー・運用フローを整理したものです。  
+本ドキュメントは、TeamsBoard の**現在の実装**を基準に、構成・責務・データフロー・運用フローを整理したものです。  
 対象は以下の2系統です。
 
 - 閲覧系フロー（一般ユーザー）
@@ -79,7 +79,7 @@ graph TD
 
 ```json
 {
-  "studyGroups": [
+  "groups": [
     {
       "id": "52664958",
       "name": "もくもく勉強会",
@@ -104,7 +104,7 @@ graph TD
 ```json
 {
   "id": "52664958-2026-02-06",
-  "studyGroupId": "52664958",
+  "groupId": "52664958",
   "date": "2026-02-06",
   "attendances": [
     { "memberId": "c6606539", "durationSeconds": 3645 }
@@ -134,13 +134,13 @@ graph TD
 
 ### 6.2 ID 生成規則
 
-- `studyGroupId`: クリーニング済み会議タイトルの SHA-256 先頭8桁
+- `groupId`: クリーニング済み会議タイトルの SHA-256 先頭8桁
 - `memberId`: メールアドレスの SHA-256 先頭8桁
-- `sessionId`: `${studyGroupId}-${YYYY-MM-DD}`
+- `sessionId`: `${groupId}-${YYYY-MM-DD}`
 
 ### 6.3 インデックス更新（`IndexMerger`）
 
-- `studyGroups` と `members` をイミュータブルに更新
+- `groups` と `members` をイミュータブルに更新
 - 重複 `sessionId` は警告扱いで追加しない
 - `updatedAt` を更新
 
@@ -203,7 +203,7 @@ sequenceDiagram
 ### 8.3 運用支援スクリプト
 
 - `scripts/infra/New-SasToken.ps1`: 管理者用 URL 発行
-- `scripts/infra/Clear-StudyData.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
+- `scripts/infra/Clear-Data.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
 
 ## 9. セキュリティ方針（現行実装）
 
@@ -228,7 +228,7 @@ sequenceDiagram
 ## 12. ディレクトリ要約
 
 ```text
-study-log/
+teams-board/
 ├── src/                                 # React SPA
 │   ├── components/                      # UIコンポーネント
 │   ├── pages/                           # 画面コンポーネント

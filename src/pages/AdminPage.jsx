@@ -40,7 +40,7 @@ export function AdminPage() {
       const indexResult = await dataFetcher.fetchIndex();
       if (indexResult.ok) {
         const sessionIds = new Set(
-          indexResult.data.studyGroups.flatMap((g) => g.sessionIds)
+          indexResult.data.groups.flatMap((g) => g.sessionIds)
         );
         setExistingSessionIds(sessionIds);
       }

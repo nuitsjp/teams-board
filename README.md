@@ -1,6 +1,6 @@
-# study-log
+# TeamsBoard
 
-Azure Blob Storage の静的サイトホスティング機能を利用した、勉強会ダッシュボード／ドリルダウン閲覧・更新システム。
+Azure Blob Storage の静的サイトホスティング機能を利用した、Teamsレポート集計ダッシュボード／ドリルダウン閲覧・更新システム。
 
 URL: [https://strjstudylogprod.z11.web.core.windows.net/](https://strjstudylogprod.z11.web.core.windows.net/)
 
@@ -73,7 +73,7 @@ pnpm run test:e2e:headed        # ブラウザ表示付き実行
 | `pnpm run infra:deploy` | Azure インフラのプロビジョニング |
 | `pnpm run infra:publish` | 静的ファイルを Azure にデプロイ |
 | `pnpm run infra:sas` | SAS トークンの生成 |
-| `pnpm run infra:clear` | 勉強会データのクリア |
+| `pnpm run infra:clear` | セッションデータのクリア |
 
 ## アーキテクチャ概要
 
@@ -106,7 +106,7 @@ pnpm run test:e2e:headed        # ブラウザ表示付き実行
 ### 閲覧フロー（一般ユーザー）
 
 1. ブラウザで SPA にアクセス（ハッシュルーティング: `#/`）
-2. DataFetcher が `data/index.json` をキャッシュバスター付きで取得し、勉強会グループ・メンバー一覧を表示
+2. DataFetcher が `data/index.json` をキャッシュバスター付きで取得し、グループ・メンバー一覧を表示
 3. メンバーカードクリックで `#/members/<id>` に遷移し、セッション参加履歴を詳細表示
 
 ### 更新フロー（管理者）
@@ -122,7 +122,7 @@ pnpm run test:e2e:headed        # ブラウザ表示付き実行
 
 | コンポーネント | 責務 |
 |---------------|------|
-| DashboardPage | 勉強会グループ一覧・メンバー一覧表示、メンバーカードクリックで詳細遷移 |
+| DashboardPage | グループ一覧・メンバー一覧表示、メンバーカードクリックで詳細遷移 |
 | MemberDetailPage | メンバーのセッション参加履歴を日付降順で詳細表示 |
 | AdminPage | CSV インポート・プレビュー・一括保存の管理者機能 |
 

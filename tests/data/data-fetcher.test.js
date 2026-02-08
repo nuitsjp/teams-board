@@ -16,7 +16,7 @@ describe('DataFetcher', () => {
     it('data/index.json にキャッシュバスター付きでリクエストすること', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ studyGroups: [], members: [], updatedAt: '' }),
+        json: () => Promise.resolve({ groups: [], members: [], updatedAt: '' }),
       });
       await fetcher.fetchIndex();
       const url = mockFetch.mock.calls[0][0];
@@ -25,7 +25,7 @@ describe('DataFetcher', () => {
 
     it('成功時に { ok: true, data: DashboardIndex } を返すこと', async () => {
       const indexData = {
-        studyGroups: [{ id: 'abc12345', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
+        groups: [{ id: 'abc12345', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
         members: [{ id: 'mem00001', name: 'テスト太郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
         updatedAt: '2026-02-01',
       };
@@ -60,7 +60,7 @@ describe('DataFetcher', () => {
     it('data/sessions/<id>.json にキャッシュバスターなしでリクエストすること', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ id: 'abc12345-2026-01-15', studyGroupId: 'abc12345', date: '2026-01-15', attendances: [] }),
+        json: () => Promise.resolve({ id: 'abc12345-2026-01-15', groupId: 'abc12345', date: '2026-01-15', attendances: [] }),
       });
       await fetcher.fetchSession('abc12345-2026-01-15');
       const url = mockFetch.mock.calls[0][0];
@@ -71,7 +71,7 @@ describe('DataFetcher', () => {
     it('成功時に { ok: true, data: SessionRecord } を返すこと', async () => {
       const sessionData = {
         id: 'abc12345-2026-01-15',
-        studyGroupId: 'abc12345',
+        groupId: 'abc12345',
         date: '2026-01-15',
         attendances: [{ memberId: 'mem00001', durationSeconds: 3600 }],
       };
