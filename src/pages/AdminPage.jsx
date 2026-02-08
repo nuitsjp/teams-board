@@ -61,11 +61,10 @@ export function AdminPage() {
       setSaveStatusText(`保存中... ${item.file.name}`);
 
       const { sessionRecord, mergeInput } = item.parseResult;
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
       const result = await blobWriter.executeWriteSequence({
         rawCsv: {
-          path: `raw/${timestamp}-${item.file.name}`,
+          path: `data/sources/${sessionRecord.id}.csv`,
           content: item.file,
           contentType: 'text/csv',
         },
