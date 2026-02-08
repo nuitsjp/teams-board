@@ -17,10 +17,10 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 
 const mockIndexData = {
   groups: [
-    { id: 'g1', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['g1-2026-01-15'] },
+    { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['g1-2026-01-15'] },
   ],
   members: [
-    { id: 'm1', name: 'テスト太郎', totalDurationSeconds: 1800, sessionIds: ['g1-2026-01-15'] },
+    { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 1800, sessionIds: ['g1-2026-01-15'] },
   ],
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -63,13 +63,13 @@ describe('MemberDetailPage', () => {
     renderWithRouter('m1');
 
     await waitFor(() => {
-      expect(screen.getByText('テスト太郎')).toBeInTheDocument();
+      expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
     });
 
     // グループが1つのみなのでデフォルト展開され、セッション日付が表示される
     expect(screen.getByText(/2026-01-15/)).toBeInTheDocument();
     // グループ名がサマリーカードに表示される
-    expect(screen.getByText(/もくもく勉強会/)).toBeInTheDocument();
+    expect(screen.getByText(/フロントエンド勉強会/)).toBeInTheDocument();
   });
 
   it('存在しないメンバーIDの場合にエラーを表示すること', async () => {

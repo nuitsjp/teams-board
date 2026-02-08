@@ -92,7 +92,7 @@ graph TD
   "groups": [
     {
       "id": "52664958",
-      "name": "もくもく勉強会",
+      "name": "フロントエンド勉強会",
       "totalDurationSeconds": 47105,
       "sessionIds": ["52664958-2026-02-06"]
     }
@@ -100,7 +100,7 @@ graph TD
   "members": [
     {
       "id": "c6606539",
-      "name": "Nakamura Atsushi A (中村 充志)",
+      "name": "Suzuki Taro A (鈴木 太郎)",
       "totalDurationSeconds": 29683,
       "sessionIds": ["52664958-2026-02-06"]
     }

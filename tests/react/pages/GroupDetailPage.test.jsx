@@ -17,12 +17,12 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 
 const mockIndexData = {
   groups: [
-    { id: 'g1', name: 'もくもく勉強会', totalDurationSeconds: 5400, sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'] },
-    { id: 'g2', name: 'React読書会', totalDurationSeconds: 3600, sessionIds: ['g2-2026-01-18'] },
+    { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 5400, sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'] },
+    { id: 'g2', name: 'TypeScript読書会', totalDurationSeconds: 3600, sessionIds: ['g2-2026-01-18'] },
   ],
   members: [
-    { id: 'm1', name: 'テスト太郎', totalDurationSeconds: 3600, sessionIds: ['g1-2026-01-15', 'g2-2026-01-18'] },
-    { id: 'm2', name: 'テスト花子', totalDurationSeconds: 1800, sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'] },
+    { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['g1-2026-01-15', 'g2-2026-01-18'] },
+    { id: 'm2', name: '高橋 美咲', totalDurationSeconds: 1800, sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'] },
   ],
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -88,7 +88,7 @@ describe('GroupDetailPage', () => {
     renderWithRouter('g1');
 
     await waitFor(() => {
-      expect(screen.getByText('もくもく勉強会')).toBeInTheDocument();
+      expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
     });
 
     // ヘッダーカードの情報
@@ -112,7 +112,7 @@ describe('GroupDetailPage', () => {
     renderWithRouter('g1');
 
     await waitFor(() => {
-      expect(screen.getByText('もくもく勉強会')).toBeInTheDocument();
+      expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
     });
 
     // 初期状態ではテーブルが表示されない（複数セッション）
@@ -121,8 +121,8 @@ describe('GroupDetailPage', () => {
     // セッションをクリックして展開
     fireEvent.click(screen.getByText('2026-01-15'));
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByText('テスト太郎')).toBeInTheDocument();
-    expect(screen.getByText('テスト花子')).toBeInTheDocument();
+    expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+    expect(screen.getByText('高橋 美咲')).toBeInTheDocument();
 
     // 再クリックで折りたたみ
     fireEvent.click(screen.getByText('2026-01-15'));
@@ -136,12 +136,12 @@ describe('GroupDetailPage', () => {
     renderWithRouter('g2');
 
     await waitFor(() => {
-      expect(screen.getByText('React読書会')).toBeInTheDocument();
+      expect(screen.getByText('TypeScript読書会')).toBeInTheDocument();
     });
 
     // セッション1件のみなのでデフォルト展開
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByText('テスト太郎')).toBeInTheDocument();
+    expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
   });
 
   it('存在しないグループIDの場合にエラーを表示すること', async () => {

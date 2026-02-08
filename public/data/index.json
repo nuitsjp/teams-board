@@ -2,7 +2,7 @@
   "groups": [
     {
       "id": "52664958",
-      "name": "もくもく勉強会",
+      "name": "フロントエンド勉強会",
       "totalDurationSeconds": 47105,
       "sessionIds": [
         "52664958-2026-01-15",
@@ -19,7 +19,7 @@
     },
     {
       "id": "a1b2c3d4",
-      "name": "React読書会",
+      "name": "TypeScript読書会",
       "totalDurationSeconds": 31500,
       "sessionIds": [
         "a1b2c3d4-2026-01-20",
@@ -29,7 +29,7 @@
     },
     {
       "id": "e5f6a7b8",
-      "name": "アーキテクチャ設計塾",
+      "name": "ソフトウェア設計勉強会",
       "totalDurationSeconds": 30000,
       "sessionIds": [
         "e5f6a7b8-2026-01-22",
@@ -38,7 +38,7 @@
     },
     {
       "id": "c9d0e1f2",
-      "name": "クラウド技術研究会",
+      "name": "インフラ技術研究会",
       "totalDurationSeconds": 16800,
       "sessionIds": [
         "c9d0e1f2-2026-01-25",
@@ -49,7 +49,7 @@
   "members": [
     {
       "id": "c6606539",
-      "name": "Nakamura Atsushi A (中村 充志)",
+      "name": "Suzuki Taro A (鈴木 太郎)",
       "totalDurationSeconds": 56983,
       "sessionIds": [
         "52664958-2026-01-15",
@@ -71,7 +71,7 @@
     },
     {
       "id": "90df7918",
-      "name": "Yamaura Tetsuro (山浦 哲朗)",
+      "name": "Tanaka Koji (田中 浩二)",
       "totalDurationSeconds": 21389,
       "sessionIds": [
         "52664958-2026-01-15",
@@ -84,7 +84,7 @@
     },
     {
       "id": "7a974eca",
-      "name": "Sai Bun A (崔 文)",
+      "name": "Yamamoto Yuki A (山本 裕貴)",
       "totalDurationSeconds": 30469,
       "sessionIds": [
         "52664958-2026-01-21",
@@ -99,7 +99,7 @@
     },
     {
       "id": "44c5651e",
-      "name": "Yato Daisuke (谷戸 大輔)",
+      "name": "Watanabe Kenji (渡辺 健二)",
       "totalDurationSeconds": 16564,
       "sessionIds": [
         "52664958-2026-01-27",

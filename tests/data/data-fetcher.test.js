@@ -25,8 +25,8 @@ describe('DataFetcher', () => {
 
     it('成功時に { ok: true, data: DashboardIndex } を返すこと', async () => {
       const indexData = {
-        groups: [{ id: 'abc12345', name: 'もくもく勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
-        members: [{ id: 'mem00001', name: 'テスト太郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
+        groups: [{ id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
+        members: [{ id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] }],
         updatedAt: '2026-02-01',
       };
       mockFetch.mockResolvedValue({
