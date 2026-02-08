@@ -65,9 +65,10 @@ if ($LASTEXITCODE -ne 0) { throw "SASトークンの生成に失敗しました"
 $webEndpoint = (az storage account show --resource-group $ResourceGroupName --name $StorageAccountName --query "primaryEndpoints.web" --output tsv)
 $webEndpoint = $webEndpoint.TrimEnd('/')
 
-# URL組み立て
+# URL組み立て（SASトークンをURLエンコードして token= に格納）
 $userUrl = "${webEndpoint}/index.html"
-$adminUrl = "${webEndpoint}/index.html?token=${sasToken}"
+$encodedSas = [System.Uri]::EscapeDataString($sasToken)
+$adminUrl = "${webEndpoint}/index.html?token=${encodedSas}"
 
 # 結果出力
 Write-Host ""

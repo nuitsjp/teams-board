@@ -95,8 +95,10 @@ try {
     }
     Write-Host "テスト完了" -ForegroundColor Green
 
-    # プロダクションビルド実行
+    # プロダクションビルド実行（環境変数でBlobエンドポイントを注入）
+    $env:VITE_BLOB_BASE_URL = "https://${StorageAccountName}.blob.core.windows.net/`$web"
     Write-Host "プロダクションビルドを実行しています..." -ForegroundColor Cyan
+    Write-Host "  VITE_BLOB_BASE_URL = $env:VITE_BLOB_BASE_URL"
     & pnpm run build
     if ($LASTEXITCODE -ne 0) {
         throw "ビルドに失敗しました (exit code: $LASTEXITCODE)"

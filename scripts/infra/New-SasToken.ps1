@@ -69,11 +69,10 @@ if ($LASTEXITCODE -ne 0) { throw "SASトークンの生成に失敗しました"
 $webEndpoint = (az storage account show --resource-group $ResourceGroupName --name $StorageAccountName --query "primaryEndpoints.web" --output tsv)
 $webEndpoint = $webEndpoint.TrimEnd('/')
 
-# az CLI の SAS トークンは先頭に `?` がないため、そのまま使用
-$sasTokenClean = $sasToken
-
-# 管理者用完全URLの組み立て
-$adminUrl = "${webEndpoint}/index.html?token=${sasTokenClean}"
+# SASトークンをURLエンコードして token= パラメータに格納
+# （エンコードしないと & がURLパラメータ区切りと誤解される）
+$encodedSas = [System.Uri]::EscapeDataString($sasToken)
+$adminUrl = "${webEndpoint}/index.html?token=${encodedSas}"
 
 # 結果出力
 Write-Host ""
