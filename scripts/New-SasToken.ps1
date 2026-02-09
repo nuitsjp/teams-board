@@ -28,8 +28,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# .env からの設定読み込み
-. (Join-Path $PSScriptRoot "Load-EnvSettings.ps1")
+# 共通関数の読み込み
+. (Join-Path $PSScriptRoot "common" "Write-Log.ps1")
+. (Join-Path $PSScriptRoot "common" "Load-EnvSettings.ps1")
+. (Join-Path $PSScriptRoot "common" "Connect-AzureStorage.ps1")
 $envSettings = Load-EnvSettings
 $applied = Apply-EnvSettings -Settings $envSettings -BoundParameters $PSBoundParameters -ParameterMap @{
     "SubscriptionId"     = "AZURE_SUBSCRIPTION_ID"
@@ -40,22 +42,11 @@ foreach ($key in $applied.Keys) {
     Set-Variable -Name $key -Value $applied[$key]
 }
 
-# サブスクリプション切替
-Write-Host "サブスクリプションを切り替えています..." -ForegroundColor Cyan
-az account set --subscription $SubscriptionId
-if ($LASTEXITCODE -ne 0) { throw "サブスクリプションの切り替えに失敗しました" }
-
-# Storageアカウントの接続確認
-Write-Host "Storageアカウント '$StorageAccountName' に接続しています..." -ForegroundColor Cyan
-az storage account show --resource-group $ResourceGroupName --name $StorageAccountName | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Storageアカウント '$StorageAccountName' が見つかりません" }
-
-# アカウントキーを取得
-$accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
-if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
+# Azure接続・アカウントキー取得
+$accountKey = Connect-AzureStorage -SubscriptionId $SubscriptionId -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName
 
 # SASトークン生成（Policyから権限を継承）
-Write-Host "SASトークンを生成しています (Policy: $PolicyName)..." -ForegroundColor Cyan
+Write-Action "SASトークンを生成しています (Policy: $PolicyName)..."
 $sasToken = (az storage container generate-sas `
     --name '$web' `
     --policy-name $PolicyName `
@@ -75,17 +66,16 @@ $encodedSas = [System.Uri]::EscapeDataString($sasToken)
 $adminUrl = "${webEndpoint}/index.html?token=${encodedSas}"
 
 # 結果出力
-Write-Host ""
-Write-Host "=== SASトークン生成完了 ===" -ForegroundColor Green
-Write-Host "Storageアカウント: $StorageAccountName"
-Write-Host "Policy: $PolicyName"
-Write-Host ""
-Write-Host "--- SASトークン ---"
-Write-Host $sasToken
-Write-Host ""
-Write-Host "--- 管理者用URL ---"
-Write-Host $adminUrl
-Write-Host ""
+Write-Step "SASトークン生成完了"
+Write-Detail "Storageアカウント" $StorageAccountName
+Write-Detail "Policy" $PolicyName
+Write-Info ""
+Write-Info "--- SASトークン ---"
+Write-Info $sasToken
+Write-Info ""
+Write-Info "--- 管理者用URL ---"
+Write-Info $adminUrl
+Write-Info ""
 
 # パイプライン出力用にURLを返す
 Write-Output $adminUrl

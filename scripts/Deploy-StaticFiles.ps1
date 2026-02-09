@@ -37,8 +37,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# .env からの設定読み込み
-. (Join-Path $PSScriptRoot "Load-EnvSettings.ps1")
+# 共通関数の読み込み
+. (Join-Path $PSScriptRoot "common" "Write-Log.ps1")
+. (Join-Path $PSScriptRoot "common" "Load-EnvSettings.ps1")
+. (Join-Path $PSScriptRoot "common" "Connect-AzureStorage.ps1")
 $envSettings = Load-EnvSettings
 $applied = Apply-EnvSettings -Settings $envSettings -BoundParameters $PSBoundParameters -ParameterMap @{
     "SubscriptionId"     = "AZURE_SUBSCRIPTION_ID"
@@ -49,8 +51,8 @@ foreach ($key in $applied.Keys) {
     Set-Variable -Name $key -Value $applied[$key]
 }
 
-# リポジトリルートをスクリプト位置から算出（scripts/infra から2階層上）
-$repoRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+# リポジトリルートをスクリプト位置から算出（scripts/ から1階層上）
+$repoRoot = Split-Path $PSScriptRoot -Parent
 
 # MIME型マッピングテーブル
 $mimeTypes = @{
@@ -88,39 +90,28 @@ $appRoot = $repoRoot
 Push-Location $appRoot
 try {
     # テスト実行
-    Write-Host "テストを実行しています..." -ForegroundColor Cyan
+    Write-Action "テストを実行しています..."
     & pnpm run test
     if ($LASTEXITCODE -ne 0) {
         throw "テストに失敗しました (exit code: $LASTEXITCODE)。デプロイを中断します。"
     }
-    Write-Host "テスト完了" -ForegroundColor Green
+    Write-Success "テスト完了"
 
     # プロダクションビルド実行（環境変数でBlobエンドポイントを注入）
     $env:VITE_BLOB_BASE_URL = "https://${StorageAccountName}.blob.core.windows.net/`$web"
-    Write-Host "プロダクションビルドを実行しています..." -ForegroundColor Cyan
-    Write-Host "  VITE_BLOB_BASE_URL = $env:VITE_BLOB_BASE_URL"
+    Write-Action "プロダクションビルドを実行しています..."
+    Write-Detail "VITE_BLOB_BASE_URL" $env:VITE_BLOB_BASE_URL
     & pnpm run build
     if ($LASTEXITCODE -ne 0) {
         throw "ビルドに失敗しました (exit code: $LASTEXITCODE)"
     }
-    Write-Host "ビルド完了" -ForegroundColor Green
+    Write-Success "ビルド完了"
 } finally {
     Pop-Location
 }
 
-# サブスクリプション切替
-Write-Host "サブスクリプションを切り替えています..." -ForegroundColor Cyan
-az account set --subscription $SubscriptionId
-if ($LASTEXITCODE -ne 0) { throw "サブスクリプションの切り替えに失敗しました" }
-
-# Storageアカウントの接続確認
-Write-Host "Storageアカウント '$StorageAccountName' に接続しています..." -ForegroundColor Cyan
-az storage account show --resource-group $ResourceGroupName --name $StorageAccountName | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Storageアカウント '$StorageAccountName' が見つかりません" }
-
-# アカウントキーを取得してBlob操作に使用
-$accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
-if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
+# Azure接続・アカウントキー取得
+$accountKey = Connect-AzureStorage -SubscriptionId $SubscriptionId -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName
 
 $totalUploadCount = 0
 $totalFileCount = 0
@@ -139,7 +130,7 @@ foreach ($sourceEntry in $SourcePaths) {
     }
     $resolvedSourcePath = Resolve-Path $fullLocalPath -ErrorAction Stop
     $prefixLabel = if ($blobPrefix -eq "") { "(ルート)" } else { $blobPrefix }
-    Write-Host "`nアップロード元: $resolvedSourcePath → Blobプレフィックス: $prefixLabel" -ForegroundColor Cyan
+    Write-Action "アップロード元: $resolvedSourcePath → Blobプレフィックス: $prefixLabel"
 
     # ファイル一覧の取得（data/ ディレクトリを除外）
     $files = Get-ChildItem -Path $resolvedSourcePath -Recurse -File |
@@ -150,11 +141,11 @@ foreach ($sourceEntry in $SourcePaths) {
     $fileCount = @($files).Count
 
     if ($fileCount -eq 0) {
-        Write-Host "  アップロード対象のファイルが見つかりません: $resolvedSourcePath" -ForegroundColor Yellow
+        Write-Warn "  アップロード対象のファイルが見つかりません: $resolvedSourcePath"
         continue
     }
 
-    Write-Host "  アップロード対象: $fileCount ファイル" -ForegroundColor Cyan
+    Write-Action "  アップロード対象: $fileCount ファイル"
     $totalFileCount += $fileCount
 
     # ファイルごとにアップロード
@@ -190,7 +181,7 @@ foreach ($sourceEntry in $SourcePaths) {
 
         $uploadCount++
         $totalUploadCount++
-        Write-Host "  [$uploadCount/$fileCount] $blobName ($contentType)"
+        Write-Info "  [$uploadCount/$fileCount] $blobName ($contentType)"
     }
 }
 
@@ -198,7 +189,6 @@ foreach ($sourceEntry in $SourcePaths) {
 $webEndpoint = (az storage account show --resource-group $ResourceGroupName --name $StorageAccountName --query "primaryEndpoints.web" --output tsv)
 
 # 結果出力
-Write-Host ""
-Write-Host "=== アップロード完了 ===" -ForegroundColor Green
-Write-Host "アップロードファイル数: $totalUploadCount / $totalFileCount"
-Write-Host "静的サイトURL: $webEndpoint"
+Write-Step "アップロード完了"
+Write-Detail "アップロードファイル数" "$totalUploadCount / $totalFileCount"
+Write-Detail "静的サイトURL" $webEndpoint

@@ -28,8 +28,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# .env からの設定読み込み
-. (Join-Path $PSScriptRoot "Load-EnvSettings.ps1")
+# 共通関数の読み込み
+. (Join-Path $PSScriptRoot "common" "Write-Log.ps1")
+. (Join-Path $PSScriptRoot "common" "Load-EnvSettings.ps1")
+. (Join-Path $PSScriptRoot "common" "Connect-AzureStorage.ps1")
 $envSettings = Load-EnvSettings
 $applied = Apply-EnvSettings -Settings $envSettings -BoundParameters $PSBoundParameters -ParameterMap @{
     "SubscriptionId"     = "AZURE_SUBSCRIPTION_ID"
@@ -43,25 +45,13 @@ foreach ($key in $applied.Keys) {
 # ============================================================
 # Step 1: Azure接続
 # ============================================================
-Write-Host "=== Step 1: Azure接続 ===" -ForegroundColor Cyan
-Write-Host "対象サブスクリプション: $SubscriptionId"
-az account set --subscription $SubscriptionId
-if ($LASTEXITCODE -ne 0) { throw "サブスクリプションの切り替えに失敗しました" }
-Write-Host "サブスクリプションを切り替えました" -ForegroundColor Green
-
-Write-Host "Storageアカウント '$StorageAccountName' に接続しています..."
-az storage account show --resource-group $ResourceGroupName --name $StorageAccountName | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Storageアカウント '$StorageAccountName' が見つかりません" }
-
-# アカウントキーを取得
-$accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
-if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
-Write-Host "Storageアカウントに接続しました" -ForegroundColor Green
+Write-Step "Step 1: Azure接続"
+$accountKey = Connect-AzureStorage -SubscriptionId $SubscriptionId -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName
 
 # ============================================================
 # Step 2: data/ 配下のBlob削除
 # ============================================================
-Write-Host "`n=== Step 2: data/ 配下のBlob削除 ===" -ForegroundColor Cyan
+Write-Step "Step 2: data/ 配下のBlob削除"
 
 # data/ 配下のBlob一覧を取得
 $blobsJson = az storage blob list `
@@ -73,16 +63,16 @@ $blobsJson = az storage blob list `
 $blobs = $blobsJson | ConvertFrom-Json
 
 if ($null -eq $blobs -or @($blobs).Count -eq 0) {
-    Write-Host "data/ 配下にBlobが存在しません。スキップします。" -ForegroundColor Yellow
+    Write-Warn "data/ 配下にBlobが存在しません。スキップします。"
     $deleteCount = 0
 } else {
-    Write-Host "data/ 配下のBlob数: $(@($blobs).Count)"
+    Write-Info "data/ 配下のBlob数: $(@($blobs).Count)"
 
     # data/index.json 以外のBlobを削除
     $deleteCount = 0
     foreach ($blob in $blobs) {
         if ($blob.name -eq "data/index.json") {
-            Write-Host "  [スキップ] $($blob.name) (Step 3で上書き)"
+            Write-Info "  [スキップ] $($blob.name) (Step 3で上書き)"
             continue
         }
         az storage blob delete `
@@ -92,15 +82,15 @@ if ($null -eq $blobs -or @($blobs).Count -eq 0) {
             --account-key $accountKey | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "Blobの削除に失敗しました: $($blob.name)" }
         $deleteCount++
-        Write-Host "  [削除] $($blob.name)"
+        Write-Info "  [削除] $($blob.name)"
     }
-    Write-Host "削除完了: $deleteCount 件のBlobを削除しました" -ForegroundColor Green
+    Write-Success "削除完了: $deleteCount 件のBlobを削除しました"
 }
 
 # ============================================================
 # Step 3: 空の index.json で上書き
 # ============================================================
-Write-Host "`n=== Step 3: index.json の初期化 ===" -ForegroundColor Cyan
+Write-Step "Step 3: index.json の初期化"
 
 # 空のindex.jsonを一時ファイルとして生成
 $updatedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
@@ -114,7 +104,7 @@ $tempFile = Join-Path $env:TEMP "teams-board-empty-index.json"
 try {
     # BOMなしUTF-8で書き込み
     [System.IO.File]::WriteAllText($tempFile, $indexContent, [System.Text.UTF8Encoding]::new($false))
-    Write-Host "一時ファイルを作成しました: $tempFile"
+    Write-Info "一時ファイルを作成しました: $tempFile"
 
     # Azure上のdata/index.jsonを上書き
     az storage blob upload `
@@ -126,13 +116,13 @@ try {
         --account-key $accountKey `
         --overwrite | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "data/index.json のアップロードに失敗しました" }
-    Write-Host "data/index.json を初期状態で上書きしました" -ForegroundColor Green
-    Write-Host "  updatedAt: $updatedAt"
+    Write-Success "data/index.json を初期状態で上書きしました"
+    Write-Detail "updatedAt" $updatedAt
 } finally {
     # 一時ファイルの削除
     if (Test-Path $tempFile) {
         Remove-Item $tempFile -Force
-        Write-Host "一時ファイルを削除しました"
+        Write-Info "一時ファイルを削除しました"
     }
 }
 
@@ -141,10 +131,10 @@ try {
 # ============================================================
 $webEndpoint = (az storage account show --resource-group $ResourceGroupName --name $StorageAccountName --query "primaryEndpoints.web" --output tsv)
 
-Write-Host "`n=== データクリア完了 ===" -ForegroundColor Cyan
-Write-Host "Storageアカウント:         $StorageAccountName"
-Write-Host "削除したBlob数:            $deleteCount"
-Write-Host "index.json:                初期化済み (updatedAt: $updatedAt)"
-Write-Host "静的サイトURL:             $webEndpoint"
-Write-Host ""
-Write-Host "全ステップが正常に完了しました" -ForegroundColor Green
+Write-Step "データクリア完了"
+Write-Detail "Storageアカウント" $StorageAccountName
+Write-Detail "削除したBlob数" "$deleteCount"
+Write-Detail "index.json" "初期化済み (updatedAt: $updatedAt)"
+Write-Detail "静的サイトURL" $webEndpoint
+Write-Info ""
+Write-Success "全ステップが正常に完了しました"

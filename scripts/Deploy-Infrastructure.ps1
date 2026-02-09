@@ -36,8 +36,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# .env からの設定読み込み
-. (Join-Path $PSScriptRoot "Load-EnvSettings.ps1")
+# 共通関数の読み込み
+. (Join-Path $PSScriptRoot "common" "Write-Log.ps1")
+. (Join-Path $PSScriptRoot "common" "Load-EnvSettings.ps1")
+. (Join-Path $PSScriptRoot "common" "Connect-AzureStorage.ps1")
 $envSettings = Load-EnvSettings
 $applied = Apply-EnvSettings -Settings $envSettings -BoundParameters $PSBoundParameters -ParameterMap @{
     "SubscriptionId"     = "AZURE_SUBSCRIPTION_ID"
@@ -52,36 +54,36 @@ foreach ($key in $applied.Keys) {
 # ============================================================
 # Step 1: サブスクリプション切替
 # ============================================================
-Write-Host "=== Step 1: サブスクリプション切替 ===" -ForegroundColor Cyan
-Write-Host "対象サブスクリプション: $SubscriptionId"
+Write-Step "Step 1: サブスクリプション切替"
+Write-Detail "対象サブスクリプション" $SubscriptionId
 az account set --subscription $SubscriptionId
 if ($LASTEXITCODE -ne 0) { throw "サブスクリプションの切り替えに失敗しました" }
-Write-Host "サブスクリプションを切り替えました" -ForegroundColor Green
+Write-Success "サブスクリプションを切り替えました"
 
 # ============================================================
 # Step 2: リソースグループの存在確認と作成/利用
 # ============================================================
-Write-Host "`n=== Step 2: リソースグループの確認 ===" -ForegroundColor Cyan
+Write-Step "Step 2: リソースグループの確認"
 $rgJson = az group show --name $ResourceGroupName 2>$null
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "リソースグループ '$ResourceGroupName' が存在しません。新規作成します..."
+    Write-Action "リソースグループ '$ResourceGroupName' が存在しません。新規作成します..."
     az group create --name $ResourceGroupName --location $Location | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "リソースグループの作成に失敗しました" }
-    Write-Host "リソースグループを作成しました: $ResourceGroupName ($Location)" -ForegroundColor Green
+    Write-Success "リソースグループを作成しました: $ResourceGroupName ($Location)"
 } else {
     $rgObj = $rgJson | ConvertFrom-Json
-    Write-Host "既存のリソースグループを利用します: $ResourceGroupName ($($rgObj.location))" -ForegroundColor Yellow
+    Write-Warn "既存のリソースグループを利用します: $ResourceGroupName ($($rgObj.location))"
 }
 
 # ============================================================
 # Step 3: Storageアカウントの作成/設定強制上書き
 # ============================================================
-Write-Host "`n=== Step 3: Storageアカウントの確認 ===" -ForegroundColor Cyan
+Write-Step "Step 3: Storageアカウントの確認"
 $saJson = az storage account show --resource-group $ResourceGroupName --name $StorageAccountName 2>$null
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Storageアカウント '$StorageAccountName' が存在しません。新規作成します..."
+    Write-Action "Storageアカウント '$StorageAccountName' が存在しません。新規作成します..."
     az storage account create `
         --resource-group $ResourceGroupName `
         --name $StorageAccountName `
@@ -94,9 +96,9 @@ if ($LASTEXITCODE -ne 0) {
         --allow-blob-public-access false `
         --yes | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Storageアカウントの作成に失敗しました" }
-    Write-Host "Storageアカウントを作成しました: $StorageAccountName" -ForegroundColor Green
+    Write-Success "Storageアカウントを作成しました: $StorageAccountName"
 } else {
-    Write-Host "既存のStorageアカウント '$StorageAccountName' の設定を強制上書きします..."
+    Write-Action "既存のStorageアカウント '$StorageAccountName' の設定を強制上書きします..."
     az storage account update `
         --resource-group $ResourceGroupName `
         --name $StorageAccountName `
@@ -107,17 +109,17 @@ if ($LASTEXITCODE -ne 0) {
         --allow-blob-public-access false `
         --yes | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Storageアカウントの設定更新に失敗しました" }
-    Write-Host "Storageアカウントの設定を上書きしました: StorageV2 / Standard_LRS / Hot / TLS1.2 / HTTPS only" -ForegroundColor Green
+    Write-Success "Storageアカウントの設定を上書きしました: StorageV2 / Standard_LRS / Hot / TLS1.2 / HTTPS only"
 }
 
 # ネットワークルール: 静的サイトへのパブリックアクセスを許可
-Write-Host "ネットワークルールを設定しています (defaultAction=Allow)..."
+Write-Action "ネットワークルールを設定しています (defaultAction=Allow)..."
 az storage account update `
     --resource-group $ResourceGroupName `
     --name $StorageAccountName `
     --default-action Allow | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "ネットワークルールの設定に失敗しました" }
-Write-Host "ネットワークルールを適用しました" -ForegroundColor Green
+Write-Success "ネットワークルールを適用しました"
 
 # アカウントキーを取得（Step 4以降のデータプレーン操作に使用）
 $accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
@@ -126,7 +128,7 @@ if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗
 # ============================================================
 # Step 4: 静的サイトホスティングの有効化
 # ============================================================
-Write-Host "`n=== Step 4: 静的サイトホスティングの有効化 ===" -ForegroundColor Cyan
+Write-Step "Step 4: 静的サイトホスティングの有効化"
 az storage blob service-properties update `
     --account-name $StorageAccountName `
     --static-website `
@@ -134,7 +136,7 @@ az storage blob service-properties update `
     --404-document "index.html" `
     --account-key $accountKey | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "静的サイトホスティングの有効化に失敗しました" }
-Write-Host "静的サイトホスティングを有効化しました (Index: index.html, Error: index.html)" -ForegroundColor Green
+Write-Success "静的サイトホスティングを有効化しました (Index: index.html, Error: index.html)"
 
 # エンドポイントURLの取得
 $endpointsJson = az storage account show `
@@ -146,13 +148,13 @@ $endpoints = $endpointsJson | ConvertFrom-Json
 $webEndpoint = $endpoints.web
 $blobEndpoint = $endpoints.blob
 
-Write-Host "静的サイトエンドポイント: $webEndpoint"
-Write-Host "BlobサービスエンドポイントURL: $blobEndpoint"
+Write-Detail "静的サイトエンドポイント" $webEndpoint
+Write-Detail "BlobサービスエンドポイントURL" $blobEndpoint
 
 # ============================================================
 # Step 5: CORS設定
 # ============================================================
-Write-Host "`n=== Step 5: CORS設定 ===" -ForegroundColor Cyan
+Write-Step "Step 5: CORS設定"
 
 # 静的サイトエンドポイントからオリジンを取得（末尾スラッシュを除去）
 $allowedOrigin = $webEndpoint.TrimEnd('/')
@@ -169,16 +171,16 @@ az storage cors add `
     --max-age 3600 `
     --account-key $accountKey | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "CORS設定に失敗しました" }
-Write-Host "CORS設定を適用しました" -ForegroundColor Green
-Write-Host "  AllowedOrigins: $allowedOrigin"
-Write-Host "  AllowedMethods: GET, PUT, HEAD"
-Write-Host "  AllowedHeaders: x-ms-blob-type, x-ms-blob-content-type, content-type, x-ms-version"
-Write-Host "  ExposedHeaders: x-ms-meta-*"
+Write-Success "CORS設定を適用しました"
+Write-Detail "AllowedOrigins" $allowedOrigin
+Write-Info "  AllowedMethods: GET, PUT, HEAD"
+Write-Info "  AllowedHeaders: x-ms-blob-type, x-ms-blob-content-type, content-type, x-ms-version"
+Write-Info "  ExposedHeaders: x-ms-meta-*"
 
 # ============================================================
 # Step 6: Stored Access Policy の作成/更新
 # ============================================================
-Write-Host "`n=== Step 6: Stored Access Policy ===" -ForegroundColor Cyan
+Write-Step "Step 6: Stored Access Policy"
 
 $expiryTime = (Get-Date).AddDays($PolicyExpiryDays).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 
@@ -197,7 +199,7 @@ if ($LASTEXITCODE -eq 0 -and $policiesJson) {
 }
 
 if (-not $policyExists) {
-    Write-Host "Stored Access Policy '$PolicyName' が存在しません。新規作成します..."
+    Write-Action "Stored Access Policy '$PolicyName' が存在しません。新規作成します..."
     az storage container policy create `
         --container-name '$web' `
         --name $PolicyName `
@@ -206,9 +208,9 @@ if (-not $policyExists) {
         --account-name $StorageAccountName `
         --account-key $accountKey | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Stored Access Policyの作成に失敗しました" }
-    Write-Host "Stored Access Policyを作成しました: $PolicyName (権限: rcwl, 有効期限: $expiryTime)" -ForegroundColor Green
+    Write-Success "Stored Access Policyを作成しました: $PolicyName (権限: rcwl, 有効期限: $expiryTime)"
 } else {
-    Write-Host "既存のStored Access Policy '$PolicyName' を上書きします..."
+    Write-Action "既存のStored Access Policy '$PolicyName' を上書きします..."
     az storage container policy update `
         --container-name '$web' `
         --name $PolicyName `
@@ -217,13 +219,13 @@ if (-not $policyExists) {
         --account-name $StorageAccountName `
         --account-key $accountKey | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Stored Access Policyの更新に失敗しました" }
-    Write-Host "Stored Access Policyを更新しました: $PolicyName (権限: rcwl, 有効期限: $expiryTime)" -ForegroundColor Green
+    Write-Success "Stored Access Policyを更新しました: $PolicyName (権限: rcwl, 有効期限: $expiryTime)"
 }
 
 # ============================================================
 # Step 7: data/index.json の初期配置
 # ============================================================
-Write-Host "`n=== Step 7: data/index.json の初期配置 ===" -ForegroundColor Cyan
+Write-Step "Step 7: data/index.json の初期配置"
 
 $existingIndex = az storage blob show `
     --container-name '$web' `
@@ -232,7 +234,7 @@ $existingIndex = az storage blob show `
     --account-key $accountKey 2>$null
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "data/index.json が存在しません。空の初期データを配置します..."
+    Write-Action "data/index.json が存在しません。空の初期データを配置します..."
     $updatedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
     $indexContent = @{
         groups    = @()
@@ -252,22 +254,22 @@ if ($LASTEXITCODE -ne 0) {
             --account-key $accountKey `
             --overwrite | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "data/index.json の配置に失敗しました" }
-        Write-Host "data/index.json を初期配置しました (updatedAt: $updatedAt)" -ForegroundColor Green
+        Write-Success "data/index.json を初期配置しました (updatedAt: $updatedAt)"
     } finally {
         if (Test-Path $tempFile) { Remove-Item $tempFile -Force }
     }
 } else {
-    Write-Host "data/index.json は既に存在します。スキップします。" -ForegroundColor Yellow
+    Write-Warn "data/index.json は既に存在します。スキップします。"
 }
 
 # ============================================================
 # 完了サマリー
 # ============================================================
-Write-Host "`n=== プロビジョニング完了 ===" -ForegroundColor Cyan
-Write-Host "リソースグループ:              $ResourceGroupName"
-Write-Host "Storageアカウント:             $StorageAccountName"
-Write-Host "静的サイトエンドポイント:       $webEndpoint"
-Write-Host "Blobサービスエンドポイント:     $blobEndpoint"
-Write-Host "Stored Access Policy:          $PolicyName (有効期限: $expiryTime)"
-Write-Host ""
-Write-Host "全ステップが正常に完了しました" -ForegroundColor Green
+Write-Step "プロビジョニング完了"
+Write-Detail "リソースグループ" $ResourceGroupName
+Write-Detail "Storageアカウント" $StorageAccountName
+Write-Detail "静的サイトエンドポイント" $webEndpoint
+Write-Detail "Blobサービスエンドポイント" $blobEndpoint
+Write-Detail "Stored Access Policy" "$PolicyName (有効期限: $expiryTime)"
+Write-Info ""
+Write-Success "全ステップが正常に完了しました"

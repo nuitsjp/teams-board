@@ -27,8 +27,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# .env からの設定読み込み
-. (Join-Path $PSScriptRoot "Load-EnvSettings.ps1")
+# 共通関数の読み込み
+. (Join-Path $PSScriptRoot "common" "Write-Log.ps1")
+. (Join-Path $PSScriptRoot "common" "Load-EnvSettings.ps1")
+. (Join-Path $PSScriptRoot "common" "Connect-AzureStorage.ps1")
 $envSettings = Load-EnvSettings
 $applied = Apply-EnvSettings -Settings $envSettings -BoundParameters $PSBoundParameters -ParameterMap @{
     "SubscriptionId"     = "AZURE_SUBSCRIPTION_ID"
@@ -39,17 +41,8 @@ foreach ($key in $applied.Keys) {
     Set-Variable -Name $key -Value $applied[$key]
 }
 
-# サブスクリプション切替
-az account set --subscription $SubscriptionId
-if ($LASTEXITCODE -ne 0) { throw "サブスクリプションの切り替えに失敗しました" }
-
-# Storageアカウントの接続確認
-az storage account show --resource-group $ResourceGroupName --name $StorageAccountName | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "Storageアカウント '$StorageAccountName' が見つかりません" }
-
-# アカウントキーを取得
-$accountKey = (az storage account keys list --resource-group $ResourceGroupName --account-name $StorageAccountName --query "[0].value" --output tsv)
-if ($LASTEXITCODE -ne 0) { throw "Storageアカウントキーの取得に失敗しました" }
+# Azure接続・アカウントキー取得
+$accountKey = Connect-AzureStorage -SubscriptionId $SubscriptionId -ResourceGroupName $ResourceGroupName -StorageAccountName $StorageAccountName
 
 # SASトークン生成（Policyから権限を継承）
 $sasToken = (az storage container generate-sas `
@@ -71,12 +64,11 @@ $encodedSas = [System.Uri]::EscapeDataString($sasToken)
 $adminUrl = "${webEndpoint}/index.html?token=${encodedSas}"
 
 # 結果出力
-Write-Host ""
-Write-Host "=== ダッシュボードURL ===" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "--- 利用者用URL ---" -ForegroundColor Green
-Write-Host $userUrl
-Write-Host ""
-Write-Host "--- 管理者用URL ---" -ForegroundColor Green
-Write-Host $adminUrl
-Write-Host ""
+Write-Step "ダッシュボードURL"
+Write-Info ""
+Write-Success "--- 利用者用URL ---"
+Write-Info $userUrl
+Write-Info ""
+Write-Success "--- 管理者用URL ---"
+Write-Info $adminUrl
+Write-Info ""
