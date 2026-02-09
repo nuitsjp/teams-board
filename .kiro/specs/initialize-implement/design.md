@@ -44,7 +44,7 @@ graph TB
     end
 
     subgraph Scripts
-        GenScript[generate-dummy-data.sh]
+        GenScript[ダミーデータ生成]
         DeployScript[Deploy-StaticFiles.ps1]
     end
 
@@ -79,7 +79,7 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant Dev as 開発者
-    participant Gen as generate-dummy-data.sh
+    participant Gen as ダミーデータ生成
     participant FS as ローカルFS
     participant AZ as az cli
     participant Blob as Azure Blob Storage
