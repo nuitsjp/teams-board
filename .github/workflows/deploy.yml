@@ -5,6 +5,8 @@ name: Deploy
 
 on:
   push:
+  pull_request:
+    branches: [main]
 
 permissions:
   id-token: write
@@ -58,6 +60,7 @@ jobs:
   deploy:
     name: デプロイ
     needs: [test, lint]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
     steps:
@@ -99,6 +102,30 @@ jobs:
             --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
             --overwrite \
             --auth-mode login
+
+      - name: 初期データの配置
+        run: |
+          # data/index.json が存在しない場合のみ空のシードをアップロード
+          exists=$(az storage blob exists \
+            --container-name '$web' \
+            --name 'data/index.json' \
+            --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
+            --auth-mode login \
+            --output tsv \
+            --query exists)
+          if [ "$exists" = "false" ]; then
+            az storage blob upload \
+              --file scripts/seed/index.json \
+              --container-name '$web' \
+              --name 'data/index.json' \
+              --content-type 'application/json; charset=utf-8' \
+              --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
+              --auth-mode login \
+              --overwrite
+            echo "初期 data/index.json をアップロードしました"
+          else
+            echo "data/index.json は既に存在します。スキップしました"
+          fi
 
       - name: デプロイ結果の表示
         run: |
