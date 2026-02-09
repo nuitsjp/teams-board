@@ -3,9 +3,8 @@
     静的ファイルをAzure Blob Storage ($web コンテナ) にアップロードする
 
 .DESCRIPTION
-    dist/ 配下のビルド成果物を $web コンテナにアップロードする。
-    ファイル拡張子に基づいて適切なContent-Typeを設定し、
-    ディレクトリ構造を維持してBlob名を生成する。
+    dist/ 配下のビルド成果物を $web コンテナに一括アップロードする。
+    az storage blob upload-batch を使用し、ディレクトリ構造を維持してデプロイする。
     Viteプロダクションビルド出力（React SPA）をデプロイする。
     data/ ディレクトリはデータのライフサイクルが異なるため除外される。
 
@@ -37,24 +36,6 @@ Import-EnvParams -EnvPath $EnvFile
 
 # リポジトリルートをスクリプト位置から算出（scripts/ から1階層上）
 $repoRoot = Split-Path $PSScriptRoot -Parent
-
-# MIME型マッピングテーブル
-$mimeTypes = @{
-    ".html" = "text/html; charset=utf-8"
-    ".css"  = "text/css; charset=utf-8"
-    ".js"   = "application/javascript; charset=utf-8"
-    ".json" = "application/json; charset=utf-8"
-    ".png"  = "image/png"
-    ".svg"  = "image/svg+xml"
-    ".ico"  = "image/x-icon"
-    ".jpg"  = "image/jpeg"
-    ".jpeg" = "image/jpeg"
-    ".gif"  = "image/gif"
-    ".woff" = "font/woff"
-    ".woff2" = "font/woff2"
-    ".ttf"  = "font/ttf"
-    ".map"  = "application/json"
-}
 
 # SourcePaths が未指定の場合、SourcePath から構築（後方互換）
 if ($SourcePaths.Count -eq 0) {
@@ -97,9 +78,6 @@ try {
 # Azure接続・アカウントキー取得
 $accountKey = Connect-AzureStorage -SubscriptionId $AZURE_SUBSCRIPTION_ID -ResourceGroupName $AZURE_RESOURCE_GROUP_NAME -StorageAccountName $AZURE_STORAGE_ACCOUNT_NAME
 
-$totalUploadCount = 0
-$totalFileCount = 0
-
 foreach ($sourceEntry in $SourcePaths) {
     # "ローカルパス:Blobプレフィックス" を分割
     $parts = $sourceEntry.Split(":", 2)
@@ -116,57 +94,31 @@ foreach ($sourceEntry in $SourcePaths) {
     $prefixLabel = if ($blobPrefix -eq "") { "(ルート)" } else { $blobPrefix }
     Write-Action "アップロード元: $resolvedSourcePath → Blobプレフィックス: $prefixLabel"
 
-    # ファイル一覧の取得（data/ ディレクトリを除外）
-    $files = Get-ChildItem -Path $resolvedSourcePath -Recurse -File |
-        Where-Object {
-            $rel = $_.FullName.Substring($resolvedSourcePath.Path.Length + 1).Replace("\", "/")
-            $rel -notlike "data/*"
-        }
-    $fileCount = @($files).Count
-
-    if ($fileCount -eq 0) {
-        Write-Warn "  アップロード対象のファイルが見つかりません: $resolvedSourcePath"
-        continue
+    # data/ ディレクトリを除外（CIと同様に物理削除）
+    $dataDir = Join-Path $resolvedSourcePath "data"
+    if (Test-Path $dataDir) {
+        Remove-Item -Path $dataDir -Recurse -Force
+        Write-Info "  data/ ディレクトリを除外しました"
     }
 
-    Write-Action "  アップロード対象: $fileCount ファイル"
-    $totalFileCount += $fileCount
-
-    # ファイルごとにアップロード
-    $uploadCount = 0
-    foreach ($file in $files) {
-        # 相対パスからBlob名を生成（パス区切りを / に変換）
-        $relativePath = $file.FullName.Substring($resolvedSourcePath.Path.Length + 1)
-        $blobName = $relativePath.Replace("\", "/")
-
-        # Blobプレフィックスがある場合は先頭に付与
-        if ($blobPrefix -ne "") {
-            $blobName = "$blobPrefix/$blobName"
-        }
-
-        # 拡張子からContent-Typeを決定
-        $ext = $file.Extension.ToLower()
-        $contentType = if ($mimeTypes.ContainsKey($ext)) {
-            $mimeTypes[$ext]
-        } else {
-            "application/octet-stream"
-        }
-
-        # アップロード
-        az storage blob upload `
-            --file $file.FullName `
-            --container-name '$web' `
-            --name $blobName `
-            --content-type $contentType `
+    # upload-batch で一括アップロード
+    if ($blobPrefix -ne "") {
+        az storage blob upload-batch `
+            --source $resolvedSourcePath `
+            --destination '$web' `
+            --destination-path $blobPrefix `
             --account-name $AZURE_STORAGE_ACCOUNT_NAME `
             --account-key $accountKey `
-            --overwrite | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "Blobアップロードに失敗しました: $blobName" }
-
-        $uploadCount++
-        $totalUploadCount++
-        Write-Info "  [$uploadCount/$fileCount] $blobName ($contentType)"
+            --overwrite
+    } else {
+        az storage blob upload-batch `
+            --source $resolvedSourcePath `
+            --destination '$web' `
+            --account-name $AZURE_STORAGE_ACCOUNT_NAME `
+            --account-key $accountKey `
+            --overwrite
     }
+    if ($LASTEXITCODE -ne 0) { throw "Blobアップロードに失敗しました: $resolvedSourcePath" }
 }
 
 # 静的サイトURL取得
@@ -174,5 +126,4 @@ $webEndpoint = (az storage account show --resource-group $AZURE_RESOURCE_GROUP_N
 
 # 結果出力
 Write-Step "アップロード完了"
-Write-Detail "アップロードファイル数" "$totalUploadCount / $totalFileCount"
 Write-Detail "静的サイトURL" $webEndpoint
