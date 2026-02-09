@@ -198,13 +198,13 @@ sequenceDiagram
 
 ### 8.1 デプロイサイクル分離
 
-- `scripts/infra/Deploy-StaticFiles.ps1`
+- `scripts/Deploy-StaticFiles.ps1`
 - `dist/` を `$web` にアップロード
 - `data/*` は除外（コード配備時にデータを上書きしない）
 
 ### 8.2 インフラ管理
 
-- `scripts/infra/Deploy-Infrastructure.ps1`
+- `scripts/Deploy-Infrastructure.ps1`
 - 静的サイト有効化
 - Blob CORS 設定
 - Stored Access Policy 設定
@@ -212,8 +212,8 @@ sequenceDiagram
 
 ### 8.3 運用支援スクリプト
 
-- `scripts/infra/New-SasToken.ps1`: 管理者用 URL 発行
-- `scripts/infra/Clear-Data.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
+- `scripts/New-SasToken.ps1`: 管理者用 URL 発行
+- `scripts/Clear-Data.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
 
 ## 9. セキュリティ方針（現行実装）
 

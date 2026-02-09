@@ -8,8 +8,11 @@
     各インフラスクリプトからドットソースで呼び出して使用する。
 #>
 
+# 共通ログ関数の読み込み
+. (Join-Path $PSScriptRoot "Write-Log.ps1")
+
 function Load-EnvSettings {
-    # スクリプト位置から2階層上がプロジェクトルート（scripts/infra → プロジェクトルート）
+    # スクリプト位置から2階層上がプロジェクトルート（scripts/common → プロジェクトルート）
     $projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
     $envPath = Join-Path $projectRoot ".env"
 
@@ -39,7 +42,7 @@ function Load-EnvSettings {
             }
         }
 
-        Write-Host ".env を読み込みました: $envPath" -ForegroundColor DarkGray
+        Write-Info ".env を読み込みました: $envPath"
         return $settings
     }
 
