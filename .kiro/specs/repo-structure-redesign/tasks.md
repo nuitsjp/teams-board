@@ -26,7 +26,7 @@
   - _Requirements: 1.2, 3.3, 6.4, 6.5, 6.6_
 
 - [x] 1.5 スクリプトの再配置と統合を行う
-  - ルート直下の既存 `scripts/` 内のインフラスクリプト（PowerShellファイル群、`generate-dummy-data.sh`）を `scripts/infra/` サブディレクトリに退避する
+  - ルート直下の既存 `scripts/` 内のインフラスクリプト（PowerShellファイル群など）を `scripts/infra/` サブディレクトリに退避する
   - `frontend/dashboard/scripts/convert-local-data.mjs` を `scripts/` 直下に移動する
   - _Requirements: 4.2, 4.3_
 
