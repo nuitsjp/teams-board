@@ -48,5 +48,5 @@
     "react-router-dom": "^7.13.0",
     "recharts": "^3.7.0"
   },
-  "packageManager": "pnpm@10.29.1"
+  "packageManager": "pnpm@10.27.0"
 }
