@@ -196,11 +196,34 @@ sequenceDiagram
 
 ## 8. デプロイと運用
 
-### 8.1 デプロイサイクル分離
+### 8.1 CI/CD パイプライン
 
-- `scripts/Deploy-StaticFiles.ps1`
-- `dist/` を `$web` にアップロード
+GitHub Actions（`.github/workflows/deploy.yml`）により、push 時に自動デプロイを実行する。
+
+```
+on: push
+
+┌──────────┐    ┌──────────┐
+│  test    │    │   lint   │   ← 並列実行
+└────┬─────┘    └────┬─────┘
+     └───────┬───────┘
+         ┌───▼───┐
+         │deploy │  ← 双方成功後にデプロイ
+         └───────┘
+```
+
+| ブランチ | GitHub Environment | 用途 |
+|----------|-------------------|------|
+| `main`   | `prod`            | 本番環境 |
+| その他   | `dev`             | 開発検証 |
+
+- Azure 認証: OIDC（`azure/login@v2` + フェデレーション資格情報）
+- ビルド成果物 `dist/` を `$web` コンテナにアップロード（`az storage blob upload-batch`）
 - `data/*` は除外（コード配備時にデータを上書きしない）
+
+#### ローカルデプロイ（手動）
+
+- `scripts/Deploy-StaticFiles.ps1`（`.env` ベースの認証情報で同等の処理を実行）
 
 ### 8.2 インフラ管理
 
@@ -232,8 +255,10 @@ sequenceDiagram
 | ビルドツール | Vite + @vitejs/plugin-react | HMR、高速ビルド、JSX 変換 |
 | ルーティング | react-router-dom（HashRouter） | SPA ハッシュベースルーティング |
 | CSV パーサー | PapaParse | Teams 出席レポートの UTF-16LE CSV 解析 |
+| CI/CD | GitHub Actions + OIDC | push 時自動デプロイ、環境別配置 |
 | ユニットテスト | Vitest + React Testing Library | jsdom 環境、コンポーネントテスト |
 | E2E テスト | Playwright | ブラウザベースの画面遷移・管理者フロー検証 |
+| Lint | ESLint + Prettier | コード品質・フォーマット統一 |
 | ホスティング | Azure Blob Storage 静的サイト | 最小コスト、閉域環境対応 |
 
 ## 11. テスト構成
@@ -260,8 +285,8 @@ teams-board/
 ├── tests/                               # ユニット・統合テスト
 ├── e2e/                                 # E2Eテスト
 ├── public/data/                         # 配信データ（ローカル）
-├── scripts/
-│   └── infra/                           # Azure運用スクリプト
+├── scripts/                             # Azure運用スクリプト（ローカル用）
+├── .github/workflows/                   # CI/CD ワークフロー
 ├── docs/                                # ドキュメント
 └── .kiro/                               # スペック駆動開発設定
 ```

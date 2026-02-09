@@ -76,39 +76,20 @@ if ($null -eq $blobs -or @($blobs).Count -eq 0) {
 # ============================================================
 Write-Step "Step 3: index.json の初期化"
 
-# 空のindex.jsonを一時ファイルとして生成
-$updatedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-$indexContent = @{
-    groups    = @()
-    members   = @()
-    updatedAt = $updatedAt
-} | ConvertTo-Json -Depth 2
+# シードファイルを使用して Azure 上の data/index.json を上書き
+$seedFile = Join-Path $PSScriptRoot "seed" "index.json"
+if (-not (Test-Path $seedFile)) { throw "シードファイルが見つかりません: $seedFile" }
 
-$tempFile = Join-Path $env:TEMP "teams-board-empty-index.json"
-try {
-    # BOMなしUTF-8で書き込み
-    [System.IO.File]::WriteAllText($tempFile, $indexContent, [System.Text.UTF8Encoding]::new($false))
-    Write-Info "一時ファイルを作成しました: $tempFile"
-
-    # Azure上のdata/index.jsonを上書き
-    az storage blob upload `
-        --file $tempFile `
-        --container-name '$web' `
-        --name 'data/index.json' `
-        --content-type 'application/json; charset=utf-8' `
-        --account-name $AZURE_STORAGE_ACCOUNT_NAME `
-        --account-key $accountKey `
-        --overwrite | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "data/index.json のアップロードに失敗しました" }
-    Write-Success "data/index.json を初期状態で上書きしました"
-    Write-Detail "updatedAt" $updatedAt
-} finally {
-    # 一時ファイルの削除
-    if (Test-Path $tempFile) {
-        Remove-Item $tempFile -Force
-        Write-Info "一時ファイルを削除しました"
-    }
-}
+az storage blob upload `
+    --file $seedFile `
+    --container-name '$web' `
+    --name 'data/index.json' `
+    --content-type 'application/json; charset=utf-8' `
+    --account-name $AZURE_STORAGE_ACCOUNT_NAME `
+    --account-key $accountKey `
+    --overwrite | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "data/index.json のアップロードに失敗しました" }
+Write-Success "data/index.json を初期状態で上書きしました"
 
 # ============================================================
 # Step 4: 結果サマリー
@@ -118,7 +99,7 @@ $webEndpoint = (az storage account show --resource-group $AZURE_RESOURCE_GROUP_N
 Write-Step "データクリア完了"
 Write-Detail "Storageアカウント" $AZURE_STORAGE_ACCOUNT_NAME
 Write-Detail "削除したBlob数" "$deleteCount"
-Write-Detail "index.json" "初期化済み (updatedAt: $updatedAt)"
+Write-Detail "index.json" "初期化済み (シードファイルで上書き)"
 Write-Detail "静的サイトURL" $webEndpoint
 Write-Info ""
 Write-Success "全ステップが正常に完了しました"
