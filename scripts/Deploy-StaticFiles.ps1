@@ -3,28 +3,16 @@
     静的ファイルをAzure Blob Storage ($web コンテナ) にアップロードする
 
 .DESCRIPTION
-    dist/ 配下のビルド成果物を $web コンテナにアップロードする。
-    ファイル拡張子に基づいて適切なContent-Typeを設定し、
-    ディレクトリ構造を維持してBlob名を生成する。
-    Viteプロダクションビルド出力（React SPA）をデプロイする。
-    data/ ディレクトリはデータのライフサイクルが異なるため除外される。
+    テスト・Lint・プロダクションビルドを実行し、dist/ 配下のビルド成果物を
+    $web コンテナに一括アップロードする。CIワークフローと同等の品質チェックを
+    ローカルで実行する。data/ ディレクトリはライフサイクルが異なるため除外し、
+    初回デプロイ時のみシードデータを配置する。
 
 .PARAMETER EnvFile
     .env ファイルのパス（デフォルト: プロジェクトルートの .env）
-
-.PARAMETER SourcePath
-    アップロード元のディレクトリパス（後方互換用、単一ディレクトリ指定時に使用）
-
-.PARAMETER SourcePaths
-    アップロード元のディレクトリとBlobプレフィックスの配列。
-    各要素は "ローカルパス:Blobプレフィックス" 形式。
-    Blobプレフィックスが空の場合はルートにアップロード。
-    例: @("dist:")
 #>
 param(
-    [string]$EnvFile = "",
-    [string]$SourcePath = "",
-    [string[]]$SourcePaths = @()
+    [string]$EnvFile = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,40 +26,8 @@ Import-EnvParams -EnvPath $EnvFile
 # リポジトリルートをスクリプト位置から算出（scripts/ から1階層上）
 $repoRoot = Split-Path $PSScriptRoot -Parent
 
-# MIME型マッピングテーブル
-$mimeTypes = @{
-    ".html" = "text/html; charset=utf-8"
-    ".css"  = "text/css; charset=utf-8"
-    ".js"   = "application/javascript; charset=utf-8"
-    ".json" = "application/json; charset=utf-8"
-    ".png"  = "image/png"
-    ".svg"  = "image/svg+xml"
-    ".ico"  = "image/x-icon"
-    ".jpg"  = "image/jpeg"
-    ".jpeg" = "image/jpeg"
-    ".gif"  = "image/gif"
-    ".woff" = "font/woff"
-    ".woff2" = "font/woff2"
-    ".ttf"  = "font/ttf"
-    ".map"  = "application/json"
-}
-
-# SourcePaths が未指定の場合、SourcePath から構築（後方互換）
-if ($SourcePaths.Count -eq 0) {
-    if ($SourcePath -eq "") {
-        # デフォルト: dist/ をルートにデプロイ（Viteビルド成果物）
-        $SourcePaths = @(
-            "dist:"
-        )
-    } else {
-        # 従来の単一パス指定（ルートにアップロード）
-        $SourcePaths = @("${SourcePath}:")
-    }
-}
-
-# テスト実行・プロダクションビルド
-$appRoot = $repoRoot
-Push-Location $appRoot
+# テスト・Lint・プロダクションビルド
+Push-Location $repoRoot
 try {
     # テスト実行
     Write-Action "テストを実行しています..."
@@ -80,6 +36,14 @@ try {
         throw "テストに失敗しました (exit code: $LASTEXITCODE)。デプロイを中断します。"
     }
     Write-Success "テスト完了"
+
+    # Lint実行
+    Write-Action "Lintを実行しています..."
+    & pnpm run lint
+    if ($LASTEXITCODE -ne 0) {
+        throw "Lintに失敗しました (exit code: $LASTEXITCODE)。デプロイを中断します。"
+    }
+    Write-Success "Lint完了"
 
     # プロダクションビルド実行（環境変数でBlobエンドポイントを注入）
     $env:VITE_BLOB_BASE_URL = "https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/`$web"
@@ -97,82 +61,52 @@ try {
 # Azure接続・アカウントキー取得
 $accountKey = Connect-AzureStorage -SubscriptionId $AZURE_SUBSCRIPTION_ID -ResourceGroupName $AZURE_RESOURCE_GROUP_NAME -StorageAccountName $AZURE_STORAGE_ACCOUNT_NAME
 
-$totalUploadCount = 0
-$totalFileCount = 0
+# ソースディレクトリ（dist/ 固定）
+$sourcePath = Join-Path $repoRoot "dist"
+Write-Action "アップロード元: $sourcePath"
 
-foreach ($sourceEntry in $SourcePaths) {
-    # "ローカルパス:Blobプレフィックス" を分割
-    $parts = $sourceEntry.Split(":", 2)
-    $localPath = $parts[0]
-    $blobPrefix = if ($parts.Count -gt 1) { $parts[1] } else { "" }
-
-    # ソースディレクトリの解決（リポジトリルート基準）
-    $fullLocalPath = if ([System.IO.Path]::IsPathRooted($localPath)) {
-        $localPath
-    } else {
-        Join-Path $repoRoot $localPath
-    }
-    $resolvedSourcePath = Resolve-Path $fullLocalPath -ErrorAction Stop
-    $prefixLabel = if ($blobPrefix -eq "") { "(ルート)" } else { $blobPrefix }
-    Write-Action "アップロード元: $resolvedSourcePath → Blobプレフィックス: $prefixLabel"
-
-    # ファイル一覧の取得（data/ ディレクトリを除外）
-    $files = Get-ChildItem -Path $resolvedSourcePath -Recurse -File |
-        Where-Object {
-            $rel = $_.FullName.Substring($resolvedSourcePath.Path.Length + 1).Replace("\", "/")
-            $rel -notlike "data/*"
-        }
-    $fileCount = @($files).Count
-
-    if ($fileCount -eq 0) {
-        Write-Warn "  アップロード対象のファイルが見つかりません: $resolvedSourcePath"
-        continue
-    }
-
-    Write-Action "  アップロード対象: $fileCount ファイル"
-    $totalFileCount += $fileCount
-
-    # ファイルごとにアップロード
-    $uploadCount = 0
-    foreach ($file in $files) {
-        # 相対パスからBlob名を生成（パス区切りを / に変換）
-        $relativePath = $file.FullName.Substring($resolvedSourcePath.Path.Length + 1)
-        $blobName = $relativePath.Replace("\", "/")
-
-        # Blobプレフィックスがある場合は先頭に付与
-        if ($blobPrefix -ne "") {
-            $blobName = "$blobPrefix/$blobName"
-        }
-
-        # 拡張子からContent-Typeを決定
-        $ext = $file.Extension.ToLower()
-        $contentType = if ($mimeTypes.ContainsKey($ext)) {
-            $mimeTypes[$ext]
-        } else {
-            "application/octet-stream"
-        }
-
-        # アップロード
-        az storage blob upload `
-            --file $file.FullName `
-            --container-name '$web' `
-            --name $blobName `
-            --content-type $contentType `
-            --account-name $AZURE_STORAGE_ACCOUNT_NAME `
-            --account-key $accountKey `
-            --overwrite | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "Blobアップロードに失敗しました: $blobName" }
-
-        $uploadCount++
-        $totalUploadCount++
-        Write-Info "  [$uploadCount/$fileCount] $blobName ($contentType)"
-    }
+# data/ ディレクトリを除外（CIと同様に物理削除）
+$dataDir = Join-Path $sourcePath "data"
+if (Test-Path $dataDir) {
+    Remove-Item -Path $dataDir -Recurse -Force
+    Write-Info "data/ ディレクトリを除外しました"
 }
 
-# 静的サイトURL取得
-$webEndpoint = (az storage account show --resource-group $AZURE_RESOURCE_GROUP_NAME --name $AZURE_STORAGE_ACCOUNT_NAME --query "primaryEndpoints.web" --output tsv)
+# upload-batch で一括アップロード
+az storage blob upload-batch `
+    --source $sourcePath `
+    --destination '$web' `
+    --account-name $AZURE_STORAGE_ACCOUNT_NAME `
+    --account-key $accountKey `
+    --overwrite
+if ($LASTEXITCODE -ne 0) { throw "Blobアップロードに失敗しました" }
 
-# 結果出力
+# 初期データの配置（data/index.json が存在しない場合のみ）
+$existsResult = az storage blob exists `
+    --container-name '$web' `
+    --name 'data/index.json' `
+    --account-name $AZURE_STORAGE_ACCOUNT_NAME `
+    --account-key $accountKey `
+    --output tsv `
+    --query exists
+if ($existsResult -eq "false") {
+    $seedFile = Join-Path $repoRoot "scripts" "seed" "index.json"
+    Write-Action "初期データを配置しています..."
+    az storage blob upload `
+        --file $seedFile `
+        --container-name '$web' `
+        --name 'data/index.json' `
+        --content-type 'application/json; charset=utf-8' `
+        --account-name $AZURE_STORAGE_ACCOUNT_NAME `
+        --account-key $accountKey `
+        --overwrite
+    if ($LASTEXITCODE -ne 0) { throw "初期データのアップロードに失敗しました" }
+    Write-Success "初期 data/index.json をアップロードしました"
+} else {
+    Write-Info "data/index.json は既に存在します。スキップしました"
+}
+
+# 静的サイトURL取得・結果出力
+$webEndpoint = (az storage account show --resource-group $AZURE_RESOURCE_GROUP_NAME --name $AZURE_STORAGE_ACCOUNT_NAME --query "primaryEndpoints.web" --output tsv)
 Write-Step "アップロード完了"
-Write-Detail "アップロードファイル数" "$totalUploadCount / $totalFileCount"
 Write-Detail "静的サイトURL" $webEndpoint

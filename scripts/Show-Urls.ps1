@@ -49,10 +49,5 @@ $adminUrl = "${webEndpoint}/index.html?token=${encodedSas}"
 
 # 結果出力
 Write-Step "ダッシュボードURL"
-Write-Info ""
-Write-Success "--- 利用者用URL ---"
-Write-Info $userUrl
-Write-Info ""
-Write-Success "--- 管理者用URL ---"
-Write-Info $adminUrl
-Write-Info ""
+Write-Success "利用者用URL: $userUrl"
+Write-Success "管理者用URL: $adminUrl"
