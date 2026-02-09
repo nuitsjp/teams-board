@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: .env設定読み込み関数の提供
 `scripts/common/Load-EnvSettings.ps1` は `Load-EnvSettings` 関数を提供しなければならない（SHALL）。`Load-EnvSettings` は `-EnvPath` パラメータを受け付け、未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。指定パスに `.env` ファイルが存在しない場合はエラーをスローしなければならない（MUST）。`Apply-EnvSettings` 関数は廃止し、`Import-EnvParams` に統合する。
@@ -14,32 +14,6 @@
 #### Scenario: -EnvPath による任意パス指定
 - **WHEN** `Load-EnvSettings -EnvPath "C:\envs\.env.prod"` のようにパスを指定する
 - **THEN** 指定されたパスの `.env` ファイルが読み込まれる
-
-### Requirement: Azure Storage接続関数の提供
-`scripts/common/Connect-AzureStorage.ps1` は `Connect-AzureStorage` 関数を提供しなければならない（SHALL）。この関数はAzureサブスクリプション切替・Storageアカウント接続確認・アカウントキー取得を一括で実行し、アカウントキーを返す。
-
-#### Scenario: Azure Storageへの正常接続
-- **WHEN** 有効な SubscriptionId、ResourceGroupName、StorageAccountName を指定して `Connect-AzureStorage` を呼び出す
-- **THEN** サブスクリプションが切り替わり、Storageアカウントの存在が確認され、アカウントキーが返される
-
-#### Scenario: サブスクリプション切替の失敗
-- **WHEN** 無効な SubscriptionId を指定して `Connect-AzureStorage` を呼び出す
-- **THEN** エラーメッセージ付きの例外がスローされる
-
-#### Scenario: Storageアカウントが見つからない場合
-- **WHEN** 存在しない StorageAccountName を指定して `Connect-AzureStorage` を呼び出す
-- **THEN** エラーメッセージ付きの例外がスローされる
-
-#### Scenario: アカウントキー取得の失敗
-- **WHEN** アカウントキーの取得に失敗した場合
-- **THEN** エラーメッセージ付きの例外がスローされる
-
-### Requirement: 共通関数ファイルの配置場所
-共通関数ファイルは `scripts/common/` ディレクトリに配置しなければならない（MUST）。各スクリプトは `$PSScriptRoot` 基準の相対パスでドットソースする。
-
-#### Scenario: スクリプトからの共通関数読み込み
-- **WHEN** `scripts/` 直下のスクリプトが共通関数を使用する
-- **THEN** `. (Join-Path $PSScriptRoot "common" "<ファイル名>.ps1")` の形式でドットソースする
 
 ### Requirement: 既存スクリプトの共通関数への移行
 既存の4スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls）は、Azure パラメータ（`SubscriptionId`, `ResourceGroupName`, `StorageAccountName`）を `param()` から廃止しなければならない（MUST）。`-EnvFile` パラメータを追加し、`.env` 読み込み処理を `Import-EnvParams` の呼び出しに置き換えなければならない（MUST）。スクリプト内では `.env` のキー名をそのまま変数名として使用する（例: `$AZURE_SUBSCRIPTION_ID`）。
@@ -60,13 +34,8 @@
 - **WHEN** スクリプトが実行される
 - **THEN** Import-EnvParams → Connect-AzureStorage の順で処理が実行される
 
-### Requirement: スクリプトディレクトリ構造のフラット化
-`scripts/infra/` 配下の全スクリプトを `scripts/` 直下に移動し、`scripts/infra/` ディレクトリを削除しなければならない（MUST）。
+## REMOVED Requirements
 
-#### Scenario: infra階層の廃止
-- **WHEN** 移行が完了した時点で
-- **THEN** `scripts/infra/` ディレクトリは存在せず、全スクリプトは `scripts/` 直下に配置されている
-
-#### Scenario: プロジェクト内の参照パスの更新
-- **WHEN** プロジェクト内に `scripts/infra/` を参照している箇所がある場合
-- **THEN** 参照パスが `scripts/` に更新されている
+### Requirement: コマンドライン引数が未指定のパラメータへの.env値の適用
+**Reason**: `Apply-EnvSettings` 関数を廃止。`.env` のキー名をそのまま変数として設定する `Import-EnvParams` に統合したため、PascalCase ↔ SNAKE_CASE のマッピングと `BoundParameters` による上書き判定が不要になった。
+**Migration**: `Apply-EnvSettings` の呼び出しを `Import-EnvParams` に置き換える。スクリプト内の変数参照を `.env` のキー名に変更する（例: `$SubscriptionId` → `$AZURE_SUBSCRIPTION_ID`）。
