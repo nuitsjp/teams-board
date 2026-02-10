@@ -6,7 +6,7 @@ Microsoft Teams の出席レポートを集計・可視化するダッシュボ�
 
 | 要素 | 選択 | 選定理由 |
 |------|------|----------|
-| ホスティング | [Azure Blob Storage 静的サイト](https://learn.microsoft.com/ja-jp/azure/storage/blobs/storage-blob-static-website) | 静的コンテンツとデータを単一ストレージアカウントで管理でき、閉域網のアクセス制御が容易。従量課金のみで低頻度運用のコストを最小化できる |
+| ホスティング | Azure Blob Storage 静的サイト | 静的コンテンツとデータを単一ストレージアカウントで管理でき、従量課金のみで低頻度運用のコストを最小化できる |
 | フロントエンド | React 19 + Vite | 宣言的 UI と高速ビルド |
 | ルーティング | react-router-dom（HashRouter） | 静的サイトホスティングとの相性が良いハッシュベースルーティング |
 | CSS | Tailwind CSS 4 | ユーティリティファーストで迅速なスタイリング |
