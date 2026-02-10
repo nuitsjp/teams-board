@@ -1,18 +1,18 @@
 {
-  "id": "c9d0e1f2-2026-01-25",
-  "groupId": "c9d0e1f2",
+  "id": "b630e3f1-2026-01-25",
+  "groupId": "b630e3f1",
   "date": "2026-01-25",
   "attendances": [
     {
-      "memberId": "90df7918",
+      "memberId": "7c35db6e",
       "durationSeconds": 3600
     },
     {
-      "memberId": "7a974eca",
+      "memberId": "70c5a8d7",
       "durationSeconds": 4200
     },
     {
-      "memberId": "44c5651e",
+      "memberId": "85befc0e",
       "durationSeconds": 3000
     }
   ]

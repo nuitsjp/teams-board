@@ -1,14 +1,14 @@
 {
-  "id": "52664958-2026-01-27",
-  "groupId": "52664958",
+  "id": "b20ae593-2026-01-27",
+  "groupId": "b20ae593",
   "date": "2026-01-27",
   "attendances": [
     {
-      "memberId": "c6606539",
+      "memberId": "d2ede157",
       "durationSeconds": 3641
     },
     {
-      "memberId": "44c5651e",
+      "memberId": "85befc0e",
       "durationSeconds": 2164
     }
   ]
