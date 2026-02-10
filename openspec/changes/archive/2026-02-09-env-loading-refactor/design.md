@@ -5,6 +5,7 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 各スクリプトの `param()` から Azure パラメータを廃止し、`.env` ファイルを唯一の設定ソースにする
 - `.env` ファイルが見つからない場合、明確なエラーメッセージで終了する
 - `-EnvFile` 引数で `.env` ファイルパスを指定可能にする（デフォルト: プロジェクトルートの `.env`）
@@ -12,6 +13,7 @@
 - `.env` 読み込み → 変数設定 → 必須キー検証を共通関数1回の呼び出しに集約する
 
 **Non-Goals:**
+
 - `.env` 以外の設定ファイル形式（YAML, JSON 等）のサポート
 - 環境変数（`$env:`）からの読み込み対応
 - スクリプト固有パラメータ（`PolicyName`, `SourcePaths` 等）のデフォルト値変更
@@ -23,6 +25,7 @@
 **決定**: 各スクリプトの `param()` に `-EnvFile` パラメータのみを残す（スクリプト固有パラメータは除く）。デフォルト値は空文字列とし、`Import-EnvParams` 内で空の場合はプロジェクトルートの `.env` に解決する。
 
 **利用例**:
+
 ```powershell
 # デフォルト（プロジェクトルートの .env を利用）
 ./scripts/Clear-Data.ps1
@@ -42,6 +45,7 @@
 **決定**: `Apply-EnvSettings` を廃止し、新関数 `Import-EnvParams` に統合する。この関数は `.env` の全キーを `Set-Variable -Scope 1` で呼び出し元スコープに直接設定する。必須キーの検証は `.env.example` をスキーマ定義として使用し、呼び出し側での指定は不要。
 
 **現在のパターン**（各スクリプトで 7 行 + param 3 行）:
+
 ```powershell
 param(
     [string]$SubscriptionId = "9f8bb535-...",
@@ -61,6 +65,7 @@ Connect-AzureStorage -SubscriptionId $SubscriptionId ...
 ```
 
 **変更後のパターン**（1 呼び出しのみ）:
+
 ```powershell
 param(
     [string]$EnvFile = ""
@@ -70,6 +75,7 @@ Connect-AzureStorage -SubscriptionId $AZURE_SUBSCRIPTION_ID ...
 ```
 
 `Import-EnvParams` 内部で以下を実行:
+
 1. `Load-EnvSettings -EnvPath $EnvPath` で `.env` を読み込み
 2. 全キーを `Set-Variable -Name $key -Value $value -Scope 1` で呼び出し元スコープに設定
 3. プロジェクトルートの `.env.example` をパースし、そこに定義されたキーが `.env` にすべて存在するか検証。不足があれば不足キー名を列挙してエラー

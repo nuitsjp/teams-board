@@ -31,6 +31,21 @@ vi.mock('../../../src/services/index-merger.js', () => ({
   })),
 }));
 
+// IndexEditor のモック
+vi.mock('../../../src/services/index-editor.js', () => ({
+  IndexEditor: vi.fn().mockImplementation(() => ({
+    updateGroupName: vi.fn().mockReturnValue({
+      index: {
+        groups: [
+          { id: 'group1', name: '新しいグループ名', totalDurationSeconds: 3600, sessionIds: [] },
+        ],
+        members: [],
+        updatedAt: new Date().toISOString(),
+      },
+    }),
+  })),
+}));
+
 // DataFetcher のモック
 vi.mock('../../../src/services/data-fetcher.js', () => ({
   DataFetcher: vi.fn().mockImplementation(() => ({
@@ -106,5 +121,83 @@ describe('AdminPage — ソースファイル保存パス', () => {
 
     // raw/ ディレクトリへのパスでないことを検証
     expect(callArgs.rawCsv.path).not.toMatch(/^raw\//);
+  });
+});
+
+describe('AdminPage — グループ管理セクション', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('グループ一覧が表示される', async () => {
+    const mockFetchIndex = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        groups: [
+          {
+            id: 'group1',
+            name: 'テストグループ1',
+            totalDurationSeconds: 3600,
+            sessionIds: ['session1', 'session2'],
+          },
+          {
+            id: 'group2',
+            name: 'テストグループ2',
+            totalDurationSeconds: 7200,
+            sessionIds: ['session3'],
+          },
+        ],
+        members: [],
+        updatedAt: '2026-02-08T00:00:00.000Z',
+      },
+    });
+
+    vi.mocked(await import('../../../src/services/data-fetcher.js')).DataFetcher.mockImplementation(
+      () => ({
+        fetchIndex: mockFetchIndex,
+      })
+    );
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('グループ管理')).toBeInTheDocument();
+      expect(screen.getByText('テストグループ1')).toBeInTheDocument();
+      expect(screen.getByText('テストグループ2')).toBeInTheDocument();
+      expect(screen.getByText('group1')).toBeInTheDocument();
+      expect(screen.getByText('group2')).toBeInTheDocument();
+    });
+  });
+
+  it('グループがない場合は「グループがありません」と表示される', async () => {
+    const mockFetchIndex = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        groups: [],
+        members: [],
+        updatedAt: '2026-02-08T00:00:00.000Z',
+      },
+    });
+
+    vi.mocked(await import('../../../src/services/data-fetcher.js')).DataFetcher.mockImplementation(
+      () => ({
+        fetchIndex: mockFetchIndex,
+      })
+    );
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('グループ管理')).toBeInTheDocument();
+      expect(screen.getByText('グループがありません')).toBeInTheDocument();
+    });
   });
 });

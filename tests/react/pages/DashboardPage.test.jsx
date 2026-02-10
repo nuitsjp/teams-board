@@ -30,7 +30,7 @@ describe('DashboardPage', () => {
   });
 
   it('ローディング中に「読み込み中...」と表示すること', () => {
-    mockFetchIndex.mockReturnValue(new Promise(() => { }));
+    mockFetchIndex.mockReturnValue(new Promise(() => {}));
 
     render(
       <MemoryRouter>

@@ -6,6 +6,5 @@
  */
 export const APP_CONFIG = {
   blobBaseUrl:
-    import.meta.env.VITE_BLOB_BASE_URL ||
-    'https://strjstudylogprod.blob.core.windows.net/$web',
+    import.meta.env.VITE_BLOB_BASE_URL || 'https://strjstudylogprod.blob.core.windows.net/$web',
 };

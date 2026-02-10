@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
-import { ArrowLeft, Clock, Calendar, Users, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  Clock,
+  Calendar,
+  Users,
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -58,7 +66,10 @@ export function GroupDetailPage() {
       for (const result of sessionResults) {
         if (!result.ok) continue;
         const session = result.data;
-        const totalDurationSeconds = session.attendances.reduce((acc, a) => acc + a.durationSeconds, 0);
+        const totalDurationSeconds = session.attendances.reduce(
+          (acc, a) => acc + a.durationSeconds,
+          0
+        );
         const attendees = session.attendances.map((a) => ({
           memberId: a.memberId,
           name: memberNameMap.get(a.memberId) || '不明',
@@ -87,7 +98,9 @@ export function GroupDetailPage() {
 
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [groupId]);
 
   const toggleSession = (sessionId) => {
@@ -164,17 +177,21 @@ export function GroupDetailPage() {
         {sessionDetails.map((session) => {
           const isExpanded = expandedSessions.has(session.sessionId);
           return (
-            <div key={session.sessionId} className="bg-surface rounded-xl border border-border-light overflow-hidden">
+            <div
+              key={session.sessionId}
+              className="bg-surface rounded-xl border border-border-light overflow-hidden"
+            >
               {/* セッションサマリーカード */}
               <button
                 onClick={() => toggleSession(session.sessionId)}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-surface-muted transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  {isExpanded
-                    ? <ChevronDown className="w-5 h-5 text-text-muted" />
-                    : <ChevronRight className="w-5 h-5 text-text-muted" />
-                  }
+                  {isExpanded ? (
+                    <ChevronDown className="w-5 h-5 text-text-muted" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-text-muted" />
+                  )}
                   <div>
                     <h3 className="text-base font-bold text-text-primary">{session.date}</h3>
                     <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">

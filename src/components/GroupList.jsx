@@ -25,7 +25,8 @@ export function GroupList({ groups }) {
               <h3 className="font-semibold text-text-primary mb-2">{group.name}</h3>
               <div className="flex items-center text-sm text-text-secondary gap-6">
                 <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
-                  <span className="font-bold text-text-primary">{group.sessionIds.length}</span> 回開催
+                  <span className="font-bold text-text-primary">{group.sessionIds.length}</span>{' '}
+                  回開催
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-text-muted" />

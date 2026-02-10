@@ -7,25 +7,25 @@ on:
   push:
     branches: [main]
     paths:
-      - "src/**"
-      - "tests/**"
-      - "e2e/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "vite.config.js"
-      - ".eslintrc.cjs"
-      - ".github/workflows/ci.yml"
+      - 'src/**'
+      - 'tests/**'
+      - 'e2e/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.js'
+      - '.eslintrc.cjs'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [main]
     paths:
-      - "src/**"
-      - "tests/**"
-      - "e2e/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "vite.config.js"
-      - ".eslintrc.cjs"
-      - ".github/workflows/ci.yml"
+      - 'src/**'
+      - 'tests/**'
+      - 'e2e/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.js'
+      - '.eslintrc.cjs'
+      - '.github/workflows/ci.yml'
 
 concurrency:
   group: ci-${{ github.ref }}

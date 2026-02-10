@@ -17,7 +17,12 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 
 const mockIndexData = {
   groups: [
-    { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['g1-2026-01-15'] },
+    {
+      id: 'g1',
+      name: 'フロントエンド勉強会',
+      totalDurationSeconds: 3600,
+      sessionIds: ['g1-2026-01-15'],
+    },
   ],
   members: [
     { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 1800, sessionIds: ['g1-2026-01-15'] },
@@ -29,9 +34,7 @@ const mockSessionData = {
   id: 'g1-2026-01-15',
   groupId: 'g1',
   date: '2026-01-15',
-  attendances: [
-    { memberId: 'm1', durationSeconds: 1800 },
-  ],
+  attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
 };
 
 function renderWithRouter(memberId) {

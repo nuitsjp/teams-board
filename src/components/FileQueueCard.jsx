@@ -130,15 +130,20 @@ export function FileQueueCard({ item, onRemove, onApproveDuplicate }) {
             className={`flex flex-wrap items-center gap-3 px-4 py-3 ${canExpand ? 'cursor-pointer hover:bg-surface-muted' : ''} transition-colors`}
             onClick={() => canExpand && setExpanded(!expanded)}
           >
-            {canExpand && (
-              expanded
-                ? <ChevronDown className="w-4 h-4 text-text-muted" />
-                : <ChevronRight className="w-4 h-4 text-text-muted" />
-            )}
+            {canExpand &&
+              (expanded ? (
+                <ChevronDown className="w-4 h-4 text-text-muted" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-text-muted" />
+              ))}
             <span className="font-semibold text-text-primary">{mergeInput.groupName}</span>
             <span className="text-text-secondary text-sm">{mergeInput.date}</span>
-            <span className="text-sm text-text-secondary">参加者: {mergeInput.attendances.length}名</span>
-            <span className="text-sm text-text-secondary">合計: {formatDuration(totalDuration)}</span>
+            <span className="text-sm text-text-secondary">
+              参加者: {mergeInput.attendances.length}名
+            </span>
+            <span className="text-sm text-text-secondary">
+              合計: {formatDuration(totalDuration)}
+            </span>
             {item.hasDuplicate && (
               <span className="text-xs text-warning bg-amber-50 px-1.5 py-0.5 rounded">重複</span>
             )}
@@ -158,7 +163,9 @@ export function FileQueueCard({ item, onRemove, onApproveDuplicate }) {
                   {mergeInput.attendances.map((a, i) => (
                     <tr key={i}>
                       <td className="py-2 px-3 text-text-primary">{a.memberName}</td>
-                      <td className="py-2 px-3 text-text-secondary">{formatDuration(a.durationSeconds)}</td>
+                      <td className="py-2 px-3 text-text-secondary">
+                        {formatDuration(a.durationSeconds)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -26,9 +26,14 @@ function AppLayout() {
       {/* 統一ヘッダー */}
       <header className="bg-surface border-b border-border sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <a href="#/" className="flex items-center gap-2.5 text-text-primary hover:text-primary-700 transition-colors">
+          <a
+            href="#/"
+            className="flex items-center gap-2.5 text-text-primary hover:text-primary-700 transition-colors"
+          >
             <BookOpen className="w-5 h-5 text-primary-600" />
-            <span className="text-lg font-bold tracking-tight">{import.meta.env.VITE_APP_TITLE || 'Teams Board'}</span>
+            <span className="text-lg font-bold tracking-tight">
+              {import.meta.env.VITE_APP_TITLE || 'Teams Board'}
+            </span>
           </a>
           {isAdmin && (
             <a

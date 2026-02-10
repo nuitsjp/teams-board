@@ -13,9 +13,11 @@
 ## Capabilities
 
 ### New Capabilities
+
 - `dotenv-config-loader`: `.env` ファイルからインフラスクリプト用の環境変数を読み込む共通ヘルパー機能
 
 ### Modified Capabilities
+
 （既存のspecsにこの変更に該当するものはなし）
 
 ## Impact

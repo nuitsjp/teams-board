@@ -30,11 +30,13 @@
 **選択**: `data/sources/{sessionId}.csv`
 
 **理由**:
+
 - セッションJSON（`data/sessions/{sessionId}.json`）と同じID体系で対応するため、紐づけが明確
 - `data/` 配下に統一することで、データの論理的な構造が一貫する
 - sessionId はハッシュベースで一意性が保証されている
 
 **代替案**:
+
 - `raw/{sessionId}.csv` — `raw/` ディレクトリを継続使用する案。しかし `data/` 配下に統一した方がデータ構造として整合的
 - `data/sessions/{sessionId}.csv` — sessions と同じディレクトリに置く案。JSON と CSV が混在し、管理が煩雑になるため不採用
 
@@ -43,6 +45,7 @@
 **選択**: `AdminPage.jsx` の `handleBulkSave` 内のパス文字列のみ変更
 
 **理由**:
+
 - `BlobWriter.executeWriteSequence` はパスを引数として受け取る汎用的な設計であり、内部の変更は不要
 - `CsvTransformer` は CSV パースのみを担当し、保存先に関与しない
 - タイムスタンプ生成コード（`new Date().toISOString().replace(...)`)は不要になるため削除

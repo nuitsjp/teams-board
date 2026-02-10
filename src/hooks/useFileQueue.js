@@ -31,7 +31,12 @@ function fileQueueReducer(state, action) {
         ...state,
         queue: state.queue.map((item) =>
           item.id === action.payload.id
-            ? { ...item, status: 'ready', parseResult: action.payload.result, warnings: action.payload.result.warnings || [] }
+            ? {
+                ...item,
+                status: 'ready',
+                parseResult: action.payload.result,
+                warnings: action.payload.result.warnings || [],
+              }
             : item
         ),
       };
@@ -49,7 +54,13 @@ function fileQueueReducer(state, action) {
         ...state,
         queue: state.queue.map((item) =>
           item.id === action.payload.id
-            ? { ...item, status: 'duplicate_warning', hasDuplicate: true, parseResult: action.payload.result, warnings: action.payload.result.warnings || [] }
+            ? {
+                ...item,
+                status: 'duplicate_warning',
+                hasDuplicate: true,
+                parseResult: action.payload.result,
+                warnings: action.payload.result.warnings || [],
+              }
             : item
         ),
       };
@@ -130,28 +141,31 @@ export function useFileQueue(csvTransformer) {
     existingSessionIds: new Set(),
   });
 
-  const parsePendingItem = useCallback(async (item) => {
-    const error = validateFile(item.file);
-    if (error) {
-      dispatch({ type: 'VALIDATE_ERROR', payload: { id: item.id, errors: [error] } });
-      return;
-    }
+  const parsePendingItem = useCallback(
+    async (item) => {
+      const error = validateFile(item.file);
+      if (error) {
+        dispatch({ type: 'VALIDATE_ERROR', payload: { id: item.id, errors: [error] } });
+        return;
+      }
 
-    dispatch({ type: 'VALIDATE_START', payload: item.id });
+      dispatch({ type: 'VALIDATE_START', payload: item.id });
 
-    const result = await csvTransformer.parse(item.file);
-    if (!result.ok) {
-      dispatch({ type: 'VALIDATE_ERROR', payload: { id: item.id, errors: result.errors } });
-      return;
-    }
+      const result = await csvTransformer.parse(item.file);
+      if (!result.ok) {
+        dispatch({ type: 'VALIDATE_ERROR', payload: { id: item.id, errors: result.errors } });
+        return;
+      }
 
-    const sessionId = result.sessionRecord.id;
-    if (state.existingSessionIds.has(sessionId)) {
-      dispatch({ type: 'DUPLICATE_DETECTED', payload: { id: item.id, result } });
-    } else {
-      dispatch({ type: 'VALIDATE_SUCCESS', payload: { id: item.id, result } });
-    }
-  }, [csvTransformer, state.existingSessionIds]);
+      const sessionId = result.sessionRecord.id;
+      if (state.existingSessionIds.has(sessionId)) {
+        dispatch({ type: 'DUPLICATE_DETECTED', payload: { id: item.id, result } });
+      } else {
+        dispatch({ type: 'VALIDATE_SUCCESS', payload: { id: item.id, result } });
+      }
+    },
+    [csvTransformer, state.existingSessionIds]
+  );
 
   // pending状態のアイテムを自動パース
   useEffect(() => {

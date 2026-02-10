@@ -95,7 +95,9 @@ export function MemberDetailPage() {
 
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [memberId]);
 
   const toggleGroup = (groupId) => {
@@ -172,17 +174,21 @@ export function MemberDetailPage() {
         {groupAttendances.map((group) => {
           const isExpanded = expandedGroups.has(group.groupId);
           return (
-            <div key={group.groupId} className="bg-surface rounded-xl border border-border-light overflow-hidden">
+            <div
+              key={group.groupId}
+              className="bg-surface rounded-xl border border-border-light overflow-hidden"
+            >
               {/* サマリーカード */}
               <button
                 onClick={() => toggleGroup(group.groupId)}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-surface-muted transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  {isExpanded
-                    ? <ChevronDown className="w-5 h-5 text-text-muted" />
-                    : <ChevronRight className="w-5 h-5 text-text-muted" />
-                  }
+                  {isExpanded ? (
+                    <ChevronDown className="w-5 h-5 text-text-muted" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-text-muted" />
+                  )}
                   <div>
                     <h3 className="text-base font-bold text-text-primary">{group.groupName}</h3>
                     <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">

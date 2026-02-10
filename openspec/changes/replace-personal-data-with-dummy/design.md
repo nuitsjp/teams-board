@@ -30,19 +30,19 @@
 
 **マッピング案:**
 
-| 元の名前 | ダミー名 |
-|---------|---------|
-| 中村 充志 / Nakamura Atsushi A | Suzuki Taro A (鈴木 太郎) |
-| 山浦 哲朗 / Yamaura Tetsuro | Tanaka Koji (田中 浩二) |
-| 崔 文 / Sai Bun A | Yamamoto Yuki A (山本 裕貴) |
-| 谷戸 大輔 / Yato Daisuke | Watanabe Kenji (渡辺 健二) |
+| 元の名前                       | ダミー名                    |
+| ------------------------------ | --------------------------- |
+| 中村 充志 / Nakamura Atsushi A | Suzuki Taro A (鈴木 太郎)   |
+| 山浦 哲朗 / Yamaura Tetsuro    | Tanaka Koji (田中 浩二)     |
+| 崔 文 / Sai Bun A              | Yamamoto Yuki A (山本 裕貴) |
+| 谷戸 大輔 / Yato Daisuke       | Watanabe Kenji (渡辺 健二)  |
 
-| 元の勉強会名 | ダミー名 |
-|-------------|---------|
-| もくもく勉強会 | フロントエンド勉強会 |
-| React読書会 | TypeScript読書会 |
+| 元の勉強会名         | ダミー名               |
+| -------------------- | ---------------------- |
+| もくもく勉強会       | フロントエンド勉強会   |
+| React読書会          | TypeScript読書会       |
 | アーキテクチャ設計塾 | ソフトウェア設計勉強会 |
-| クラウド技術研究会 | インフラ技術研究会 |
+| クラウド技術研究会   | インフラ技術研究会     |
 
 **代替案**: Fakerライブラリで自動生成 → 「実際に存在しそうな名称」の制御が難しく、再実行のたびに変わるため不採用。
 
@@ -54,16 +54,17 @@
 
 **テストデータのマッピング:**
 
-| 元の名前 | ダミー名 |
-|---------|---------|
-| テスト太郎 | 佐藤 一郎 |
-| テスト花子 | 高橋 美咲 |
-| taro@example.com | ichiro.sato@example.com |
+| 元の名前           | ダミー名                     |
+| ------------------ | ---------------------------- |
+| テスト太郎         | 佐藤 一郎                    |
+| テスト花子         | 高橋 美咲                    |
+| taro@example.com   | ichiro.sato@example.com      |
 | hanako@example.com | misaki.takahashi@example.com |
 
 ### 3. 置換の実行順序
 
 **決定**: 以下の順序で置換する:
+
 1. `public/data/index.json`（マスターデータ）
 2. `public/data/sessions/*.json`（セッションデータ ─ 構造に変更がないため内容確認のみ）
 3. `tests/` 配下のテストファイル
