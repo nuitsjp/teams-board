@@ -94,8 +94,6 @@ jobs:
 
       - name: Azure Blob Storage にデプロイ
         run: |
-          # data/ ディレクトリはデータのライフサイクルが異なるため除外
-          rm -rf dist/data
           az storage blob upload-batch \
             --source dist \
             --destination '$web' \

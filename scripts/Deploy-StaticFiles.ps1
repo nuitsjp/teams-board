@@ -5,8 +5,8 @@
 .DESCRIPTION
     テスト・Lint・プロダクションビルドを実行し、dist/ 配下のビルド成果物を
     $web コンテナに一括アップロードする。CIワークフローと同等の品質チェックを
-    ローカルで実行する。data/ ディレクトリはライフサイクルが異なるため除外し、
-    初回デプロイ時のみシードデータを配置する。
+    ローカルで実行する。開発用データは dev-fixtures/ に分離済みのため
+    dist/ にデータは含まれない。初回デプロイ時のみシードデータを配置する。
 
 .PARAMETER EnvFile
     .env ファイルのパス（デフォルト: プロジェクトルートの .env）
@@ -64,13 +64,6 @@ $accountKey = Connect-AzureStorage -SubscriptionId $AZURE_SUBSCRIPTION_ID -Resou
 # ソースディレクトリ（dist/ 固定）
 $sourcePath = Join-Path $repoRoot "dist"
 Write-Action "アップロード元: $sourcePath"
-
-# data/ ディレクトリを除外（CIと同様に物理削除）
-$dataDir = Join-Path $sourcePath "data"
-if (Test-Path $dataDir) {
-    Remove-Item -Path $dataDir -Recurse -Force
-    Write-Info "data/ ディレクトリを除外しました"
-}
 
 # upload-batch で一括アップロード
 az storage blob upload-batch `
