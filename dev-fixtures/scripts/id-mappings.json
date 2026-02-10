@@ -1,0 +1,50 @@
+{
+  "groups": {
+    "52664958": {
+      "oldId": "52664958",
+      "newId": "b20ae593",
+      "name": "フロントエンド勉強会"
+    },
+    "a1b2c3d4": {
+      "oldId": "a1b2c3d4",
+      "newId": "75aa4f8f",
+      "name": "TypeScript読書会"
+    },
+    "e5f6a7b8": {
+      "oldId": "e5f6a7b8",
+      "newId": "078075da",
+      "name": "ソフトウェア設計勉強会"
+    },
+    "c9d0e1f2": {
+      "oldId": "c9d0e1f2",
+      "newId": "b630e3f1",
+      "name": "インフラ技術研究会"
+    }
+  },
+  "members": {
+    "c6606539": {
+      "oldId": "c6606539",
+      "newId": "d2ede157",
+      "name": "Suzuki Taro A (鈴木 太郎)",
+      "email": "suzuki.taro.a@example.com"
+    },
+    "90df7918": {
+      "oldId": "90df7918",
+      "newId": "7c35db6e",
+      "name": "Tanaka Koji (田中 浩二)",
+      "email": "tanaka.koji@example.com"
+    },
+    "7a974eca": {
+      "oldId": "7a974eca",
+      "newId": "70c5a8d7",
+      "name": "Yamamoto Yuki A (山本 裕貴)",
+      "email": "yamamoto.yuki.a@example.com"
+    },
+    "44c5651e": {
+      "oldId": "44c5651e",
+      "newId": "85befc0e",
+      "name": "Watanabe Kenji (渡辺 健二)",
+      "email": "watanabe.kenji@example.com"
+    }
+  }
+}
