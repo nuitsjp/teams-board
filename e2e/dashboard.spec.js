@@ -123,9 +123,9 @@ test.describe('グループ詳細画面', () => {
     await sessionHeadings.first().click();
     await expect(page.locator('table')).toBeVisible();
 
-    // テーブルに名前列と学習時間列がある
+    // テーブルに名前列と参加時間列がある
     await expect(page.getByRole('columnheader', { name: '名前' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: '学習時間' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
 
     // 再クリックで折りたたみ
     await sessionHeadings.first().click();
@@ -172,9 +172,9 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();
     await expect(page.locator('table')).toBeVisible();
 
-    // テーブルに日付列と学習時間列がある
+    // テーブルに日付列と参加時間列がある
     await expect(page.getByRole('columnheader', { name: '日付' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: '学習時間' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
 
     // 再クリックで折りたたみ
     await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();

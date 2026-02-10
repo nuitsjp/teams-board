@@ -207,7 +207,7 @@ export function MemberDetailPage() {
                       <thead>
                         <tr className="border-b border-border-light bg-surface-muted text-left text-sm text-text-secondary">
                           <th className="px-6 py-3 font-medium">日付</th>
-                          <th className="px-6 py-3 font-medium text-right">学習時間</th>
+                          <th className="px-6 py-3 font-medium text-right">参加時間</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border-light">

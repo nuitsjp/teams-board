@@ -55,15 +55,10 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-bold text-text-primary">学習サマリー</h2>
-        <p className="text-sm text-text-muted mt-1">全体の学習記録を確認できます</p>
-      </div>
-
       {/* 統計カード */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <SummaryCard
-          title="総勉強時間"
+          title="総参加時間"
           value={formatDuration(totalDuration)}
           icon={Clock}
         />

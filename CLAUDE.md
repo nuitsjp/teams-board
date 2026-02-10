@@ -11,51 +11,93 @@ You are running on Windows. Bash isn't available directly, so please use Bash (v
 - Class names, function names, and other identifiers must be written in English.
 - Can execute GitHub CLI/Azure CLI. Will execute and verify them personally
   whenever possible.
-- Do not modify files directly on the main branch. 
+- Do not modify files directly on the main branch.
 - Create a branch with an appropriate name and switch to it before making any modifications.
 
-# AI-DLC and Spec-Driven Development
+## Common Commands
 
-Kiro-style Spec Driven Development implementation on AI-DLC (AI Development Life Cycle)
+```bash
+pnpm install              # Install dependencies
+pnpm run dev              # Start dev server (http://localhost:5173, with HMR)
+pnpm run build            # Production build (output to dist/)
+pnpm test                 # Run unit tests with Vitest
+pnpm run test:watch       # Vitest watch mode
+pnpm run test:coverage    # Run tests with coverage
+pnpm run lint             # ESLint static analysis
+pnpm run format           # Prettier code formatting
 
-## Project Context
+# E2E tests (Playwright)
+pnpm exec playwright install   # First time only: install browsers
+pnpm run test:e2e              # Headless execution
+pnpm run test:e2e:headed       # Run with browser visible
 
-### Paths
-- Steering: `.kiro/steering/`
-- Specs: `.kiro/specs/`
+# Run a single test file
+pnpm vitest run tests/logic/csv-transformer.test.js
+pnpm vitest run tests/react/pages/DashboardPage.test.jsx
+```
 
-### Steering vs Specification
+## Tech Stack
 
-**Steering** (`.kiro/steering/`) - Guide AI with project-wide rules and context
-**Specs** (`.kiro/specs/`) - Formalize development process for individual features
+- **React 19** + **Vite** — JSX (no TypeScript)
+- **react-router-dom** (HashRouter) — `#/` based routing
+- **Tailwind CSS 4** — Utility-first CSS
+- **PapaParse** — Teams attendance report CSV (UTF-16LE) parser
+- **Vitest** + **React Testing Library** — Unit tests in jsdom environment
+- **Playwright** — E2E tests (Chromium only)
+- **pnpm** — Package manager (`packageManager: pnpm@10.27.0`)
 
-### Active Specifications
-- Check `.kiro/specs/` for active specifications
-- Use `/kiro:spec-status [feature-name]` to check progress
+## Architecture
 
-## Development Guidelines
-- Think in English, generate responses in Japanese. All Markdown content written to project files (e.g., requirements.md, design.md, tasks.md, research.md, validation reports) MUST be written in the target language configured for this specification (see spec.json.language).
+A dashboard SPA that aggregates and visualizes Microsoft Teams attendance report CSVs. Hosted on Azure Blob Storage static site hosting, operating without a backend server.
 
-## Minimal Workflow
-- Phase 0 (optional): `/kiro:steering`, `/kiro:steering-custom`
-- Phase 1 (Specification):
-  - `/kiro:spec-init "description"`
-  - `/kiro:spec-requirements {feature}`
-  - `/kiro:validate-gap {feature}` (optional: for existing codebase)
-  - `/kiro:spec-design {feature} [-y]`
-  - `/kiro:validate-design {feature}` (optional: design review)
-  - `/kiro:spec-tasks {feature} [-y]`
-- Phase 2 (Implementation): `/kiro:spec-impl {feature} [tasks]`
-  - `/kiro:validate-impl {feature}` (optional: after implementation)
-- Progress check: `/kiro:spec-status {feature}` (use anytime)
+### Layer Structure
 
-## Development Rules
-- 3-phase approval workflow: Requirements → Design → Tasks → Implementation
-- Human review required each phase; use `-y` only for intentional fast-track
-- Keep steering current and verify alignment with `/kiro:spec-status`
-- Follow the user's instructions precisely, and within that scope act autonomously: gather the necessary context and complete the requested work end-to-end in this run, asking questions only when essential information is missing or the instructions are critically ambiguous.
+| Layer | Path | Responsibility |
+|-------|------|----------------|
+| Pages | `src/pages/` | Per-screen data fetching and display (Dashboard, MemberDetail, GroupDetail, Admin) |
+| Components | `src/components/` | Reusable UI parts (FileDropZone, GroupList, MemberList, SummaryCard, etc.) |
+| Hooks | `src/hooks/` | State management (`useAuth` = SAS token auth, `useFileQueue` = file queue) |
+| Services | `src/services/` | I/O and domain logic (see below) |
+| Config | `src/config/` | Environment variable based config (`APP_CONFIG.blobBaseUrl`) |
 
-## Steering Configuration
-- Load entire `.kiro/steering/` as project memory
-- Default files: `product.md`, `tech.md`, `structure.md`
-- Custom files are supported (managed via `/kiro:steering-custom`)
+### Services Layer Roles
+
+- **CsvTransformer** — Parses Teams attendance report CSV (UTF-16LE/TSV), producing session records and index merge inputs. Uses first 8 hex digits of SHA-256 for ID generation
+- **IndexMerger** — Immutably updates groups/members in `index.json` (duplicate sessionIds are skipped with warnings)
+- **DataFetcher** — Fetches `data/index.json` and `data/sessions/*.json` from the static site
+- **BlobWriter** — PUTs to Azure Blob Storage with SAS token
+
+### Routing
+
+- `#/` — Dashboard overview
+- `#/groups/:groupId` — Group detail
+- `#/members/:memberId` — Member detail
+- `#/admin` — Admin page (visible only when SAS token authenticated)
+
+### Data Flow
+
+- Read path: Static Website Endpoint → `data/index.json` (with cache buster) + `data/sessions/<id>.json` (immutable)
+- Write path: CSV drop → CsvTransformer → IndexMerger → BlobWriter (PUT with SAS)
+- SAS token is extracted from URL query `token` on first load, then immediately removed via `history.replaceState` and held in memory only
+
+### Development Data
+
+Development JSON fixtures are placed in `dev-fixtures/data/`. The Vite plugin `serveDevFixtures` (in vite.config.js) serves `/data/` requests from this directory on the dev server. Not included in `public/` since Azure Blob Storage serves this data in production.
+
+### Test Structure
+
+- `tests/data/` — DataFetcher, BlobWriter, IndexMerger tests
+- `tests/logic/` — CsvTransformer tests
+- `tests/react/` — React component, page, and hook tests
+- `tests/fixtures/` — Test CSV fixtures
+- `tests/vitest.setup.js` — webcrypto polyfill + jest-dom setup
+- `e2e/` — Playwright E2E tests (dashboard, admin)
+
+### CI/CD
+
+GitHub Actions (`.github/workflows/deploy.yml`) runs tests and lint in parallel on push, then deploys to Azure Blob Storage. `main` → prod environment, other branches → dev environment. Uses OIDC authentication.
+
+### Environment Variables (Build Time)
+
+- `VITE_APP_TITLE` — App title (default: 'Teams Board')
+- `VITE_BLOB_BASE_URL` — Blob Service Endpoint URL

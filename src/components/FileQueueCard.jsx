@@ -151,7 +151,7 @@ export function FileQueueCard({ item, onRemove, onApproveDuplicate }) {
                 <thead>
                   <tr className="border-b border-border-light text-text-secondary">
                     <th className="text-left py-2 px-3 font-medium">参加者</th>
-                    <th className="text-left py-2 px-3 font-medium">学習時間</th>
+                    <th className="text-left py-2 px-3 font-medium">参加時間</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-light">

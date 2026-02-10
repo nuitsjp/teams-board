@@ -55,7 +55,7 @@ describe('GroupList', () => {
     }
   });
 
-  it('開催回数と学習時間が表示されること', () => {
+  it('開催回数と参加時間が表示されること', () => {
     renderGroupList();
 
     const rows = screen.getAllByTestId('group-row');
