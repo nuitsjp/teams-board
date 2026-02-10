@@ -41,7 +41,7 @@ describe('MemberList', () => {
       const rows = screen.getAllByTestId('member-row');
       const names = rows.map((row) => row.querySelector('h3').textContent);
 
-      // localeCompare('ja') でソートされること（勉強時間順ではないこと）
+      // localeCompare('ja') でソートされること（参加時間順ではないこと）
       expect(names[0]).toBe('Alice');
       expect(names[1]).toBe('Bob');
     });
