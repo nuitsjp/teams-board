@@ -16,10 +16,10 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "infra:deploy": "pwsh -ExecutionPolicy Bypass -File scripts/Deploy-Infrastructure.ps1",
-    "infra:publish": "pwsh -ExecutionPolicy Bypass -File scripts/Deploy-StaticFiles.ps1",
-    "infra:sas": "pwsh -ExecutionPolicy Bypass -File scripts/New-SasToken.ps1",
-    "infra:clear": "pwsh -ExecutionPolicy Bypass -File scripts/Clear-Data.ps1",
-    "infra:urls": "pwsh -ExecutionPolicy Bypass -File scripts/Show-Urls.ps1"
+    "infra:publish": "node scripts/deploy-static-files.mjs",
+    "infra:sas": "node scripts/new-sas-token.mjs",
+    "infra:clear": "node scripts/clear-data.mjs",
+    "infra:urls": "node scripts/show-urls.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
