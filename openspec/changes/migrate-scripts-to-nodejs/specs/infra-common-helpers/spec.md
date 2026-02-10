@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: .env設定読み込み関数の提供
 `scripts/lib/env-settings.mjs` は `loadEnvSettings` 関数をnamed exportとして提供しなければならない（SHALL）。`loadEnvSettings` はオプションのパス引数を受け付け、未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。指定パスに `.env` ファイルが存在しない場合はエラーをスローしなければならない（MUST）。

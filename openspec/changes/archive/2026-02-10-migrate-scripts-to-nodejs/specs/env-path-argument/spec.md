@@ -1,22 +1,22 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: スクリプトの -EnvFile パラメータ
-全メインスクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls）は `-EnvFile` パラメータを受け付けなければならない（SHALL）。このパラメータにより、使用する `.env` ファイルのパスを指定できる。未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。
+全メインスクリプト（clear-data, deploy-static-files, new-sas-token, show-urls）は `--env-file` CLIオプションを受け付けなければならない（SHALL）。このオプションにより、使用する `.env` ファイルのパスを指定できる。未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。
 
-#### Scenario: -EnvFile 未指定時のデフォルト動作
-- **WHEN** `-EnvFile` を指定せずにスクリプトを実行する
+#### Scenario: --env-file 未指定時のデフォルト動作
+- **WHEN** `--env-file` を指定せずにスクリプトを実行する
 - **THEN** プロジェクトルートの `.env` ファイルが読み込まれる
 
-#### Scenario: -EnvFile で相対パスを指定
-- **WHEN** `-EnvFile ".env.staging"` のように相対パスを指定してスクリプトを実行する
+#### Scenario: --env-file で相対パスを指定
+- **WHEN** `--env-file .env.staging` のように相対パスを指定してスクリプトを実行する
 - **THEN** プロジェクトルート基準で解決されたパスの `.env` ファイルが読み込まれる
 
-#### Scenario: -EnvFile で絶対パスを指定
-- **WHEN** `-EnvFile "/path/to/.env.prod"` のように絶対パスを指定してスクリプトを実行する
+#### Scenario: --env-file で絶対パスを指定
+- **WHEN** `--env-file /path/to/.env.prod` のように絶対パスを指定してスクリプトを実行する
 - **THEN** 指定された絶対パスの `.env` ファイルが読み込まれる
 
 #### Scenario: 指定された .env ファイルが存在しない場合
-- **WHEN** `-EnvFile` で指定されたパス（またはデフォルトパス）に `.env` ファイルが存在しない
+- **WHEN** `--env-file` で指定されたパス（またはデフォルトパス）に `.env` ファイルが存在しない
 - **THEN** ファイルパスを含む明確なエラーメッセージと共にスクリプトが終了する
 
 ### Requirement: Import-EnvParams 共通関数の提供
