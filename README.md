@@ -2,8 +2,6 @@
 
 Microsoft Teams の出席レポートを集計・可視化するダッシュボードです。グループごとの参加状況やメンバーの活動時間を一覧表示し、CSV ファイルのインポートでデータを更新できます。
 
-> **Note**: GitHub Actions ワークフローを最適化しました。詳細は [Issue #29](https://github.com/ssd-mkdocs-platform/teams-board/issues/29) を参照してください。
-
 ## 技術スタック
 
 | 要素 | 選択 | 選定理由 |
@@ -22,6 +20,7 @@ Microsoft Teams の出席レポートを集計・可視化するダッシュボ�
 ### 前提条件
 
 - **Node.js** v20 以上
+- **pnpm**（Node.js v20 以上の場合は `corepack enable` で利用可能）
 - **ni**（パッケージマネージャーに依存しないコマンド。`npm i -g @antfu/ni` でインストール可能）
 
 ### セットアップとテスト実行
