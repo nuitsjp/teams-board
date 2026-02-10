@@ -1,5 +1,6 @@
 # CI ワークフロー
 # PR to main および main への push 時に test/lint/build を並列実行
+# concurrency 設定により、同じ PR への新しい push で古い実行をキャンセル
 name: CI
 
 on:
