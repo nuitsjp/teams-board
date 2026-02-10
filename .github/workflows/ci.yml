@@ -1,0 +1,103 @@
+# CI ワークフロー
+# PR to main および main への push 時に test/lint/build を並列実行
+# concurrency 設定により、同じ PR への新しい push で古い実行をキャンセル
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "e2e/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "vite.config.js"
+      - ".eslintrc.cjs"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "e2e/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "vite.config.js"
+      - ".eslintrc.cjs"
+      - ".github/workflows/ci.yml"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ユニットテスト
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # setup-node の pnpm キャッシュは pnpm コマンドを呼ぶため、先に pnpm を用意する
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: ユニットテスト実行
+        run: pnpm run test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint 実行
+        run: pnpm run lint
+
+  build:
+    name: ビルド検証
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: ビルド検証
+        run: pnpm run build
