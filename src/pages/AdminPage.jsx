@@ -8,9 +8,11 @@ import { ProgressBar } from '../components/ProgressBar.jsx';
 import { CsvTransformer } from '../services/csv-transformer.js';
 import { BlobWriter } from '../services/blob-writer.js';
 import { IndexMerger } from '../services/index-merger.js';
+import { IndexEditor } from '../services/index-editor.js';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { APP_CONFIG } from '../config/app-config.js';
-import { ArrowLeft, Upload, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Upload, RotateCcw, AlertCircle, CheckCircle } from 'lucide-react';
+import { GroupNameEditor } from '../components/GroupNameEditor.jsx';
 
 /**
  * 管理者パネル — CSVインポート・プレビュー・一括保存機能
@@ -21,28 +23,44 @@ export function AdminPage() {
   const authAdapter = useMemo(() => createAuthAdapter(auth), [auth]);
 
   const csvTransformer = useMemo(() => new CsvTransformer(), []);
-  const blobWriter = useMemo(() => new BlobWriter(authAdapter, APP_CONFIG.blobBaseUrl), [authAdapter]);
+  const blobWriter = useMemo(
+    () => new BlobWriter(authAdapter, APP_CONFIG.blobBaseUrl),
+    [authAdapter]
+  );
   const indexMerger = useMemo(() => new IndexMerger(), []);
+  const indexEditor = useMemo(() => new IndexEditor(), []);
   const dataFetcher = useMemo(() => new DataFetcher(), []);
 
   const {
-    queue, addFiles, removeFile, approveDuplicate,
-    setExistingSessionIds, updateStatus, readyItems, failedItems,
+    queue,
+    addFiles,
+    removeFile,
+    approveDuplicate,
+    setExistingSessionIds,
+    updateStatus,
+    readyItems,
+    failedItems,
   } = useFileQueue(csvTransformer);
 
   const [saving, setSaving] = useState(false);
   const [saveProgress, setSaveProgress] = useState({ current: 0, total: 0 });
   const [saveStatusText, setSaveStatusText] = useState('');
 
-  // 既存セッションIDの取得
+  // グループ管理機能用の状態
+  const [groups, setGroups] = useState([]);
+  const [savingGroupId, setSavingGroupId] = useState(null);
+  const [groupMessage, setGroupMessage] = useState({ type: '', text: '' });
+  const [cachedIndex, setCachedIndex] = useState(null);
+
+  // 既存セッションIDの取得とグループ一覧の取得
   useEffect(() => {
     (async () => {
       const indexResult = await dataFetcher.fetchIndex();
       if (indexResult.ok) {
-        const sessionIds = new Set(
-          indexResult.data.groups.flatMap((g) => g.sessionIds)
-        );
+        const sessionIds = new Set(indexResult.data.groups.flatMap((g) => g.sessionIds));
         setExistingSessionIds(sessionIds);
+        setGroups(indexResult.data.groups);
+        setCachedIndex(indexResult.data);
       }
     })();
   }, [dataFetcher, setExistingSessionIds]);
@@ -68,11 +86,13 @@ export function AdminPage() {
           content: item.file,
           contentType: 'text/csv',
         },
-        newItems: [{
-          path: `data/sessions/${sessionRecord.id}.json`,
-          content: JSON.stringify(sessionRecord, null, 2),
-          contentType: 'application/json',
-        }],
+        newItems: [
+          {
+            path: `data/sessions/${sessionRecord.id}.json`,
+            content: JSON.stringify(sessionRecord, null, 2),
+            contentType: 'application/json',
+          },
+        ],
         indexUpdater: (currentIndex) => indexMerger.merge(currentIndex, mergeInput).index,
       });
 
@@ -100,6 +120,89 @@ export function AdminPage() {
     }
   }, [queue, updateStatus]);
 
+  // グループ名保存処理
+  const handleSaveGroupName = useCallback(
+    async (groupId, newName) => {
+      setSavingGroupId(groupId);
+      setGroupMessage({ type: '', text: '' });
+
+      try {
+        // 楽観的ロック: 最新のindex.jsonを取得
+        const latestIndexResult = await dataFetcher.fetchIndex();
+        if (!latestIndexResult.ok) {
+          setGroupMessage({
+            type: 'error',
+            text: '最新データの取得に失敗しました。ネットワーク接続を確認してください',
+          });
+          setSavingGroupId(null);
+          return false;
+        }
+
+        // updatedAtタイムスタンプを比較
+        if (cachedIndex && latestIndexResult.data.updatedAt !== cachedIndex.updatedAt) {
+          setGroupMessage({
+            type: 'error',
+            text: '他のユーザーが同時に編集しています。最新データを再読み込みしてください',
+          });
+          setSavingGroupId(null);
+          return false;
+        }
+
+        // IndexEditorでindex.jsonを更新
+        const { index: updatedIndex, error } = indexEditor.updateGroupName(
+          latestIndexResult.data,
+          groupId,
+          newName
+        );
+
+        if (error) {
+          setGroupMessage({ type: 'error', text: error });
+          setSavingGroupId(null);
+          return false;
+        }
+
+        // BlobWriterで保存
+        const result = await blobWriter.executeWriteSequence({
+          rawCsv: null,
+          newItems: [],
+          indexUpdater: () => updatedIndex,
+        });
+
+        if (!result.allSucceeded) {
+          const errorMessages = result.results
+            .filter((r) => !r.success)
+            .map((r) => r.error)
+            .join(', ');
+          setGroupMessage({
+            type: 'error',
+            text: `保存に失敗しました。${errorMessages}`,
+          });
+          setSavingGroupId(null);
+          return false;
+        }
+
+        // 保存成功後、最新index.jsonを再取得
+        const refreshedIndexResult = await dataFetcher.fetchIndex();
+        if (refreshedIndexResult.ok) {
+          setGroups(refreshedIndexResult.data.groups);
+          setCachedIndex(refreshedIndexResult.data);
+        }
+
+        setGroupMessage({ type: 'success', text: 'グループ名を保存しました' });
+        setSavingGroupId(null);
+        return true;
+      } catch (err) {
+        setGroupMessage({
+          type: 'error',
+          text: `保存に失敗しました。${err.message}`,
+        });
+        setSavingGroupId(null);
+        return false;
+      }
+    },
+    [dataFetcher, indexEditor, blobWriter, cachedIndex]
+  );
+
   // 非管理者はダッシュボードにリダイレクト
   if (!auth.isAdmin) return <Navigate to="/" replace />;
 
@@ -119,11 +222,7 @@ export function AdminPage() {
         <p className="text-sm text-text-muted mt-1">CSVインポート・プレビュー・一括保存</p>
       </div>
 
-      <FileDropZone
-        onFilesAdded={addFiles}
-        disabled={saving}
-        hasFiles={queue.length > 0}
-      />
+      <FileDropZone onFilesAdded={addFiles} disabled={saving} hasFiles={queue.length > 0} />
 
       <FileQueueCardList
         queue={queue}
@@ -161,6 +260,80 @@ export function AdminPage() {
           )}
         </div>
       )}
+
+      {/* グループ管理セクション */}
+      <div className="mt-8 pt-8 border-t border-border-light">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-text-primary">グループ管理</h3>
+          <p className="text-sm text-text-muted mt-1">
+            グループ名を編集できます（グループIDは変更されません）
+          </p>
+        </div>
+
+        {groupMessage.text && (
+          <div
+            className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+              groupMessage.type === 'success'
+                ? 'bg-green-50 text-green-800'
+                : 'bg-red-50 text-red-800'
+            }`}
+          >
+            {groupMessage.type === 'success' ? (
+              <CheckCircle className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5" />
+            )}
+            <span className="text-sm">{groupMessage.text}</span>
+          </div>
+        )}
+
+        {groups.length === 0 ? (
+          <p className="text-sm text-text-muted">グループがありません</p>
+        ) : (
+          <div className="bg-surface rounded-xl border border-border-light overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                    グループID
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                    グループ名
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">
+                    総学習時間
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">
+                    セッション数
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-light">
+                {groups.map((group) => (
+                  <tr key={group.id}>
+                    <td className="px-4 py-3 text-sm text-text-muted font-mono">{group.id}</td>
+                    <td className="px-4 py-3">
+                      <GroupNameEditor
+                        groupId={group.id}
+                        initialName={group.name}
+                        onSave={handleSaveGroupName}
+                        disabled={savingGroupId !== null}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-sm text-text-primary text-right">
+                      {Math.floor(group.totalDurationSeconds / 3600)}時間
+                      {Math.floor((group.totalDurationSeconds % 3600) / 60)}分
+                    </td>
+                    <td className="px-4 py-3 text-sm text-text-primary text-right">
+                      {group.sessionIds.length}件
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
