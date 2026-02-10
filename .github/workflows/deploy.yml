@@ -1,0 +1,140 @@
+# 静的ファイルデプロイ CI ワークフロー
+# テストと Lint を並列実行し、成功後に Azure Blob Storage ($web) へデプロイする
+# mainブランチ: prod環境、その他のブランチ: dev環境
+name: Deploy
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    name: テスト
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: ユニットテスト実行
+        run: pnpm run test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint 実行
+        run: pnpm run lint
+
+  deploy:
+    name: デプロイ
+    needs: [test, lint]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: Azure にログイン
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: プロダクションビルド
+        run: pnpm run build
+        env:
+          VITE_APP_TITLE: ${{ vars.VITE_APP_TITLE }}
+          VITE_BLOB_BASE_URL: https://${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}.blob.core.windows.net/$web
+
+      - name: Azure Blob Storage にデプロイ
+        run: |
+          az storage blob upload-batch \
+            --source dist \
+            --destination '$web' \
+            --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
+            --overwrite \
+            --auth-mode login
+
+      - name: 初期データの配置
+        run: |
+          # data/index.json が存在しない場合のみ空のシードをアップロード
+          exists=$(az storage blob exists \
+            --container-name '$web' \
+            --name 'data/index.json' \
+            --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
+            --auth-mode login \
+            --output tsv \
+            --query exists)
+          if [ "$exists" = "false" ]; then
+            az storage blob upload \
+              --file scripts/seed/index.json \
+              --container-name '$web' \
+              --name 'data/index.json' \
+              --content-type 'application/json; charset=utf-8' \
+              --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
+              --auth-mode login \
+              --overwrite
+            echo "初期 data/index.json をアップロードしました"
+          else
+            echo "data/index.json は既に存在します。スキップしました"
+          fi
+
+      - name: デプロイ結果の表示
+        run: |
+          WEB_URL=$(az storage account show \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP_NAME }}" \
+            --name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
+            --query "primaryEndpoints.web" \
+            --output tsv)
+          echo "## :rocket: デプロイ完了" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 項目 | 値 |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 環境 | \`${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 静的サイトURL | ${WEB_URL} |" >> "$GITHUB_STEP_SUMMARY"

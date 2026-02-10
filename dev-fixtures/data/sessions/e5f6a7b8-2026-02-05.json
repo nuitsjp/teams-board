@@ -1,0 +1,19 @@
+{
+  "id": "e5f6a7b8-2026-02-05",
+  "groupId": "e5f6a7b8",
+  "date": "2026-02-05",
+  "attendances": [
+    {
+      "memberId": "c6606539",
+      "durationSeconds": 6600
+    },
+    {
+      "memberId": "44c5651e",
+      "durationSeconds": 5400
+    },
+    {
+      "memberId": "90df7918",
+      "durationSeconds": 4800
+    }
+  ]
+}

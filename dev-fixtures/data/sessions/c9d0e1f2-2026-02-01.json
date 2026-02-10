@@ -1,0 +1,15 @@
+{
+  "id": "c9d0e1f2-2026-02-01",
+  "groupId": "c9d0e1f2",
+  "date": "2026-02-01",
+  "attendances": [
+    {
+      "memberId": "90df7918",
+      "durationSeconds": 2700
+    },
+    {
+      "memberId": "7a974eca",
+      "durationSeconds": 3300
+    }
+  ]
+}
