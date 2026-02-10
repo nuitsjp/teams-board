@@ -14,12 +14,7 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "infra:deploy": "pwsh -ExecutionPolicy Bypass -File scripts/Deploy-Infrastructure.ps1",
-    "infra:publish": "node scripts/deploy-static-files.mjs",
-    "infra:sas": "node scripts/new-sas-token.mjs",
-    "infra:clear": "node scripts/clear-data.mjs",
-    "infra:urls": "node scripts/show-urls.mjs"
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
