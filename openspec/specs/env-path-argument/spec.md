@@ -12,7 +12,7 @@
 - **THEN** プロジェクトルート基準で解決されたパスの `.env` ファイルが読み込まれる
 
 #### Scenario: -EnvFile で絶対パスを指定
-- **WHEN** `-EnvFile "C:\envs\.env.prod"` のように絶対パスを指定してスクリプトを実行する
+- **WHEN** `-EnvFile "/path/to/.env.prod"` のように絶対パスを指定してスクリプトを実行する
 - **THEN** 指定された絶対パスの `.env` ファイルが読み込まれる
 
 #### Scenario: 指定された .env ファイルが存在しない場合
@@ -20,16 +20,16 @@
 - **THEN** ファイルパスを含む明確なエラーメッセージと共にスクリプトが終了する
 
 ### Requirement: Import-EnvParams 共通関数の提供
-`scripts/common/Load-EnvSettings.ps1` は `Import-EnvParams` 関数を提供しなければならない（SHALL）。この関数は `.env` ファイルの読み込み、全キーの呼び出し元スコープへの変数設定、`.env.example` に基づく必須キーの検証を一括で実行する。
+`scripts/lib/env-settings.mjs` は `importEnvParams` 関数をnamed exportとして提供しなければならない（SHALL）。この関数は `.env` ファイルの読み込み、全キーのオブジェクトとしての返却、`.env.example` に基づく必須キーの検証を一括で実行する。
 
-#### Scenario: Import-EnvParams による .env キーの変数設定
-- **WHEN** `Import-EnvParams -EnvPath $EnvFile` を呼び出す
-- **THEN** `.env` の全キーが `Set-Variable -Scope 1` で呼び出し元スコープの変数として設定される（例: `AZURE_SUBSCRIPTION_ID=xxx` → `$AZURE_SUBSCRIPTION_ID` が利用可能になる）
+#### Scenario: importEnvParams による .env キーのオブジェクト返却
+- **WHEN** `importEnvParams(envFile)` を呼び出す
+- **THEN** `.env` の全キーがプロパティとして設定されたオブジェクトが返される（例: `AZURE_SUBSCRIPTION_ID=xxx` → `env.AZURE_SUBSCRIPTION_ID` が利用可能になる）
 
 #### Scenario: .env.example に基づく必須キーの検証
 - **WHEN** `.env.example` に定義されたキーが `.env` に存在しない
-- **THEN** 不足しているキー名を含むエラーメッセージと共にスクリプトが終了する
+- **THEN** 不足しているキー名を含むエラーメッセージと共に例外がスローされる
 
 #### Scenario: .env.example が存在しない場合
 - **WHEN** プロジェクトルートに `.env.example` が存在しない
-- **THEN** 必須キー検証はスキップされ、`.env` の全キーが変数として設定される
+- **THEN** 必須キー検証はスキップされ、`.env` の全キーがオブジェクトとして返される
