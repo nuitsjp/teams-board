@@ -227,23 +227,72 @@ on: push
 
 ### 8.2 インフラ管理
 
-- `scripts/Deploy-Infrastructure.ps1`
-- 静的サイト有効化
-- Blob CORS 設定
-- Stored Access Policy 設定
-- ネットワーク規則（`DefaultAction Deny`）適用
+ストレージアカウントの初期設定として、以下の3項目を Azure CLI で構成する必要がある。
+
+#### 静的サイト有効化
+
+```bash
+az storage blob service-properties update \
+  --account-name <ACCOUNT_NAME> \
+  --static-website --index-document index.html
+```
+
+#### Blob CORS 設定
+
+管理者更新フロー（`BlobWriter`）は Static Website Endpoint（`*.web.core.windows.net`）から Blob Service Endpoint（`*.blob.core.windows.net`）へクロスオリジンリクエストを送信する。PUT リクエストは `x-ms-blob-type` / `x-ms-version` ヘッダーを含むため、CORS プリフライト（OPTIONS）が必須となる。
+
+```bash
+az storage cors add \
+  --services b \
+  --methods GET PUT HEAD OPTIONS \
+  --origins "https://<ACCOUNT_NAME>.z11.web.core.windows.net" \
+  --allowed-headers "Content-Type,x-ms-blob-type,x-ms-version" \
+  --exposed-headers "Content-Length,ETag" \
+  --max-age 3600 \
+  --account-name <ACCOUNT_NAME>
+```
+
+| 項目 | 値 | 理由 |
+|------|-----|------|
+| `--methods` | `GET PUT HEAD OPTIONS` | データ取得（GET）、Blob書き込み（PUT）、プリフライト（OPTIONS） |
+| `--origins` | Static Website Endpoint | SPA のオリジン。環境ごとに異なる |
+| `--allowed-headers` | `Content-Type,x-ms-blob-type,x-ms-version` | `BlobWriter.#putBlob()` が送信するヘッダー |
+
+> **注意**: CORS が未設定の場合、管理者のファイルアップロードは「Response to preflight request doesn't pass access control check」エラーで失敗する。
+
+#### Stored Access Policy 設定
+
+管理者用 SAS トークンは `$web` コンテナの Stored Access Policy に紐づける。ポリシーが存在しない場合、SAS トークンは `SAS identifier cannot be found` エラーで無効となる。
+
+```bash
+az storage container policy create \
+  --container-name '$web' \
+  --name dashboard-admin \
+  --permissions rwdl \
+  --expiry <YYYY-MM-DDTHH:MM:SSZ> \
+  --account-name <ACCOUNT_NAME> \
+  --account-key <ACCOUNT_KEY>
+```
+
+| ポリシー名 | 権限 | 用途 |
+|------------|------|------|
+| `dashboard-admin` | `rwdl`（読み取り・書き込み・削除・一覧） | CSV アップロード・index.json 更新 |
+
+> **注意**: `$web` コンテナ名に `$` が含まれるため、シェル変数展開に注意が必要。Node.js の `execFile` では文字列リテラルとして安全に渡される。
 
 ### 8.3 運用支援スクリプト
 
-- `scripts/New-SasToken.ps1`: 管理者用 URL 発行
-- `scripts/Clear-Data.ps1`: `data/sessions` 削除 + `data/index.json` 初期化
+- `scripts/new-sas-token.mjs`: Stored Access Policy に紐づく SAS トークンを生成し、管理者用 URL を出力する
+- `scripts/clear-data.mjs`: `data/sessions` 削除 + `data/index.json` 初期化
+- `scripts/show-urls.mjs`: デプロイ済みの静的サイト URL を表示
 
 ## 9. セキュリティ方針（現行実装）
 
 - 閲覧: 静的サイトエンドポイントから匿名 GET
 - 更新: SAS 付き Blob Service Endpoint への PUT/GET
 - トークン取り扱い: URL から即時除去し、メモリ内のみで保持
-- CORS: `GET, PUT, HEAD` と `x-ms-blob-type`, `x-ms-version` などを許可
+- CORS: Static Website Endpoint → Blob Service Endpoint 間で `GET, PUT, HEAD, OPTIONS` を許可（8.2 節参照）
+- SAS トークン: Stored Access Policy（`dashboard-admin`）に紐づくコンテナ SAS を使用。ポリシーの有効期限と権限をサーバー側で一元管理可能
 
 補足: `staticwebapp.config.json` は Azure Static Web Apps 向け設定であり、Blob Static Website 単体運用では適用されません。
 
