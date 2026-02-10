@@ -12,7 +12,12 @@ test.describe('ダッシュボード画面', () => {
     await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();
 
     // グループが4つ存在すること
-    const groupNames = ['フロントエンド勉強会', 'TypeScript読書会', 'ソフトウェア設計勉強会', 'インフラ技術研究会'];
+    const groupNames = [
+      'フロントエンド勉強会',
+      'TypeScript読書会',
+      'ソフトウェア設計勉強会',
+      'インフラ技術研究会',
+    ];
     for (const name of groupNames) {
       await expect(page.getByText(name).first()).toBeVisible();
     }
@@ -69,7 +74,9 @@ test.describe('画面遷移', () => {
     await expect(page.getByRole('heading', { name: 'メンバー' })).toBeVisible();
   });
 
-  test('存在しないルートにアクセスするとダッシュボードにリダイレクトされること', async ({ page }) => {
+  test('存在しないルートにアクセスするとダッシュボードにリダイレクトされること', async ({
+    page,
+  }) => {
     await page.goto('/#/nonexistent-route');
 
     // ダッシュボードが表示されること
@@ -147,7 +154,9 @@ test.describe('グループ詳細画面', () => {
 });
 
 test.describe('メンバー詳細画面 — グループ別表示', () => {
-  test('複数グループに参加しているメンバーでグループ別サマリーカードが表示されること', async ({ page }) => {
+  test('複数グループに参加しているメンバーでグループ別サマリーカードが表示されること', async ({
+    page,
+  }) => {
     // 鈴木さん（フロントエンド勉強会、TypeScript読書会、ソフトウェア設計勉強会に参加）の詳細ページへ
     await page.goto('/#/members/c6606539');
 

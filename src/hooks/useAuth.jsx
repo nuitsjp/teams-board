@@ -33,11 +33,7 @@ function extractAuth() {
 export function AuthProvider({ children }) {
   const [auth] = useState(() => extractAuth());
 
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 
 /**

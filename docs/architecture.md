@@ -14,10 +14,10 @@
 
 Teams の出席情報は社内情報であるため、閉域ネットワーク内での低コスト運用が求められます。
 
-| 候補 | 評価 |
-|------|------|
-| Azure Static Web Apps (SWA) | パブリックネットワークへの接続が前提であり、ネットワークレベルのアクセス制御が困難 |
-| Azure App Service | VNet 統合にはBasic 以上のプランが必要で、低頻度利用に対してコストが見合わない |
+| 候補                              | 評価                                                                                                                                   |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Azure Static Web Apps (SWA)       | パブリックネットワークへの接続が前提であり、ネットワークレベルのアクセス制御が困難                                                     |
+| Azure App Service                 | VNet 統合にはBasic 以上のプランが必要で、低頻度利用に対してコストが見合わない                                                          |
 | **Azure Blob Storage 静的サイト** | 静的コンテンツとデータを単一ストレージアカウントで管理でき、閉域網のアクセス制御が容易。従量課金のみで低頻度運用のコストを最小化できる |
 
 ## 2. システム境界
@@ -55,14 +55,14 @@ graph TD
 
 ### 4.1 レイヤー構成
 
-| レイヤー | 主な実装 | 責務 |
-|---|---|---|
-| App | `src/App.jsx`, `src/main.jsx` | `AuthProvider` + ルーティング初期化 |
-| Pages | `DashboardPage`, `MemberDetailPage`, `AdminPage` | 画面単位のデータ取得・表示・操作 |
-| Components | `FileDropZone`, `FileQueueCard`, `ProgressBar` など | 再利用UI部品 |
-| Hooks | `useAuth`, `useFileQueue` | 認証状態・ファイルキュー状態管理 |
-| Services | `data-fetcher`, `csv-transformer`, `index-merger`, `blob-writer` | I/O とドメイン処理 |
-| Utils | `format-duration` | 表示フォーマット |
+| レイヤー   | 主な実装                                                         | 責務                                |
+| ---------- | ---------------------------------------------------------------- | ----------------------------------- |
+| App        | `src/App.jsx`, `src/main.jsx`                                    | `AuthProvider` + ルーティング初期化 |
+| Pages      | `DashboardPage`, `MemberDetailPage`, `AdminPage`                 | 画面単位のデータ取得・表示・操作    |
+| Components | `FileDropZone`, `FileQueueCard`, `ProgressBar` など              | 再利用UI部品                        |
+| Hooks      | `useAuth`, `useFileQueue`                                        | 認証状態・ファイルキュー状態管理    |
+| Services   | `data-fetcher`, `csv-transformer`, `index-merger`, `blob-writer` | I/O とドメイン処理                  |
+| Utils      | `format-duration`                                                | 表示フォーマット                    |
 
 ### 4.2 ルーティング
 
@@ -116,9 +116,7 @@ graph TD
   "id": "52664958-2026-02-06",
   "groupId": "52664958",
   "date": "2026-02-06",
-  "attendances": [
-    { "memberId": "c6606539", "durationSeconds": 3645 }
-  ]
+  "attendances": [{ "memberId": "c6606539", "durationSeconds": 3645 }]
 }
 ```
 
@@ -128,11 +126,11 @@ graph TD
 
 ### 5.3 キャッシュ戦略
 
-| パス | 可変性 | 取得方法 |
-|---|---|---|
-| `data/index.json` | 可変 | `?v=<timestamp>` 付き GET |
-| `data/sessions/<id>.json` | 不変 | キャッシュバスターなし GET |
-| `raw/*.csv` | 追記のみ | 管理者 PUT のみ |
+| パス                      | 可変性   | 取得方法                   |
+| ------------------------- | -------- | -------------------------- |
+| `data/index.json`         | 可変     | `?v=<timestamp>` 付き GET  |
+| `data/sessions/<id>.json` | 不変     | キャッシュバスターなし GET |
+| `raw/*.csv`               | 追記のみ | 管理者 PUT のみ            |
 
 ## 6. ドメイン処理
 
@@ -212,10 +210,10 @@ on: push
          └───────┘
 ```
 
-| ブランチ | GitHub Environment | 用途 |
-|----------|-------------------|------|
-| `main`   | `prod`            | 本番環境 |
-| その他   | `dev`             | 開発検証 |
+| ブランチ | GitHub Environment | 用途     |
+| -------- | ------------------ | -------- |
+| `main`   | `prod`             | 本番環境 |
+| その他   | `dev`              | 開発検証 |
 
 - Azure 認証: OIDC（`azure/login@v2` + フェデレーション資格情報）
 - ビルド成果物 `dist/` を `$web` コンテナにアップロード（`az storage blob upload-batch`）
@@ -252,11 +250,11 @@ az storage cors add \
   --account-name <ACCOUNT_NAME>
 ```
 
-| 項目 | 値 | 理由 |
-|------|-----|------|
-| `--methods` | `GET PUT HEAD OPTIONS` | データ取得（GET）、Blob書き込み（PUT）、プリフライト（OPTIONS） |
-| `--origins` | Static Website Endpoint | SPA のオリジン。環境ごとに異なる |
-| `--allowed-headers` | `Content-Type,x-ms-blob-type,x-ms-version` | `BlobWriter.#putBlob()` が送信するヘッダー |
+| 項目                | 値                                         | 理由                                                            |
+| ------------------- | ------------------------------------------ | --------------------------------------------------------------- |
+| `--methods`         | `GET PUT HEAD OPTIONS`                     | データ取得（GET）、Blob書き込み（PUT）、プリフライト（OPTIONS） |
+| `--origins`         | Static Website Endpoint                    | SPA のオリジン。環境ごとに異なる                                |
+| `--allowed-headers` | `Content-Type,x-ms-blob-type,x-ms-version` | `BlobWriter.#putBlob()` が送信するヘッダー                      |
 
 > **注意**: CORS が未設定の場合、管理者のファイルアップロードは「Response to preflight request doesn't pass access control check」エラーで失敗する。
 
@@ -274,8 +272,8 @@ az storage container policy create \
   --account-key <ACCOUNT_KEY>
 ```
 
-| ポリシー名 | 権限 | 用途 |
-|------------|------|------|
+| ポリシー名        | 権限                                     | 用途                              |
+| ----------------- | ---------------------------------------- | --------------------------------- |
 | `dashboard-admin` | `rwdl`（読み取り・書き込み・削除・一覧） | CSV アップロード・index.json 更新 |
 
 > **注意**: `$web` コンテナ名に `$` が含まれるため、シェル変数展開に注意が必要。Node.js の `execFile` では文字列リテラルとして安全に渡される。
@@ -298,17 +296,17 @@ az storage container policy create \
 
 ## 10. 技術スタック
 
-| 要素 | 選択 | 理由 |
-|------|------|------|
-| フレームワーク | React 19 + ReactDOM 19 | 宣言的 UI による保守性向上 |
-| ビルドツール | Vite + @vitejs/plugin-react | HMR、高速ビルド、JSX 変換 |
-| ルーティング | react-router-dom（HashRouter） | SPA ハッシュベースルーティング |
-| CSV パーサー | PapaParse | Teams 出席レポートの UTF-16LE CSV 解析 |
-| CI/CD | GitHub Actions + OIDC | push 時自動デプロイ、環境別配置 |
-| ユニットテスト | Vitest + React Testing Library | jsdom 環境、コンポーネントテスト |
-| E2E テスト | Playwright | ブラウザベースの画面遷移・管理者フロー検証 |
-| Lint | ESLint + Prettier | コード品質・フォーマット統一 |
-| ホスティング | Azure Blob Storage 静的サイト | 最小コスト、閉域環境対応 |
+| 要素           | 選択                           | 理由                                       |
+| -------------- | ------------------------------ | ------------------------------------------ |
+| フレームワーク | React 19 + ReactDOM 19         | 宣言的 UI による保守性向上                 |
+| ビルドツール   | Vite + @vitejs/plugin-react    | HMR、高速ビルド、JSX 変換                  |
+| ルーティング   | react-router-dom（HashRouter） | SPA ハッシュベースルーティング             |
+| CSV パーサー   | PapaParse                      | Teams 出席レポートの UTF-16LE CSV 解析     |
+| CI/CD          | GitHub Actions + OIDC          | push 時自動デプロイ、環境別配置            |
+| ユニットテスト | Vitest + React Testing Library | jsdom 環境、コンポーネントテスト           |
+| E2E テスト     | Playwright                     | ブラウザベースの画面遷移・管理者フロー検証 |
+| Lint           | ESLint + Prettier              | コード品質・フォーマット統一               |
+| ホスティング   | Azure Blob Storage 静的サイト  | 最小コスト、閉域環境対応                   |
 
 ## 11. テスト構成
 

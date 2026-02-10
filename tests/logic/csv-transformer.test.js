@@ -97,7 +97,11 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '30 分 0 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '30 分 0 秒',
+            },
           ],
           errors: [],
         });
@@ -132,7 +136,11 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '30 分 0 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '30 分 0 秒',
+            },
           ],
           errors: [],
         });
@@ -156,7 +164,11 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '30 分 0 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '30 分 0 秒',
+            },
           ],
           errors: [],
         });
@@ -181,7 +193,11 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '30 分 15 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '30 分 15 秒',
+            },
           ],
           errors: [],
         });
@@ -204,7 +220,11 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '1 時間 30 分 0 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '1 時間 30 分 0 秒',
+            },
           ],
           errors: [],
         });
@@ -228,8 +248,16 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '不正な形式' },
-            { '名前': '高橋 美咲', 'メール アドレス': 'misaki.takahashi@example.com', '会議の長さ': '10 分 0 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '不正な形式',
+            },
+            {
+              名前: '高橋 美咲',
+              'メール アドレス': 'misaki.takahashi@example.com',
+              会議の長さ: '10 分 0 秒',
+            },
           ],
           errors: [],
         });
@@ -257,7 +285,11 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '10 分 0 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '10 分 0 秒',
+            },
           ],
           errors: [],
         });
@@ -288,7 +320,11 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '10 分 0 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '10 分 0 秒',
+            },
           ],
           errors: [],
         });
@@ -316,8 +352,16 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '59 分 12 秒' },
-            { '名前': '高橋 美咲', 'メール アドレス': 'misaki.takahashi@example.com', '会議の長さ': '20 分 59 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '59 分 12 秒',
+            },
+            {
+              名前: '高橋 美咲',
+              'メール アドレス': 'misaki.takahashi@example.com',
+              会議の長さ: '20 分 59 秒',
+            },
           ],
           errors: [],
         });
@@ -373,7 +417,11 @@ describe('CsvTransformer', () => {
       Papa.parse.mockImplementation((input, config) => {
         config.complete({
           data: [
-            { '名前': '佐藤 一郎', 'メール アドレス': 'ichiro.sato@example.com', '会議の長さ': '10 分 0 秒' },
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '10 分 0 秒',
+            },
           ],
           errors: [],
         });

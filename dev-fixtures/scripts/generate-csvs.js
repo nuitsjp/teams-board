@@ -64,12 +64,9 @@ function generateCSV(sessionData) {
   const startTime = formatDate(sessionData.date);
 
   // セクション1: 要約
-  const section1 = [
-    '1. 要約',
-    `会議のタイトル\t${groupName}`,
-    `開始時刻\t${startTime}`,
-    '',
-  ].join('\n');
+  const section1 = ['1. 要約', `会議のタイトル\t${groupName}`, `開始時刻\t${startTime}`, ''].join(
+    '\n'
+  );
 
   // セクション2: 参加者
   const participantRows = sessionData.attendances.map((att) => {
@@ -80,12 +77,9 @@ function generateCSV(sessionData) {
     return `${name}\t${email}\t${duration}`;
   });
 
-  const section2 = [
-    '2. 参加者',
-    '名前\tメール アドレス\t会議の長さ',
-    ...participantRows,
-    '',
-  ].join('\n');
+  const section2 = ['2. 参加者', '名前\tメール アドレス\t会議の長さ', ...participantRows, ''].join(
+    '\n'
+  );
 
   // セクション3: 会議中のアクティビティ
   const section3 = '3. 会議中のアクティビティ\n';

@@ -6,21 +6,23 @@
 
 ### 現在のパラメータマッピング（全スクリプト共通）
 
-| PowerShellパラメータ | JSON キー | `.env` 変数名（新） |
-|---|---|---|
-| `SubscriptionId` | `subscriptionId` | `AZURE_SUBSCRIPTION_ID` |
-| `ResourceGroupName` | `resourceGroupName` | `AZURE_RESOURCE_GROUP_NAME` |
+| PowerShellパラメータ | JSON キー            | `.env` 変数名（新）          |
+| -------------------- | -------------------- | ---------------------------- |
+| `SubscriptionId`     | `subscriptionId`     | `AZURE_SUBSCRIPTION_ID`      |
+| `ResourceGroupName`  | `resourceGroupName`  | `AZURE_RESOURCE_GROUP_NAME`  |
 | `StorageAccountName` | `storageAccountName` | `AZURE_STORAGE_ACCOUNT_NAME` |
-| `Location` | `location` | `AZURE_LOCATION` |
+| `Location`           | `location`           | `AZURE_LOCATION`             |
 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - `.env` ファイルにAzure環境変数を統合し、環境設定を一元管理する
 - 既存スクリプトのコマンドライン引数による上書き動作を維持する
 - `.env.example` を更新し、必要な変数を明示する
 
 **Non-Goals:**
+
 - フロントエンドコードの変更（既に `.env` を使用済み）
 - CI/CD パイプラインの変更（本リポジトリにCI/CDは未構成）
 - `.env` の暗号化やシークレット管理の導入
@@ -32,6 +34,7 @@
 **選択**: PowerShellスクリプト内で `.env` ファイルを自前でパースする
 
 **代替案**:
+
 - サードパーティモジュール（`Set-PsEnv` 等）を使用 → 外部依存が増える
 - Node.jsの`dotenv`をブリッジ → 過剰な複雑さ
 
@@ -42,6 +45,7 @@
 **選択**: ファイル名を変更して役割を明示する
 
 **代替案**:
+
 - ファイル名据え置きで中身のみ変更 → 名前と実態が乖離して混乱を招く
 
 **理由**: ファイル名が機能を正確に表す方が保守性が高い。全スクリプトのドットソース行も一括で更新する。
@@ -57,10 +61,11 @@
 **選択**: Azure関連パラメータには `AZURE_` プレフィックスを付与する（例: `AZURE_SUBSCRIPTION_ID`）
 
 **代替案**:
+
 - camelCaseのまま（JSON踏襲） → `.env` の慣習に反する
 - プレフィックスなし → 既存の `VITE_` 系変数との区別が不明瞭
 
-**理由**: `.env` の一般的な慣習（UPPER_SNAKE_CASE、カテゴリプレフィックス）に従い、フロントエンド向け `VITE_` 変数と明確に区別できる。
+**理由**: `.env` の一般的な慣習（UPPER*SNAKE_CASE、カテゴリプレフィックス）に従い、フロントエンド向け `VITE*` 変数と明確に区別できる。
 
 ### 5. パラメータマッピングの変更
 
@@ -78,8 +83,8 @@
 
 ## Risks / Trade-offs
 
-| リスク | 緩和策 |
-|---|---|
-| **BREAKING**: 既存の `local.settings.json` を使用している開発者の環境が壊れる | `.env.example` に必要な変数とコメントを記載し、移行手順を明確にする |
-| `.env` パーサーの不備（クォート付き値、特殊文字等） | 現在のパラメータはすべて単純な英数字文字列のため、基本的な `KEY=VALUE` パースで十分。クォートの除去処理は実装する |
-| `.gitignore` から `local.settings.json` を削除後、誤ってコミットされるリスク | `.env` 統合後は `local.settings.json` 自体が不要になるため、`.gitignore` のエントリ削除ではなくコメント更新に留める |
+| リスク                                                                        | 緩和策                                                                                                              |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **BREAKING**: 既存の `local.settings.json` を使用している開発者の環境が壊れる | `.env.example` に必要な変数とコメントを記載し、移行手順を明確にする                                                 |
+| `.env` パーサーの不備（クォート付き値、特殊文字等）                           | 現在のパラメータはすべて単純な英数字文字列のため、基本的な `KEY=VALUE` パースで十分。クォートの除去処理は実装する   |
+| `.gitignore` から `local.settings.json` を削除後、誤ってコミットされるリスク  | `.env` 統合後は `local.settings.json` 自体が不要になるため、`.gitignore` のエントリ削除ではなくコメント更新に留める |

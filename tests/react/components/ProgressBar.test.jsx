@@ -10,16 +10,12 @@ describe('ProgressBar', () => {
   });
 
   it('visible=trueの場合にプログレスバーを表示すること', () => {
-    render(
-      <ProgressBar current={1} total={3} visible={true} statusText="保存中..." />
-    );
+    render(<ProgressBar current={1} total={3} visible={true} statusText="保存中..." />);
     expect(screen.getByText(/保存中\.\.\./)).toBeInTheDocument();
   });
 
   it('進捗値が正しく設定されること', () => {
-    render(
-      <ProgressBar current={2} total={5} visible={true} statusText="" />
-    );
+    render(<ProgressBar current={2} total={5} visible={true} statusText="" />);
     // divベースのプログレスバー: width: 40%
     expect(screen.getByText(/40%/)).toBeInTheDocument();
   });

@@ -17,12 +17,32 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 
 const mockIndexData = {
   groups: [
-    { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 5400, sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'] },
-    { id: 'g2', name: 'TypeScript読書会', totalDurationSeconds: 3600, sessionIds: ['g2-2026-01-18'] },
+    {
+      id: 'g1',
+      name: 'フロントエンド勉強会',
+      totalDurationSeconds: 5400,
+      sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'],
+    },
+    {
+      id: 'g2',
+      name: 'TypeScript読書会',
+      totalDurationSeconds: 3600,
+      sessionIds: ['g2-2026-01-18'],
+    },
   ],
   members: [
-    { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['g1-2026-01-15', 'g2-2026-01-18'] },
-    { id: 'm2', name: '高橋 美咲', totalDurationSeconds: 1800, sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'] },
+    {
+      id: 'm1',
+      name: '佐藤 一郎',
+      totalDurationSeconds: 3600,
+      sessionIds: ['g1-2026-01-15', 'g2-2026-01-18'],
+    },
+    {
+      id: 'm2',
+      name: '高橋 美咲',
+      totalDurationSeconds: 1800,
+      sessionIds: ['g1-2026-01-15', 'g1-2026-01-20'],
+    },
   ],
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -41,18 +61,14 @@ const mockSessionData2 = {
   id: 'g1-2026-01-20',
   groupId: 'g1',
   date: '2026-01-20',
-  attendances: [
-    { memberId: 'm2', durationSeconds: 2400 },
-  ],
+  attendances: [{ memberId: 'm2', durationSeconds: 2400 }],
 };
 
 const mockSessionDataSingle = {
   id: 'g2-2026-01-18',
   groupId: 'g2',
   date: '2026-01-18',
-  attendances: [
-    { memberId: 'm1', durationSeconds: 3600 },
-  ],
+  attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
 };
 
 function renderWithRouter(groupId) {

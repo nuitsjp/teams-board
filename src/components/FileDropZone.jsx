@@ -9,29 +9,38 @@ export function FileDropZone({ onFilesAdded, disabled, hasFiles }) {
   const [dragover, setDragover] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    if (!disabled) setDragover(true);
-  }, [disabled]);
+  const handleDragOver = useCallback(
+    (e) => {
+      e.preventDefault();
+      if (!disabled) setDragover(true);
+    },
+    [disabled]
+  );
 
   const handleDragLeave = useCallback(() => {
     setDragover(false);
   }, []);
 
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    setDragover(false);
-    if (!disabled && e.dataTransfer.files.length > 0) {
-      onFilesAdded(e.dataTransfer.files);
-    }
-  }, [disabled, onFilesAdded]);
+  const handleDrop = useCallback(
+    (e) => {
+      e.preventDefault();
+      setDragover(false);
+      if (!disabled && e.dataTransfer.files.length > 0) {
+        onFilesAdded(e.dataTransfer.files);
+      }
+    },
+    [disabled, onFilesAdded]
+  );
 
-  const handleFileChange = useCallback((e) => {
-    if (e.target.files.length > 0) {
-      onFilesAdded(e.target.files);
-      e.target.value = '';
-    }
-  }, [onFilesAdded]);
+  const handleFileChange = useCallback(
+    (e) => {
+      if (e.target.files.length > 0) {
+        onFilesAdded(e.target.files);
+        e.target.value = '';
+      }
+    },
+    [onFilesAdded]
+  );
 
   const text = dragover
     ? 'ここにドロップ'
@@ -52,7 +61,9 @@ export function FileDropZone({ onFilesAdded, disabled, hasFiles }) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <Upload className={`mx-auto text-text-muted ${hasFiles ? 'w-5 h-5 inline mr-2' : 'w-8 h-8 mb-3'}`} />
+      <Upload
+        className={`mx-auto text-text-muted ${hasFiles ? 'w-5 h-5 inline mr-2' : 'w-8 h-8 mb-3'}`}
+      />
       <span className={hasFiles ? '' : 'block mb-3'}>{text}</span>
       <input
         ref={fileInputRef}

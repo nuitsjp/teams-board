@@ -16,10 +16,12 @@
 ## Capabilities
 
 ### New Capabilities
+
 - `node-infra-scripts`: 4つのメインスクリプト（deploy-static-files, clear-data, new-sas-token, show-urls）のNode.js ESM実装
 - `node-common-libs`: 3つの共通ライブラリ（azure-storage, env-settings, logger）のNode.js ESMモジュール実装
 
 ### Modified Capabilities
+
 - `env-path-argument`: `-EnvFile` PowerShellパラメータから `--env-file` CLIオプション（`process.argv` パース）に変更
 - `infra-common-helpers`: PowerShell関数（Load-EnvSettings, Connect-AzureStorage, Write-Log）をNode.js ESMモジュールのエクスポート関数に置き換え
 

@@ -10,9 +10,7 @@ export class IndexMerger {
     const warnings = [];
 
     // 重複セッションID検出
-    const allSessionIds = new Set([
-      ...currentIndex.groups.flatMap((g) => g.sessionIds),
-    ]);
+    const allSessionIds = new Set([...currentIndex.groups.flatMap((g) => g.sessionIds)]);
     if (allSessionIds.has(newSession.sessionId)) {
       warnings.push(`重複セッションID検出: ${newSession.sessionId} は既に存在します`);
       return {
@@ -27,7 +25,8 @@ export class IndexMerger {
 
     // GroupSummary の更新
     const sessionTotalDuration = newSession.attendances.reduce(
-      (sum, a) => sum + a.durationSeconds, 0
+      (sum, a) => sum + a.durationSeconds,
+      0
     );
     const groups = currentIndex.groups.map((g) => ({
       ...g,

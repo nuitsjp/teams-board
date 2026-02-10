@@ -28,7 +28,9 @@ export function DashboardPage() {
       }
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -57,21 +59,9 @@ export function DashboardPage() {
     <div className="space-y-8">
       {/* 統計カード */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SummaryCard
-          title="総参加時間"
-          value={formatDuration(totalDuration)}
-          icon={Clock}
-        />
-        <SummaryCard
-          title="総開催回数"
-          value={`${totalSessions}回`}
-          icon={Users}
-        />
-        <SummaryCard
-          title="参加人数"
-          value={`${members.length}人`}
-          icon={User}
-        />
+        <SummaryCard title="総参加時間" value={formatDuration(totalDuration)} icon={Clock} />
+        <SummaryCard title="総開催回数" value={`${totalSessions}回`} icon={Users} />
+        <SummaryCard title="参加人数" value={`${members.length}人`} icon={User} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

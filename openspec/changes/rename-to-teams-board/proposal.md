@@ -20,9 +20,11 @@
 ## Capabilities
 
 ### New Capabilities
+
 - `configurable-site-header`: サイトヘッダー（タイトル・ブランド名）をデプロイ時に外部から設定できる機能
 
 ### Modified Capabilities
+
 - （既存のopenspec/specsは空のため、変更対象なし）
 
 ## Impact

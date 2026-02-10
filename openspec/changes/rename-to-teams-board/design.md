@@ -13,6 +13,7 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - 製品名を「Study Log」から「Teams Board」に統一的に変更する
 - ドメインモデル名を `studyGroups` から汎用的な `groups` に変更する
 - コンポーネント名・ファイル名を汎用的なものにリネームする
@@ -21,6 +22,7 @@
 - ドキュメント類を新しい製品名に合わせて更新する
 
 **Non-Goals:**
+
 - UIデザイン・レイアウトの変更（名称とテキストの変更のみ）
 - 機能の追加・削除
 - 既存のopenspec changeドキュメント（履歴）の書き換え
@@ -34,6 +36,7 @@
 **選択**: `groups`
 
 **代替案**:
+
 - `events` — 会議やイベントを含む広い概念だが、JavaScriptのDOM eventと紛らわしい
 - `teams` — Teams製品名と重複して混乱する
 - `categories` — グルーピング概念とは異なるニュアンス
@@ -42,11 +45,11 @@
 
 ### 2. コンポーネント・ファイルのリネーム規則
 
-| 変更前 | 変更後 |
-|---|---|
-| `StudyGroupList.jsx` | `GroupList.jsx` |
-| `StudyGroupDetailPage.jsx` | `GroupDetailPage.jsx` |
-| `StudyGroupList.test.jsx` | `GroupList.test.jsx` |
+| 変更前                          | 変更後                     |
+| ------------------------------- | -------------------------- |
+| `StudyGroupList.jsx`            | `GroupList.jsx`            |
+| `StudyGroupDetailPage.jsx`      | `GroupDetailPage.jsx`      |
+| `StudyGroupList.test.jsx`       | `GroupList.test.jsx`       |
 | `StudyGroupDetailPage.test.jsx` | `GroupDetailPage.test.jsx` |
 
 **理由**: `StudyGroup` プレフィックスを `Group` に短縮。コンポーネント内の変数名も同様に `studyGroup` → `group`、`studyGroups` → `groups` に変更。
@@ -56,12 +59,14 @@
 **選択**: Vite の `define` オプションで `import.meta.env.VITE_APP_TITLE` を参照
 
 **代替案**:
+
 - ランタイムでJSONファイルを読み込む — 静的サイトとしては過剰
 - `index.html` をビルド時にテンプレート処理 — Viteプラグインが必要で複雑
 
 **理由**: Viteは `VITE_` プレフィックスの環境変数を自動的に `import.meta.env` に展開する。追加の依存関係なしで実現可能。デフォルト値を「Teams Board」としておけば、環境変数未設定でも動作する。
 
 **実装方針**:
+
 - `index.html` の `<title>` は Viteの `transformIndexHtml` フックを使い `VITE_APP_TITLE` で差し替え、またはデフォルトの「Teams Board」をハードコード
 - `App.jsx` のヘッダーテキストは `import.meta.env.VITE_APP_TITLE || 'Teams Board'` を参照
 - `.env` ファイルにデフォルト値 `VITE_APP_TITLE=Teams Board` を設定
@@ -74,10 +79,10 @@
 
 ### 5. UI表示テキストの変更
 
-| 変更前 | 変更後 |
-|---|---|
-| 「勉強会グループ」 | 「グループ」 |
-| 「勉強会詳細画面」（コメント） | 「グループ詳細画面」 |
+| 変更前                           | 変更後                 |
+| -------------------------------- | ---------------------- |
+| 「勉強会グループ」               | 「グループ」           |
+| 「勉強会詳細画面」（コメント）   | 「グループ詳細画面」   |
 | 「勉強会別サマリー」（コメント） | 「グループ別サマリー」 |
 
 ### 6. インフラスクリプトの更新

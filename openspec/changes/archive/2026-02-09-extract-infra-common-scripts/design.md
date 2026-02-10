@@ -8,6 +8,7 @@
 4. アカウントキー取得（`az storage account keys list`）
 
 現在の構造：
+
 ```
 scripts/
 └── infra/
@@ -24,12 +25,14 @@ scripts/
 ## Goals / Non-Goals
 
 **Goals:**
+
 - `scripts/infra/` の `infra` 階層を廃止し、全スクリプトを `scripts/` 直下に引き上げる
 - 共通処理を `scripts/common/` サブフォルダに集約し、重複コードを排除する
 - 各スクリプトのパラメータインターフェース（外部呼び出しの互換性）を維持する
 - 共通関数を呼び出すだけで .env読み込み → Azure接続 → アカウントキー取得が完了する構成にする
 
 **Non-Goals:**
+
 - 各スクリプト固有のビジネスロジックの変更やリファクタリング
 - パラメータのデフォルト値の変更
 - 新しいインフラスクリプトの追加
@@ -83,11 +86,13 @@ function Connect-AzureStorage {
 **決定**: 各スクリプトのドットソースパスを `scripts/` 直下基準に更新する
 
 変更前（`scripts/infra/` 基準）：
+
 ```powershell
 . (Join-Path $PSScriptRoot "Load-EnvSettings.ps1")
 ```
 
 変更後（`scripts/` 基準）：
+
 ```powershell
 . (Join-Path $PSScriptRoot "common" "Load-EnvSettings.ps1")
 . (Join-Path $PSScriptRoot "common" "Connect-AzureStorage.ps1")
@@ -100,11 +105,13 @@ function Connect-AzureStorage {
 **決定**: `$PSScriptRoot` 基準のプロジェクトルート算出ロジックを修正する
 
 変更前（`scripts/infra/` → 2階層上）：
+
 ```powershell
 $projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 ```
 
 変更後（`scripts/common/` → 2階層上、階層数は同じだが意味が変わる）：
+
 ```powershell
 $projectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 ```

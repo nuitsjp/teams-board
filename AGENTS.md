@@ -2,7 +2,7 @@
 
 This file provides guidance when working with code in this repository.
 
-You are running on Windows. Bash isn't available directly, so please use Bash (via pwsh:*).
+You are running on Windows. Bash isn't available directly, so please use Bash (via pwsh:\*).
 
 ## Primary Directive
 
@@ -52,13 +52,13 @@ A dashboard SPA that aggregates and visualizes Microsoft Teams attendance report
 
 ### Layer Structure
 
-| Layer | Path | Responsibility |
-|-------|------|----------------|
-| Pages | `src/pages/` | Per-screen data fetching and display (Dashboard, MemberDetail, GroupDetail, Admin) |
-| Components | `src/components/` | Reusable UI parts (FileDropZone, GroupList, MemberList, SummaryCard, etc.) |
-| Hooks | `src/hooks/` | State management (`useAuth` = SAS token auth, `useFileQueue` = file queue) |
-| Services | `src/services/` | I/O and domain logic (see below) |
-| Config | `src/config/` | Environment variable based config (`APP_CONFIG.blobBaseUrl`) |
+| Layer      | Path              | Responsibility                                                                     |
+| ---------- | ----------------- | ---------------------------------------------------------------------------------- |
+| Pages      | `src/pages/`      | Per-screen data fetching and display (Dashboard, MemberDetail, GroupDetail, Admin) |
+| Components | `src/components/` | Reusable UI parts (FileDropZone, GroupList, MemberList, SummaryCard, etc.)         |
+| Hooks      | `src/hooks/`      | State management (`useAuth` = SAS token auth, `useFileQueue` = file queue)         |
+| Services   | `src/services/`   | I/O and domain logic (see below)                                                   |
+| Config     | `src/config/`     | Environment variable based config (`APP_CONFIG.blobBaseUrl`)                       |
 
 ### Services Layer Roles
 
