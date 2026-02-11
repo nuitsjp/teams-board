@@ -24,6 +24,18 @@ function extractAuth() {
     : `${url.origin}${url.pathname}${url.hash}`;
   window.history.replaceState(null, '', cleanUrl);
 
+  // 開発用ダミートークンの処理
+  if (token === 'dev' && import.meta.env.DEV) {
+    console.info('[開発モード] ダミートークンを使用中: 管理者モードが有効です');
+    return { sasToken: 'dev', isAdmin: true };
+  }
+
+  // 本番環境でのダミートークンは無効化
+  if (token === 'dev') {
+    return { sasToken: null, isAdmin: false };
+  }
+
+  // 実際のSASトークンの処理（既存のロジック）
   return { sasToken: token, isAdmin: true };
 }
 

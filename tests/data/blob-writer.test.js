@@ -166,4 +166,122 @@ describe('BlobWriter', () => {
       expect(result.results[0].success).toBe(true);
     });
   });
+
+  describe('開発環境でのモック動作', () => {
+    let originalEnv;
+
+    beforeEach(() => {
+      originalEnv = import.meta.env.DEV;
+      fetchCalls = [];
+    });
+
+    afterEach(() => {
+      import.meta.env.DEV = originalEnv;
+    });
+
+    it('開発環境でダミートークン使用時に/dev-fixtures-writeにPOSTリクエストが送信されること', async () => {
+      // 開発環境をモック
+      import.meta.env.DEV = true;
+
+      // ダミートークンのauth
+      const devAuth = {
+        getSasToken: () => 'dev',
+      };
+
+      // /dev-fixtures-write へのレスポンスをモック
+      mockFetch.mockImplementation(async (url, options) => {
+        fetchCalls.push({ url, method: options?.method || 'GET', body: options?.body });
+        if (url === '/dev-fixtures-write') {
+          return { ok: true, json: () => Promise.resolve({ success: true }) };
+        }
+        if (!options?.method && url.includes('data/index.json')) {
+          return { ok: true, json: () => Promise.resolve({ items: [], updatedAt: '' }) };
+        }
+        return { ok: true };
+      });
+
+      const devWriter = new BlobWriter(devAuth, 'https://test.blob.core.windows.net/$web');
+      await devWriter.executeWriteSequence({
+        newItems: [{ path: 'data/items/test.json', content: '{"test": true}', contentType: 'application/json' }],
+        indexUpdater: (idx) => idx,
+      });
+
+      const devWriteCalls = fetchCalls.filter((c) => c.url === '/dev-fixtures-write');
+      expect(devWriteCalls.length).toBeGreaterThan(0);
+      expect(devWriteCalls[0].method).toBe('POST');
+
+      // リクエストボディにpathとdataが含まれることを確認
+      const body = JSON.parse(devWriteCalls[0].body);
+      expect(body.path).toBe('data/items/test.json');
+      expect(body.data).toEqual({ test: true });
+    });
+
+    it('本番環境では通常のAzure Blob Storage APIが使用されること', async () => {
+      // 本番環境をモック
+      import.meta.env.DEV = false;
+
+      // 実際のSASトークンのauth
+      const prodAuth = {
+        getSasToken: () => 'sv=2025-01-05&ss=b',
+      };
+
+      mockFetch.mockImplementation(async (url, options) => {
+        fetchCalls.push({ url, method: options?.method || 'GET' });
+        if (!options?.method && url.includes('data/index.json')) {
+          return { ok: true, json: () => Promise.resolve({ items: [], updatedAt: '' }) };
+        }
+        return { ok: true };
+      });
+
+      const prodWriter = new BlobWriter(prodAuth, 'https://test.blob.core.windows.net/$web');
+      await prodWriter.executeWriteSequence({
+        newItems: [{ path: 'data/items/test.json', content: '{}', contentType: 'application/json' }],
+        indexUpdater: (idx) => idx,
+      });
+
+      // Azure Blob Storage APIへのPUTリクエストが送信されること
+      const azurePutCalls = fetchCalls.filter(
+        (c) => c.method === 'PUT' && c.url.includes('https://test.blob.core.windows.net/$web')
+      );
+      expect(azurePutCalls.length).toBeGreaterThan(0);
+
+      // /dev-fixtures-writeへのリクエストは送信されないこと
+      const devWriteCalls = fetchCalls.filter((c) => c.url === '/dev-fixtures-write');
+      expect(devWriteCalls).toHaveLength(0);
+    });
+
+    it('開発環境で実際のSASトークン使用時は通常のAzure APIが使用されること', async () => {
+      // 開発環境をモック
+      import.meta.env.DEV = true;
+
+      // 実際のSASトークンのauth（devではない）
+      const realAuth = {
+        getSasToken: () => 'sv=2025-01-05&ss=b',
+      };
+
+      mockFetch.mockImplementation(async (url, options) => {
+        fetchCalls.push({ url, method: options?.method || 'GET' });
+        if (!options?.method && url.includes('data/index.json')) {
+          return { ok: true, json: () => Promise.resolve({ items: [], updatedAt: '' }) };
+        }
+        return { ok: true };
+      });
+
+      const realWriter = new BlobWriter(realAuth, 'https://test.blob.core.windows.net/$web');
+      await realWriter.executeWriteSequence({
+        newItems: [{ path: 'data/items/test.json', content: '{}', contentType: 'application/json' }],
+        indexUpdater: (idx) => idx,
+      });
+
+      // Azure Blob Storage APIへのPUTリクエストが送信されること
+      const azurePutCalls = fetchCalls.filter(
+        (c) => c.method === 'PUT' && c.url.includes('https://test.blob.core.windows.net/$web')
+      );
+      expect(azurePutCalls.length).toBeGreaterThan(0);
+
+      // /dev-fixtures-writeへのリクエストは送信されないこと
+      const devWriteCalls = fetchCalls.filter((c) => c.url === '/dev-fixtures-write');
+      expect(devWriteCalls).toHaveLength(0);
+    });
+  });
 });

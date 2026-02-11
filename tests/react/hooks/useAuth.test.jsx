@@ -72,4 +72,73 @@ describe('useAuth', () => {
 
     expect(window.history.replaceState).toHaveBeenCalled();
   });
+
+  describe('開発用ダミートークン', () => {
+    let originalEnv;
+
+    beforeEach(() => {
+      originalEnv = import.meta.env.DEV;
+    });
+
+    afterEach(() => {
+      import.meta.env.DEV = originalEnv;
+    });
+
+    it('開発環境でtoken=devを使用した場合、isAdminがtrueであること', () => {
+      // 開発環境をモック
+      import.meta.env.DEV = true;
+
+      Object.defineProperty(window, 'location', {
+        writable: true,
+        value: new URL('http://localhost/?token=dev'),
+      });
+
+      render(
+        <AuthProvider>
+          <AuthDisplay />
+        </AuthProvider>
+      );
+
+      expect(screen.getByTestId('token').textContent).toBe('dev');
+      expect(screen.getByTestId('admin').textContent).toBe('true');
+    });
+
+    it('本番環境でtoken=devを使用した場合、isAdminがfalseであること', () => {
+      // 本番環境をモック
+      import.meta.env.DEV = false;
+
+      Object.defineProperty(window, 'location', {
+        writable: true,
+        value: new URL('http://localhost/?token=dev'),
+      });
+
+      render(
+        <AuthProvider>
+          <AuthDisplay />
+        </AuthProvider>
+      );
+
+      expect(screen.getByTestId('token').textContent).toBe('null');
+      expect(screen.getByTestId('admin').textContent).toBe('false');
+    });
+
+    it('開発環境で実際のSASトークンを使用した場合、通常通り動作すること', () => {
+      // 開発環境をモック
+      import.meta.env.DEV = true;
+
+      Object.defineProperty(window, 'location', {
+        writable: true,
+        value: new URL('http://localhost/?token=real-sas-token'),
+      });
+
+      render(
+        <AuthProvider>
+          <AuthDisplay />
+        </AuthProvider>
+      );
+
+      expect(screen.getByTestId('token').textContent).toBe('real-sas-token');
+      expect(screen.getByTestId('admin').textContent).toBe('true');
+    });
+  });
 });

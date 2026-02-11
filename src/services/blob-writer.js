@@ -2,6 +2,7 @@
 export class BlobWriter {
   #auth;
   #blobBaseUrl;
+  static #mockWarningShown = false;
 
   /**
    * @param {object} auth - { getSasToken: () => string|null } インターフェース
@@ -91,6 +92,15 @@ export class BlobWriter {
    */
   async #putBlob({ path, content, contentType }) {
     const sasToken = this.#auth.getSasToken();
+
+    // 開発環境でのモック動作（Tree-shakingのために条件を分離）
+    if (import.meta.env.DEV) {
+      if (sasToken === 'dev') {
+        return await this.#writeToDevFixtures({ path, content });
+      }
+    }
+
+    // 本番環境または実際のSASトークン使用時は通常のAzure Blob Storage API
     const url = `${this.#blobBaseUrl}/${path}?${sasToken}`;
     try {
       const response = await fetch(url, {
@@ -112,11 +122,72 @@ export class BlobWriter {
   }
 
   /**
+   * 開発環境でdev-fixturesにファイルを書き込む（モック動作）
+   * @param {object} op - { path, content }
+   * @returns {Promise<{path: string, success: boolean, error?: string}>}
+   */
+  async #writeToDevFixtures({ path, content }) {
+    // 初回使用時に警告を表示
+    if (!BlobWriter.#mockWarningShown) {
+      console.warn('[開発モード] BlobWriterはdev-fixtures/data/に書き込みます');
+      BlobWriter.#mockWarningShown = true;
+    }
+
+    try {
+      // contentが文字列でない場合はJSON化
+      const data = typeof content === 'string' ? JSON.parse(content) : content;
+
+      const response = await fetch('/dev-fixtures-write', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path, data }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return {
+          path,
+          success: false,
+          error: errorData.error || `HTTP ${response.status} ${response.statusText}`,
+        };
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        return { path, success: false, error: result.error };
+      }
+
+      return { path, success: true };
+    } catch (err) {
+      return { path, success: false, error: err.message };
+    }
+  }
+
+  /**
    * 最新のindex.jsonを取得する
    * @returns {Promise<{ok: true, data: object} | {ok: false, error: string}>}
    */
   async #fetchCurrentIndex() {
     const sasToken = this.#auth.getSasToken();
+
+    // 開発環境では相対パスを使用
+    if (import.meta.env.DEV && sasToken === 'dev') {
+      const url = `/data/index.json?v=${Date.now()}`;
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          return { ok: false, error: `HTTP ${response.status} ${response.statusText}` };
+        }
+        const data = await response.json();
+        return { ok: true, data };
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    }
+
+    // 本番環境または実際のSASトークン使用時
     const url = `${this.#blobBaseUrl}/data/index.json?${sasToken}`;
     try {
       const response = await fetch(url);
