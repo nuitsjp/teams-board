@@ -1,6 +1,12 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 
+const fetchIndex = async (page) => {
+  const response = await page.request.get('/data/index.json');
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+};
+
 test.describe('管理者パネル — グループ名編集', () => {
   test('グループ管理セクションが表示されること', async ({ page }) => {
     await page.goto('/?token=test-sas-token#/admin');
@@ -26,9 +32,11 @@ test.describe('管理者パネル — グループ名編集', () => {
     await expect(page.getByRole('columnheader', { name: '総学習時間' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'セッション数' })).toBeVisible();
 
-    // グループが表示されること（dev-fixturesのデータを想定）
-    await expect(page.getByText('フロントエンド勉強会')).toBeVisible();
-    await expect(page.getByText('TypeScript読書会')).toBeVisible();
+    const index = await fetchIndex(page);
+    const groupNames = index.groups.map((group) => group.name).slice(0, 2);
+    for (const name of groupNames) {
+      await expect(page.getByText(name)).toBeVisible();
+    }
   });
 
   test('グループ名の編集ボタンが表示されること', async ({ page }) => {

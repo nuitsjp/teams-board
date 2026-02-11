@@ -1,6 +1,23 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getMemberGroups = (index, member) =>
+  index.groups.filter((group) => group.sessionIds.some((id) => member.sessionIds.includes(id)));
+
+const selectMember = (index, minGroups) =>
+  index.members.find((member) => getMemberGroups(index, member).length >= minGroups) ??
+  index.members[0];
+
+const selectGroup = (index) => index.groups[0];
+
+const fetchIndex = async (page) => {
+  const response = await page.request.get('/data/index.json');
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+};
+
 test.describe('ダッシュボード画面', () => {
   test('グループ一覧が表示されること', async ({ page }) => {
     await page.goto('/');
@@ -9,15 +26,11 @@ test.describe('ダッシュボード画面', () => {
     await expect(page.locator('header')).toContainText('Teams Board');
 
     // グループセクションが表示されること
-    await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
 
-    // グループが4つ存在すること
-    const groupNames = [
-      'フロントエンド勉強会',
-      'TypeScript読書会',
-      'ソフトウェア設計勉強会',
-      'インフラ技術研究会',
-    ];
+    // グループが存在すること
+    const index = await fetchIndex(page);
+    const groupNames = index.groups.map((group) => group.name).slice(0, 4);
     for (const name of groupNames) {
       await expect(page.getByText(name).first()).toBeVisible();
     }
@@ -30,8 +43,9 @@ test.describe('ダッシュボード画面', () => {
     await expect(page.getByRole('heading', { name: 'メンバー' })).toBeVisible();
 
     // メンバーが存在すること
+    const index = await fetchIndex(page);
     const memberRows = page.getByTestId('member-row');
-    await expect(memberRows).toHaveCount(4);
+    await expect(memberRows).toHaveCount(index.members.length);
   });
 });
 
@@ -80,7 +94,7 @@ test.describe('画面遷移', () => {
     await page.goto('/#/nonexistent-route');
 
     // ダッシュボードが表示されること
-    await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
   });
 });
 
@@ -106,24 +120,29 @@ test.describe('グループ詳細画面', () => {
   });
 
   test('グループ詳細画面でセッション一覧が表示されること', async ({ page }) => {
-    // フロントエンド勉強会（10回開催）の詳細ページへ
-    await page.goto('/#/groups/52664958');
+    const index = await fetchIndex(page);
+    const group = selectGroup(index);
+    test.skip(!group, 'グループデータが存在しないためスキップ');
+    await page.goto(`/#/groups/${group.id}`);
 
     // グループ名が表示される
-    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
     // 開催回数が表示される
-    await expect(page.getByText(/10回開催/)).toBeVisible();
+    await expect(page.getByText(new RegExp(`${group.sessionIds.length}回開催`))).toBeVisible();
 
     // セッション日付が表示される（複数あるので折りたたみ状態）
     await expect(page.locator('table')).toHaveCount(0);
   });
 
   test('セッションをクリックして参加者詳細を展開・折りたたみできること', async ({ page }) => {
-    await page.goto('/#/groups/52664958');
+    const index = await fetchIndex(page);
+    const group = selectGroup(index);
+    test.skip(!group, 'グループデータが存在しないためスキップ');
+    await page.goto(`/#/groups/${group.id}`);
 
     // セッション日付が表示されるまで待つ
-    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
     // セッションをクリックして展開
     const sessionHeadings = page.getByRole('heading', { level: 3 });
@@ -140,7 +159,10 @@ test.describe('グループ詳細画面', () => {
   });
 
   test('グループ詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
-    await page.goto('/#/groups/52664958');
+    const index = await fetchIndex(page);
+    const group = selectGroup(index);
+    test.skip(!group, 'グループデータが存在しないためスキップ');
+    await page.goto(`/#/groups/${group.id}`);
 
     // 詳細画面が表示されるまで待つ
     await expect(page.getByText('一覧へ戻る')).toBeVisible();
@@ -149,7 +171,7 @@ test.describe('グループ詳細画面', () => {
     await page.getByText('一覧へ戻る').click();
 
     // ダッシュボードに戻る
-    await expect(page.getByRole('heading', { name: 'グループ' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
   });
 });
 
@@ -157,28 +179,37 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
   test('複数グループに参加しているメンバーでグループ別サマリーカードが表示されること', async ({
     page,
   }) => {
-    // 鈴木さん（フロントエンド勉強会、TypeScript読書会、ソフトウェア設計勉強会に参加）の詳細ページへ
-    await page.goto('/#/members/c6606539');
+    const index = await fetchIndex(page);
+    const member = selectMember(index, 2);
+    const memberGroups = member ? getMemberGroups(index, member) : [];
+    test.skip(!member || memberGroups.length === 0, 'メンバーデータが存在しないためスキップ');
+    await page.goto(`/#/members/${member.id}`);
 
     // メンバー名が表示される
-    await expect(page.getByRole('heading', { name: /鈴木 太郎/ })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: new RegExp(escapeRegExp(member.name)) })
+    ).toBeVisible();
 
-    // 3つのグループサマリーカードが表示される
-    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'TypeScript読書会' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'ソフトウェア設計勉強会' })).toBeVisible();
+    // グループサマリーカードが表示される
+    for (const group of memberGroups) {
+      await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
+    }
   });
 
   test('グループカードをクリックして出席履歴を展開・折りたたみできること', async ({ page }) => {
-    await page.goto('/#/members/c6606539');
+    const index = await fetchIndex(page);
+    const member = selectMember(index, 2);
+    const memberGroups = member ? getMemberGroups(index, member) : [];
+    test.skip(!member || memberGroups.length < 2, '複数グループのメンバーが存在しないためスキップ');
+    await page.goto(`/#/members/${member.id}`);
 
     // 初期状態では出席履歴テーブルが表示されていない（複数グループなので折りたたみ）
-    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: memberGroups[0].name })).toBeVisible();
     const tables = page.locator('table');
     await expect(tables).toHaveCount(0);
 
     // 「フロントエンド勉強会」カードをクリックして展開
-    await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();
+    await page.getByRole('heading', { name: memberGroups[0].name }).click();
     await expect(page.locator('table')).toBeVisible();
 
     // テーブルに日付列と参加時間列がある
@@ -186,26 +217,34 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     await expect(page.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
 
     // 再クリックで折りたたみ
-    await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();
+    await page.getByRole('heading', { name: memberGroups[0].name }).click();
     await expect(page.locator('table')).toHaveCount(0);
   });
 
   test('グループが1つのみのメンバーではデフォルトで展開されること', async ({ page }) => {
-    // 現データでは全メンバーが複数グループに参加しているため、
-    // 複数グループの場合に折りたたまれていることを確認する
-    await page.goto('/#/members/c6606539');
+    const index = await fetchIndex(page);
+    const member = index.members.find(
+      (candidate) => getMemberGroups(index, candidate).length === 1
+    );
+    const memberGroups = member ? getMemberGroups(index, member) : [];
+    test.skip(!member || memberGroups.length !== 1, '単一グループのメンバーが存在しないためスキップ');
+    await page.goto(`/#/members/${member.id}`);
 
-    // 複数グループのメンバーでは初期状態でテーブルが表示されていない
-    await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
-    await expect(page.locator('table')).toHaveCount(0);
+    // 単一グループのメンバーでは初期状態でテーブルが表示されている
+    await expect(page.getByRole('heading', { name: memberGroups[0].name })).toBeVisible();
+    await expect(page.locator('table')).toBeVisible();
   });
 
   test('複数のグループカードを同時に展開できること', async ({ page }) => {
-    await page.goto('/#/members/c6606539');
+    const index = await fetchIndex(page);
+    const member = selectMember(index, 2);
+    const memberGroups = member ? getMemberGroups(index, member) : [];
+    test.skip(!member || memberGroups.length < 2, '複数グループのメンバーが存在しないためスキップ');
+    await page.goto(`/#/members/${member.id}`);
 
     // 2つのグループを展開
-    await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();
-    await page.getByRole('heading', { name: 'TypeScript読書会' }).click();
+    await page.getByRole('heading', { name: memberGroups[0].name }).click();
+    await page.getByRole('heading', { name: memberGroups[1].name }).click();
 
     // 2つのテーブルが表示される
     await expect(page.locator('table')).toHaveCount(2);
