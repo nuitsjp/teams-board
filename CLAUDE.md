@@ -95,7 +95,7 @@ Development JSON fixtures are placed in `dev-fixtures/data/`. The Vite plugin `s
 
 ### CI/CD
 
-GitHub Actions (`.github/workflows/deploy.yml`) runs tests and lint in parallel on push, then deploys to Azure Blob Storage. `main` → prod environment, other branches → dev environment. Uses OIDC authentication.
+GitHub Actions (`.github/workflows/deploy.yml`) runs lint and tests in parallel, then builds and deploys. `main` push → prod deployment, Pull Request → dev deployment + E2E tests. Uses OIDC authentication.
 
 ### Environment Variables (Build Time)
 

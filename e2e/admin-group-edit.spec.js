@@ -1,5 +1,12 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
+import { getIndexFixture, registerIndexRoute } from '../e2e-helpers/test-helpers.js';
+
+const fetchIndex = async () => getIndexFixture();
+
+test.beforeEach(async ({ page }) => {
+  await registerIndexRoute(page);
+});
 
 test.describe('管理者パネル — グループ名編集', () => {
   test('グループ管理セクションが表示されること', async ({ page }) => {
@@ -26,9 +33,11 @@ test.describe('管理者パネル — グループ名編集', () => {
     await expect(page.getByRole('columnheader', { name: '総学習時間' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'セッション数' })).toBeVisible();
 
-    // グループが表示されること（dev-fixturesのデータを想定）
-    await expect(page.getByText('フロントエンド勉強会')).toBeVisible();
-    await expect(page.getByText('TypeScript読書会')).toBeVisible();
+    const index = await fetchIndex();
+    const groupNames = index.groups.map((group) => group.name).slice(0, 2);
+    for (const name of groupNames) {
+      await expect(page.getByText(name)).toBeVisible();
+    }
   });
 
   test('グループ名の編集ボタンが表示されること', async ({ page }) => {

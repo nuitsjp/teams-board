@@ -1,5 +1,10 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
+import { registerIndexRoute } from '../e2e-helpers/test-helpers.js';
+
+test.beforeEach(async ({ page }) => {
+  await registerIndexRoute(page);
+});
 
 test.describe('管理者パネル', () => {
   test('トークンなしでアクセスした場合に管理者リンクが非表示であること', async ({ page }) => {

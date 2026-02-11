@@ -32,15 +32,15 @@ export async function restoreIndexJson() {
 }
 
 /**
- * Gitのorigin/mainからindex.jsonを取得してクリーンな状態に復元
+ * Gitの現在のコミットからindex.jsonを取得してクリーンな状態に復元
  */
 export async function restoreFromGit() {
   try {
     console.log('[fixture-manager] Gitからクリーンなデータを復元中...');
 
-    // git show を使ってorigin/mainからファイル内容を取得
+    // git show を使って現在のコミットからファイル内容を取得
     const content = execSync(
-      'git show origin/main:dev-fixtures/data/index.json',
+      'git show HEAD:dev-fixtures/data/index.json',
       { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
 
