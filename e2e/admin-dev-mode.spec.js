@@ -7,6 +7,7 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
   test.describe.configure({ mode: 'serial' });
 
   // データ変更テスト後に即座にバックアップから復元
+  // eslint-disable-next-line no-empty-pattern
   test.afterEach(async ({}, testInfo) => {
     if (testInfo.title.includes('グループ名の編集ができること')) {
       await restoreIndexJson();
