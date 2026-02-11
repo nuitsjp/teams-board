@@ -63,6 +63,7 @@ export class DevBlobStorage {
    * @param {string} _contentType - Content-Type（開発環境では未使用）
    * @returns {Promise<{path: string, success: boolean, error?: string}>}
    */
+  // eslint-disable-next-line no-unused-vars
   async write(path, content, _contentType) {
     // 初回使用時に警告を表示
     if (!DevBlobStorage.#warningShown) {

@@ -52,9 +52,6 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
     await expect(input).toBeVisible();
     await expect(input).toBeFocused();
 
-    // 現在の値を取得
-    const originalValue = await input.inputValue();
-
     // グループ名を変更
     const newGroupName = `テストグループ_${Date.now()}`;
     await input.clear();
