@@ -1,34 +1,23 @@
 # Teams Board アーキテクチャ（現行実装）
 
-## 1. 目的と前提
+## 1. 目的
 
-本ドキュメントは、Teams Board の**現在の実装**を基準に、構成・責務・データフロー・運用フローを整理したものです。  
-対象は以下の2系統です。
+本ドキュメントは、`src/` 配下の実装と `.github/workflows/deploy.yml` を基準に、Teams Board の構成・データフロー・運用前提を整理する。
 
-- 閲覧系フロー（一般ユーザー）
-- 管理者更新フロー（SASトークン付きブラウザ更新）
+対象は次の2系統である。
 
-本システムは、Azure Blob Storage の静的サイト配信を中心に運用し、常時稼働バックエンドなしで成立する構成を採用しています。
+- 閲覧フロー（一般ユーザー）
+- 管理フロー（SAS トークンを持つ管理者）
 
-### ホスティング選定の背景
-
-Teams の出席情報は社内情報であるため、閉域ネットワーク内での低コスト運用が求められます。
-
-| 候補                              | 評価                                                                                                                                   |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Azure Static Web Apps (SWA)       | パブリックネットワークへの接続が前提であり、ネットワークレベルのアクセス制御が困難                                                     |
-| Azure App Service                 | VNet 統合にはBasic 以上のプランが必要で、低頻度利用に対してコストが見合わない                                                          |
-| **Azure Blob Storage 静的サイト** | 静的コンテンツとデータを単一ストレージアカウントで管理でき、閉域網のアクセス制御が容易。従量課金のみで低頻度運用のコストを最小化できる |
+本システムは Azure Blob Storage Static Website を中心に構成し、常駐バックエンドを持たない。
 
 ## 2. システム境界
 
-### 2.1 稼働境界
-
 - フロントエンド: React SPA（`src/`）
-- 配信基盤: Azure Blob Storage Static Website（`$web`）
-- 更新書き込み先: Blob Service Endpoint（SAS必須）
+- 配信基盤: Azure Blob Storage Static Website（`*.web.core.windows.net`）
+- 書き込み先: Blob Service Endpoint（`*.blob.core.windows.net/$web`、SAS 必須）
 
-## 3. 全体アーキテクチャ
+## 3. 全体構成
 
 ```mermaid
 graph TD
@@ -45,45 +34,48 @@ graph TD
     end
 
     U -->|GET| WEB
-    WEB -->|index.json / sessions| SPA
-    A -->|token付きURLでアクセス| WEB
+    WEB -->|data/index.json / data/sessions/*.json| SPA
+    A -->|token 付き URL でアクセス| WEB
     SPA -->|PUT/GET with SAS| BLOB
-    BLOB -->|raw/*.csv / data/*.json| SPA
+    BLOB -->|data/sources/*.csv / data/*.json| SPA
 ```
 
-## 4. フロントエンド構成（React SPA）
+## 4. フロントエンド構成
 
 ### 4.1 レイヤー構成
 
-| レイヤー   | 主な実装                                                         | 責務                                |
-| ---------- | ---------------------------------------------------------------- | ----------------------------------- |
-| App        | `src/App.jsx`, `src/main.jsx`                                    | `AuthProvider` + ルーティング初期化 |
-| Pages      | `DashboardPage`, `MemberDetailPage`, `AdminPage`                 | 画面単位のデータ取得・表示・操作    |
-| Components | `FileDropZone`, `FileQueueCard`, `ProgressBar` など              | 再利用UI部品                        |
-| Hooks      | `useAuth`, `useFileQueue`                                        | 認証状態・ファイルキュー状態管理    |
-| Services   | `data-fetcher`, `csv-transformer`, `index-merger`, `blob-writer` | I/O とドメイン処理                  |
-| Utils      | `format-duration`                                                | 表示フォーマット                    |
+| レイヤー | 主な実装 | 責務 |
+|--|--|--|
+| App | `src/App.jsx`, `src/main.jsx` | 認証コンテキストとルーティング初期化 |
+| Pages | `DashboardPage`, `MemberDetailPage`, `GroupDetailPage`, `AdminPage` | 画面単位のデータ取得・表示・操作 |
+| Components | `FileDropZone`, `FileQueueCard`, `GroupNameEditor` など | 再利用 UI 部品 |
+| Hooks | `useAuth`, `useFileQueue` | 認証状態・ファイルキュー状態管理 |
+| Services | `data-fetcher`, `csv-transformer`, `index-merger`, `index-editor`, `blob-writer` | I/O とドメイン処理 |
+| Config | `src/config/app-config.js` | ビルド時設定（`VITE_BLOB_BASE_URL`） |
+| Utils | `format-duration` | 表示フォーマット |
 
 ### 4.2 ルーティング
 
 - `#/` : ダッシュボード
 - `#/members/:memberId` : メンバー詳細
+- `#/groups/:groupId` : グループ詳細
 - `#/admin` : 管理画面（非管理者は `Navigate to="/"`）
 - `*` : ダッシュボードへリダイレクト
 
 ### 4.3 認証・管理者モード
 
-- URL クエリ `token` を `useAuth` が初回に抽出
+- URL クエリ `token` を `useAuth` が初回アクセスで抽出
 - 抽出後は `history.replaceState` で URL から `token` を除去
-- `isAdmin` が true の場合のみ管理導線を表示
-- SAS はメモリ保持のみ（localStorage/sessionStorage 非使用）
+- `isAdmin` が `true` の場合のみ管理導線を表示
+- SAS トークンはメモリ保持のみ（`localStorage` / `sessionStorage` 非使用）
 
-## 5. データ契約
+## 5. データ構造と契約
 
-### 5.1 配信データ
+### 5.1 配信・更新対象データ
 
 - `data/index.json`（可変・集約）
 - `data/sessions/<sessionId>.json`（不変・明細）
+- `data/sources/<sessionId>.csv`（管理者取り込み時の原本保存）
 
 `index.json` 例:
 
@@ -109,52 +101,23 @@ graph TD
 }
 ```
 
-`sessions/<sessionId>.json` 例:
+### 5.2 ID 生成規則（`CsvTransformer`）
 
-```json
-{
-  "id": "52664958-2026-02-06",
-  "groupId": "52664958",
-  "date": "2026-02-06",
-  "attendances": [{ "memberId": "c6606539", "durationSeconds": 3645 }]
-}
-```
-
-### 5.2 保管データ
-
-- `raw/<timestamp>-<filename>.csv`（管理者更新時の原本保存）
+- `groupId`: 正規化済み会議タイトルの SHA-256 先頭 8 桁
+- `memberId`: メールアドレスの SHA-256 先頭 8 桁
+- `sessionId`: `${groupId}-${YYYY-MM-DD}`
 
 ### 5.3 キャッシュ戦略
 
-| パス                      | 可変性   | 取得方法                   |
-| ------------------------- | -------- | -------------------------- |
-| `data/index.json`         | 可変     | `?v=<timestamp>` 付き GET  |
-| `data/sessions/<id>.json` | 不変     | キャッシュバスターなし GET |
-| `raw/*.csv`               | 追記のみ | 管理者 PUT のみ            |
+| パス | 可変性 | 取得方法 |
+|--|--|--|
+| `data/index.json` | 可変 | `?v=<timestamp>` 付き GET |
+| `data/sessions/<id>.json` | 不変 | キャッシュバスターなし GET |
+| `data/sources/*.csv` | 追記のみ | 管理者 PUT のみ |
 
-## 6. ドメイン処理
+## 6. 実行フロー
 
-### 6.1 CSV 変換（`CsvTransformer`）
-
-- 入力: Teams 出席レポート CSV（UTF-16LE）
-- 主な処理: `TextDecoder('utf-16le')` によるデコード、`1.要約/2.参加者/3.会議中...` のセクション分割、PapaParse による参加者TSV解析、時間文字列の秒正規化
-- 出力: `sessionRecord`（保存用）、`mergeInput`（`IndexMerger` 入力）、`warnings`（不正行スキップ情報）
-
-### 6.2 ID 生成規則
-
-- `groupId`: クリーニング済み会議タイトルの SHA-256 先頭8桁
-- `memberId`: メールアドレスの SHA-256 先頭8桁
-- `sessionId`: `${groupId}-${YYYY-MM-DD}`
-
-### 6.3 インデックス更新（`IndexMerger`）
-
-- `groups` と `members` をイミュータブルに更新
-- 重複 `sessionId` は警告扱いで追加しない
-- `updatedAt` を更新
-
-## 7. 実行フロー
-
-### 7.1 閲覧フロー（一般ユーザー）
+### 6.1 閲覧フロー
 
 ```mermaid
 sequenceDiagram
@@ -166,13 +129,13 @@ sequenceDiagram
   WEB-->>SPA: HTML/JS/CSS
   SPA->>WEB: GET data/index.json?v=timestamp
   WEB-->>SPA: DashboardIndex
-  U->>SPA: メンバー選択
+  U->>SPA: メンバー/グループを選択
   SPA->>WEB: GET data/sessions/<id>.json (複数)
-  WEB-->>SPA: SessionRecord群
+  WEB-->>SPA: SessionRecord 群
   SPA-->>U: 一覧/詳細を表示
 ```
 
-### 7.2 管理者更新フロー（ブラウザ）
+### 6.2 CSV 取り込みフロー（管理者）
 
 ```mermaid
 sequenceDiagram
@@ -180,11 +143,11 @@ sequenceDiagram
   participant SPA as AdminPage
   participant BLOB as Blob Service
 
-  A->>SPA: CSV複数投入
+  A->>SPA: CSV 複数投入
   SPA->>SPA: useFileQueue で検証・パース・重複判定
   A->>SPA: 一括保存
-  loop ready状態の各ファイル
-    SPA->>BLOB: PUT raw/<ts>-<name>.csv
+  loop ready 状態の各ファイル
+    SPA->>BLOB: PUT data/sources/<sessionId>.csv
     SPA->>BLOB: PUT data/sessions/<sessionId>.json
     SPA->>BLOB: GET data/index.json
     SPA->>SPA: IndexMerger.merge
@@ -192,40 +155,44 @@ sequenceDiagram
   end
 ```
 
-## 8. デプロイと運用
+### 6.3 グループ名修正フロー（管理者）
 
-### 8.1 CI/CD パイプライン
+```mermaid
+sequenceDiagram
+  actor A as Admin
+  participant SPA as AdminPage
+  participant BLOB as Blob Service
 
-GitHub Actions（`.github/workflows/deploy.yml`）により、push 時に自動デプロイを実行する。
-
+  A->>SPA: グループ名編集
+  SPA->>BLOB: GET data/index.json（最新）
+  SPA->>SPA: cachedIndex.updatedAt と比較
+  alt 同時編集なし
+    SPA->>SPA: IndexEditor.updateGroupName
+    SPA->>BLOB: PUT data/index.json
+    SPA->>BLOB: GET data/index.json（再取得）
+    SPA-->>A: 保存成功メッセージ
+  else 同時編集あり
+    SPA-->>A: 再読み込み要求メッセージ
+  end
 ```
-on: push
 
-┌──────────┐    ┌──────────┐
-│  test    │    │   lint   │   ← 並列実行
-└────┬─────┘    └────┬─────┘
-     └───────┬───────┘
-         ┌───▼───┐
-         │deploy │  ← 双方成功後にデプロイ
-         └───────┘
-```
+## 7. デプロイと運用
 
-| ブランチ | GitHub Environment | 用途     |
-| -------- | ------------------ | -------- |
-| `main`   | `prod`             | 本番環境 |
-| その他   | `dev`              | 開発検証 |
+### 7.1 CI/CD（`deploy.yml`）
 
-- Azure 認証: OIDC（`azure/login@v2` + フェデレーション資格情報）
-- ビルド成果物 `dist/` を `$web` コンテナにアップロード（`az storage blob upload-batch`）
-- `data/*` は除外（コード配備時にデータを上書きしない）
+- トリガー: `main` への `push`（`src/**`, `tests/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, ワークフロー自身の変更時）
+- ジョブ: `deploy` のみ（このワークフローでは `test`/`lint` は実行しない）
+- 実行内容:
+  - `pnpm install --frozen-lockfile`
+  - `pnpm run build`
+  - `az storage blob upload-batch --source dist --destination '$web'`
+  - デプロイ先 URL を `GITHUB_STEP_SUMMARY` へ出力
 
-#### ローカルデプロイ（手動）
+| ブランチ | GitHub Environment | 用途 |
+|--|--|--|
+| `main` | `prod` | 本番デプロイ |
 
-- `scripts/Deploy-StaticFiles.ps1`（`.env` ベースの認証情報で同等の処理を実行）
-
-### 8.2 インフラ管理
-
-ストレージアカウントの初期設定として、以下の3項目を Azure CLI で構成する必要がある。
+### 7.2 インフラ初期設定（Azure CLI）
 
 #### 静的サイト有効化
 
@@ -236,8 +203,6 @@ az storage blob service-properties update \
 ```
 
 #### Blob CORS 設定
-
-管理者更新フロー（`BlobWriter`）は Static Website Endpoint（`*.web.core.windows.net`）から Blob Service Endpoint（`*.blob.core.windows.net`）へクロスオリジンリクエストを送信する。PUT リクエストは `x-ms-blob-type` / `x-ms-version` ヘッダーを含むため、CORS プリフライト（OPTIONS）が必須となる。
 
 ```bash
 az storage cors add \
@@ -250,17 +215,7 @@ az storage cors add \
   --account-name <ACCOUNT_NAME>
 ```
 
-| 項目                | 値                                         | 理由                                                            |
-| ------------------- | ------------------------------------------ | --------------------------------------------------------------- |
-| `--methods`         | `GET PUT HEAD OPTIONS`                     | データ取得（GET）、Blob書き込み（PUT）、プリフライト（OPTIONS） |
-| `--origins`         | Static Website Endpoint                    | SPA のオリジン。環境ごとに異なる                                |
-| `--allowed-headers` | `Content-Type,x-ms-blob-type,x-ms-version` | `BlobWriter.#putBlob()` が送信するヘッダー                      |
-
-> **注意**: CORS が未設定の場合、管理者のファイルアップロードは「Response to preflight request doesn't pass access control check」エラーで失敗する。
-
 #### Stored Access Policy 設定
-
-管理者用 SAS トークンは `$web` コンテナの Stored Access Policy に紐づける。ポリシーが存在しない場合、SAS トークンは `SAS identifier cannot be found` エラーで無効となる。
 
 ```bash
 az storage container policy create \
@@ -272,68 +227,43 @@ az storage container policy create \
   --account-key <ACCOUNT_KEY>
 ```
 
-| ポリシー名        | 権限                                     | 用途                              |
-| ----------------- | ---------------------------------------- | --------------------------------- |
-| `dashboard-admin` | `rwdl`（読み取り・書き込み・削除・一覧） | CSV アップロード・index.json 更新 |
+## 8. セキュリティ方針
 
-> **注意**: `$web` コンテナ名に `$` が含まれるため、シェル変数展開に注意が必要。Node.js の `execFile` では文字列リテラルとして安全に渡される。
-
-### 8.3 運用支援スクリプト
-
-- `scripts/new-sas-token.mjs`: Stored Access Policy に紐づく SAS トークンを生成し、管理者用 URL を出力する
-- `scripts/clear-data.mjs`: `data/sessions` 削除 + `data/index.json` 初期化
-- `scripts/show-urls.mjs`: デプロイ済みの静的サイト URL を表示
-
-## 9. セキュリティ方針（現行実装）
-
-- 閲覧: 静的サイトエンドポイントから匿名 GET
+- 閲覧: Static Website Endpoint から匿名 GET
 - 更新: SAS 付き Blob Service Endpoint への PUT/GET
-- トークン取り扱い: URL から即時除去し、メモリ内のみで保持
-- CORS: Static Website Endpoint → Blob Service Endpoint 間で `GET, PUT, HEAD, OPTIONS` を許可（8.2 節参照）
-- SAS トークン: Stored Access Policy（`dashboard-admin`）に紐づくコンテナ SAS を使用。ポリシーの有効期限と権限をサーバー側で一元管理可能
+- トークン管理: URL から即時除去し、メモリ内のみ保持
+- CORS: Static Website Endpoint から Blob Service Endpoint への `GET, PUT, HEAD, OPTIONS` を許可
+- SAS: Stored Access Policy（`dashboard-admin`）に紐づくコンテナ SAS を利用
 
-補足: `staticwebapp.config.json` は Azure Static Web Apps 向け設定であり、Blob Static Website 単体運用では適用されません。
+!!! note
+    `staticwebapp.config.json` は Azure Static Web Apps 用設定であり、Blob Static Website 単体運用では適用されない。
 
-## 10. 技術スタック
-
-| 要素           | 選択                           | 理由                                       |
-| -------------- | ------------------------------ | ------------------------------------------ |
-| フレームワーク | React 19 + ReactDOM 19         | 宣言的 UI による保守性向上                 |
-| ビルドツール   | Vite + @vitejs/plugin-react    | HMR、高速ビルド、JSX 変換                  |
-| ルーティング   | react-router-dom（HashRouter） | SPA ハッシュベースルーティング             |
-| CSV パーサー   | PapaParse                      | Teams 出席レポートの UTF-16LE CSV 解析     |
-| CI/CD          | GitHub Actions + OIDC          | push 時自動デプロイ、環境別配置            |
-| ユニットテスト | Vitest + React Testing Library | jsdom 環境、コンポーネントテスト           |
-| E2E テスト     | Playwright                     | ブラウザベースの画面遷移・管理者フロー検証 |
-| Lint           | ESLint + Prettier              | コード品質・フォーマット統一               |
-| ホスティング   | Azure Blob Storage 静的サイト  | 最小コスト、閉域環境対応                   |
-
-## 11. テスト構成
+## 9. テスト構成
 
 - 単体/結合: Vitest + jsdom（`tests/data`, `tests/logic`, `tests/react`）
-- 画面E2E: Playwright（`e2e`）
+- E2E: Playwright（`e2e`）
 
-## 12. 既知の制約
+## 10. 既知の制約
 
-- `AdminPage` の `BLOB_BASE_URL` はコード内固定値
-- 同時更新の排他制御はアプリ側で未実装（最終書き込み勝ち）
-- `memberId` はメール依存のため、メール欠落時は識別精度が低下
+- CSV 一括保存フローは `data/index.json` の条件付き更新（ETag/If-Match）を行っていないため、同時更新時は最終書き込みが優先される。
+- グループ名修正の同時編集検知は `updatedAt` 比較ベースであり、サーバー側の強制排他ではない。
+- `memberId` はメールアドレス依存のため、メール欠落行は識別精度が低下する。
 
-## 13. ディレクトリ要約
+## 11. ディレクトリ要約
 
 ```text
 teams-board/
-├── src/                                 # React SPA
-│   ├── components/                      # UIコンポーネント
-│   ├── pages/                           # 画面コンポーネント
-│   ├── hooks/                           # カスタムHook
-│   ├── services/                        # ビジネスロジック層
-│   └── utils/                           # ユーティリティ
-├── tests/                               # ユニット・統合テスト
-├── e2e/                                 # E2Eテスト
-├── public/data/                         # 配信データ（ローカル）
-├── scripts/                             # Azure運用スクリプト（ローカル用）
-├── .github/workflows/                   # CI/CD ワークフロー
-├── docs/                                # ドキュメント
-└── .kiro/                               # スペック駆動開発設定
+├── src/                               # React SPA
+│   ├── components/                    # UI コンポーネント
+│   ├── pages/                         # 画面コンポーネント
+│   ├── hooks/                         # カスタム Hook
+│   ├── services/                      # ドメイン/データ処理
+│   ├── config/                        # ビルド時設定
+│   └── utils/                         # ユーティリティ
+├── dev-fixtures/data/                 # 開発用配信データ
+├── tests/                             # 単体/結合テスト
+├── e2e/                               # E2E テスト
+├── .github/workflows/                 # CI/CD ワークフロー
+├── docs/                              # 業務・機能ドキュメント
+└── openspec/                          # 仕様管理成果物
 ```
