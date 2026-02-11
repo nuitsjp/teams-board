@@ -1,11 +1,12 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
+import { getIndexFixture, registerIndexRoute } from './test-helpers.js';
 
-const fetchIndex = async (page) => {
-  const response = await page.request.get('/data/index.json');
-  expect(response.ok()).toBeTruthy();
-  return response.json();
-};
+const fetchIndex = async () => getIndexFixture();
+
+test.beforeEach(async ({ page }) => {
+  await registerIndexRoute(page);
+});
 
 test.describe('管理者パネル — グループ名編集', () => {
   test('グループ管理セクションが表示されること', async ({ page }) => {
@@ -32,7 +33,7 @@ test.describe('管理者パネル — グループ名編集', () => {
     await expect(page.getByRole('columnheader', { name: '総学習時間' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'セッション数' })).toBeVisible();
 
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const groupNames = index.groups.map((group) => group.name).slice(0, 2);
     for (const name of groupNames) {
       await expect(page.getByText(name)).toBeVisible();

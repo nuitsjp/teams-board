@@ -1,5 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
+import { getIndexFixture, registerIndexRoute } from './test-helpers.js';
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -12,11 +13,11 @@ const selectMember = (index, minGroups) =>
 
 const selectGroup = (index) => index.groups[0];
 
-const fetchIndex = async (page) => {
-  const response = await page.request.get('/data/index.json');
-  expect(response.ok()).toBeTruthy();
-  return response.json();
-};
+const fetchIndex = async () => getIndexFixture();
+
+test.beforeEach(async ({ page }) => {
+  await registerIndexRoute(page);
+});
 
 test.describe('ダッシュボード画面', () => {
   test('グループ一覧が表示されること', async ({ page }) => {
@@ -29,7 +30,7 @@ test.describe('ダッシュボード画面', () => {
     await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
 
     // グループが存在すること
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const groupNames = index.groups.map((group) => group.name).slice(0, 4);
     for (const name of groupNames) {
       await expect(page.getByText(name).first()).toBeVisible();
@@ -43,7 +44,7 @@ test.describe('ダッシュボード画面', () => {
     await expect(page.getByRole('heading', { name: 'メンバー' })).toBeVisible();
 
     // メンバーが存在すること
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const memberRows = page.getByTestId('member-row');
     await expect(memberRows).toHaveCount(index.members.length);
   });
@@ -120,7 +121,7 @@ test.describe('グループ詳細画面', () => {
   });
 
   test('グループ詳細画面でセッション一覧が表示されること', async ({ page }) => {
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const group = selectGroup(index);
     test.skip(!group, 'グループデータが存在しないためスキップ');
     await page.goto(`/#/groups/${group.id}`);
@@ -136,7 +137,7 @@ test.describe('グループ詳細画面', () => {
   });
 
   test('セッションをクリックして参加者詳細を展開・折りたたみできること', async ({ page }) => {
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const group = selectGroup(index);
     test.skip(!group, 'グループデータが存在しないためスキップ');
     await page.goto(`/#/groups/${group.id}`);
@@ -159,7 +160,7 @@ test.describe('グループ詳細画面', () => {
   });
 
   test('グループ詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const group = selectGroup(index);
     test.skip(!group, 'グループデータが存在しないためスキップ');
     await page.goto(`/#/groups/${group.id}`);
@@ -179,7 +180,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
   test('複数グループに参加しているメンバーでグループ別サマリーカードが表示されること', async ({
     page,
   }) => {
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const member = selectMember(index, 2);
     const memberGroups = member ? getMemberGroups(index, member) : [];
     test.skip(!member || memberGroups.length === 0, 'メンバーデータが存在しないためスキップ');
@@ -197,7 +198,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
   });
 
   test('グループカードをクリックして出席履歴を展開・折りたたみできること', async ({ page }) => {
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const member = selectMember(index, 2);
     const memberGroups = member ? getMemberGroups(index, member) : [];
     test.skip(!member || memberGroups.length < 2, '複数グループのメンバーが存在しないためスキップ');
@@ -222,12 +223,14 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
   });
 
   test('グループが1つのみのメンバーではデフォルトで展開されること', async ({ page }) => {
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const member = index.members.find(
       (candidate) => getMemberGroups(index, candidate).length === 1
     );
-    const memberGroups = member ? getMemberGroups(index, member) : [];
-    test.skip(!member || memberGroups.length !== 1, '単一グループのメンバーが存在しないためスキップ');
+    if (!member) {
+      throw new Error('単一グループのメンバーが必要です');
+    }
+    const memberGroups = getMemberGroups(index, member);
     await page.goto(`/#/members/${member.id}`);
 
     // 単一グループのメンバーでは初期状態でテーブルが表示されている
@@ -236,7 +239,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
   });
 
   test('複数のグループカードを同時に展開できること', async ({ page }) => {
-    const index = await fetchIndex(page);
+    const index = await fetchIndex();
     const member = selectMember(index, 2);
     const memberGroups = member ? getMemberGroups(index, member) : [];
     test.skip(!member || memberGroups.length < 2, '複数グループのメンバーが存在しないためスキップ');
