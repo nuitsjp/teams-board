@@ -107,7 +107,7 @@ test.describe('グループ詳細画面', () => {
 
   test('グループ詳細画面でセッション一覧が表示されること', async ({ page }) => {
     // フロントエンド勉強会（10回開催）の詳細ページへ
-    await page.goto('/#/groups/52664958');
+    await page.goto('/#/groups/b20ae593');
 
     // グループ名が表示される
     await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
@@ -120,7 +120,7 @@ test.describe('グループ詳細画面', () => {
   });
 
   test('セッションをクリックして参加者詳細を展開・折りたたみできること', async ({ page }) => {
-    await page.goto('/#/groups/52664958');
+    await page.goto('/#/groups/b20ae593');
 
     // セッション日付が表示されるまで待つ
     await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
@@ -140,7 +140,7 @@ test.describe('グループ詳細画面', () => {
   });
 
   test('グループ詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
-    await page.goto('/#/groups/52664958');
+    await page.goto('/#/groups/b20ae593');
 
     // 詳細画面が表示されるまで待つ
     await expect(page.getByText('一覧へ戻る')).toBeVisible();
@@ -158,7 +158,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     page,
   }) => {
     // 鈴木さん（フロントエンド勉強会、TypeScript読書会、ソフトウェア設計勉強会に参加）の詳細ページへ
-    await page.goto('/#/members/c6606539');
+    await page.goto('/#/members/d2ede157');
 
     // メンバー名が表示される
     await expect(page.getByRole('heading', { name: /鈴木 太郎/ })).toBeVisible();
@@ -170,7 +170,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
   });
 
   test('グループカードをクリックして出席履歴を展開・折りたたみできること', async ({ page }) => {
-    await page.goto('/#/members/c6606539');
+    await page.goto('/#/members/d2ede157');
 
     // 初期状態では出席履歴テーブルが表示されていない（複数グループなので折りたたみ）
     await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
@@ -193,7 +193,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
   test('グループが1つのみのメンバーではデフォルトで展開されること', async ({ page }) => {
     // 現データでは全メンバーが複数グループに参加しているため、
     // 複数グループの場合に折りたたまれていることを確認する
-    await page.goto('/#/members/c6606539');
+    await page.goto('/#/members/d2ede157');
 
     // 複数グループのメンバーでは初期状態でテーブルが表示されていない
     await expect(page.getByRole('heading', { name: 'フロントエンド勉強会' })).toBeVisible();
@@ -201,7 +201,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
   });
 
   test('複数のグループカードを同時に展開できること', async ({ page }) => {
-    await page.goto('/#/members/c6606539');
+    await page.goto('/#/members/d2ede157');
 
     // 2つのグループを展開
     await page.getByRole('heading', { name: 'フロントエンド勉強会' }).click();

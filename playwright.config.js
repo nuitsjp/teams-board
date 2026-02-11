@@ -2,6 +2,9 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  testMatch: '**/*.spec.js',
+  globalSetup: './e2e/global-setup.js',
+  globalTeardown: './e2e/global-teardown.js',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -20,8 +23,15 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'readonly-tests',
+      testMatch: /^(?!.*admin-dev-mode\.spec\.js$).*/,
       use: { browserName: 'chromium' },
+    },
+    {
+      name: 'data-mutation-tests',
+      testMatch: '**/admin-dev-mode.spec.js',
+      use: { browserName: 'chromium' },
+      dependencies: ['readonly-tests'],
     },
   ],
 });

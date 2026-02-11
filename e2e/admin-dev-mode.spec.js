@@ -1,7 +1,18 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
+import { restoreIndexJson } from '../e2e-helpers/fixture-manager.js';
 
 test.describe('開発モード — ダミートークンでの管理者機能', () => {
+  // データ変更テストは並列実行から分離してシーケンシャルに実行
+  test.describe.configure({ mode: 'serial' });
+
+  // データ変更テスト後に即座にバックアップから復元
+  test.afterEach(async (_, testInfo) => {
+    if (testInfo.title.includes('グループ名の編集ができること')) {
+      await restoreIndexJson();
+    }
+  });
+
   test('token=devで管理者リンクが表示されること', async ({ page }) => {
     await page.goto('/?token=dev');
 
