@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
-import { registerIndexRoute } from './test-helpers.js';
+import { registerIndexRoute } from '../e2e-helpers/test-helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await registerIndexRoute(page);
