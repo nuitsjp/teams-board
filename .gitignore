@@ -8,6 +8,9 @@
 playwright-report/
 test-results/
 
+# E2Eテストのバックアップファイル
+dev-fixtures/data/.*.backup
+
 # Logs
 logs
 *.log

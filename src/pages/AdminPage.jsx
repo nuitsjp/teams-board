@@ -7,6 +7,8 @@ import { FileQueueCardList } from '../components/FileQueueCardList.jsx';
 import { ProgressBar } from '../components/ProgressBar.jsx';
 import { CsvTransformer } from '../services/csv-transformer.js';
 import { BlobWriter } from '../services/blob-writer.js';
+import { ProductionIndexFetcher, DevIndexFetcher } from '../services/index-fetcher.js';
+import { AzureBlobStorage, DevBlobStorage } from '../services/blob-storage.js';
 import { IndexMerger } from '../services/index-merger.js';
 import { IndexEditor } from '../services/index-editor.js';
 import { DataFetcher } from '../services/data-fetcher.js';
@@ -23,10 +25,27 @@ export function AdminPage() {
   const authAdapter = useMemo(() => createAuthAdapter(auth), [auth]);
 
   const csvTransformer = useMemo(() => new CsvTransformer(), []);
+
+  // 環境に応じてIndexFetcherとBlobStorageを注入
+  const indexFetcher = useMemo(() => {
+    if (import.meta.env.DEV && authAdapter.getSasToken() === 'dev') {
+      return new DevIndexFetcher();
+    }
+    return new ProductionIndexFetcher(APP_CONFIG.blobBaseUrl, authAdapter);
+  }, [authAdapter]);
+
+  const blobStorage = useMemo(() => {
+    if (import.meta.env.DEV && authAdapter.getSasToken() === 'dev') {
+      return new DevBlobStorage();
+    }
+    return new AzureBlobStorage(APP_CONFIG.blobBaseUrl, authAdapter);
+  }, [authAdapter]);
+
   const blobWriter = useMemo(
-    () => new BlobWriter(authAdapter, APP_CONFIG.blobBaseUrl),
-    [authAdapter]
+    () => new BlobWriter(indexFetcher, blobStorage),
+    [indexFetcher, blobStorage]
   );
+
   const indexMerger = useMemo(() => new IndexMerger(), []);
   const indexEditor = useMemo(() => new IndexEditor(), []);
   const dataFetcher = useMemo(() => new DataFetcher(), []);
