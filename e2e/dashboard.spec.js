@@ -123,7 +123,9 @@ test.describe('グループ詳細画面', () => {
   test('グループ詳細画面でセッション一覧が表示されること', async ({ page }) => {
     const index = await fetchIndex();
     const group = selectGroup(index);
-    test.skip(!group, 'グループデータが存在しないためスキップ');
+    if (!group) {
+      throw new Error('グループデータが存在しないためテストできません');
+    }
     await page.goto(`/#/groups/${group.id}`);
 
     // グループ名が表示される
@@ -139,7 +141,9 @@ test.describe('グループ詳細画面', () => {
   test('セッションをクリックして参加者詳細を展開・折りたたみできること', async ({ page }) => {
     const index = await fetchIndex();
     const group = selectGroup(index);
-    test.skip(!group, 'グループデータが存在しないためスキップ');
+    if (!group) {
+      throw new Error('グループデータが存在しないためテストできません');
+    }
     await page.goto(`/#/groups/${group.id}`);
 
     // セッション日付が表示されるまで待つ
@@ -162,7 +166,9 @@ test.describe('グループ詳細画面', () => {
   test('グループ詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
     const index = await fetchIndex();
     const group = selectGroup(index);
-    test.skip(!group, 'グループデータが存在しないためスキップ');
+    if (!group) {
+      throw new Error('グループデータが存在しないためテストできません');
+    }
     await page.goto(`/#/groups/${group.id}`);
 
     // 詳細画面が表示されるまで待つ
@@ -183,7 +189,9 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     const index = await fetchIndex();
     const member = selectMember(index, 2);
     const memberGroups = member ? getMemberGroups(index, member) : [];
-    test.skip(!member || memberGroups.length === 0, 'メンバーデータが存在しないためスキップ');
+    if (!member || memberGroups.length < 2) {
+      throw new Error('複数グループのメンバーが必要です');
+    }
     await page.goto(`/#/members/${member.id}`);
 
     // メンバー名が表示される
@@ -201,7 +209,9 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     const index = await fetchIndex();
     const member = selectMember(index, 2);
     const memberGroups = member ? getMemberGroups(index, member) : [];
-    test.skip(!member || memberGroups.length < 2, '複数グループのメンバーが存在しないためスキップ');
+    if (!member || memberGroups.length < 2) {
+      throw new Error('複数グループのメンバーが必要です');
+    }
     await page.goto(`/#/members/${member.id}`);
 
     // 初期状態では出席履歴テーブルが表示されていない（複数グループなので折りたたみ）
@@ -242,7 +252,9 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     const index = await fetchIndex();
     const member = selectMember(index, 2);
     const memberGroups = member ? getMemberGroups(index, member) : [];
-    test.skip(!member || memberGroups.length < 2, '複数グループのメンバーが存在しないためスキップ');
+    if (!member || memberGroups.length < 2) {
+      throw new Error('複数グループのメンバーが必要です');
+    }
     await page.goto(`/#/members/${member.id}`);
 
     // 2つのグループを展開

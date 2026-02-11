@@ -1,15 +1,15 @@
 // BlobWriter — Blobサービスエンドポイントへのデータ書き込み
 export class BlobWriter {
-  #auth;
-  #blobBaseUrl;
+  #indexFetcher;
+  #blobStorage;
 
   /**
-   * @param {object} auth - { getSasToken: () => string|null } インターフェース
-   * @param {string} blobBaseUrl - Blobサービスエンドポイント（例: https://account.blob.core.windows.net/$web）
+   * @param {object} indexFetcher - IndexFetcherインターフェース実装
+   * @param {object} blobStorage - BlobStorageインターフェース実装
    */
-  constructor(auth, blobBaseUrl) {
-    this.#auth = auth;
-    this.#blobBaseUrl = blobBaseUrl;
+  constructor(indexFetcher, blobStorage) {
+    this.#indexFetcher = indexFetcher;
+    this.#blobStorage = blobStorage;
   }
 
   /**
@@ -90,25 +90,7 @@ export class BlobWriter {
    * @returns {Promise<{path: string, success: boolean, error?: string}>}
    */
   async #putBlob({ path, content, contentType }) {
-    const sasToken = this.#auth.getSasToken();
-    const url = `${this.#blobBaseUrl}/${path}?${sasToken}`;
-    try {
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': contentType,
-          'x-ms-blob-type': 'BlockBlob',
-          'x-ms-version': '2025-01-05',
-        },
-        body: content,
-      });
-      if (!response.ok) {
-        return { path, success: false, error: `HTTP ${response.status} ${response.statusText}` };
-      }
-      return { path, success: true };
-    } catch (err) {
-      return { path, success: false, error: err.message };
-    }
+    return await this.#blobStorage.write(path, content, contentType);
   }
 
   /**
@@ -116,17 +98,6 @@ export class BlobWriter {
    * @returns {Promise<{ok: true, data: object} | {ok: false, error: string}>}
    */
   async #fetchCurrentIndex() {
-    const sasToken = this.#auth.getSasToken();
-    const url = `${this.#blobBaseUrl}/data/index.json?${sasToken}`;
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        return { ok: false, error: `HTTP ${response.status} ${response.statusText}` };
-      }
-      const data = await response.json();
-      return { ok: true, data };
-    } catch (err) {
-      return { ok: false, error: err.message };
-    }
+    return await this.#indexFetcher.fetch();
   }
 }

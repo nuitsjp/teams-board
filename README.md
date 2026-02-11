@@ -45,6 +45,40 @@ nr preview
 
 `nr dev` でブラウザが開き、ダッシュボード一覧が表示されます（デフォルト: `http://localhost:5173`）。
 
+### 開発環境で管理者モードを使用する
+
+開発環境では、ダミートークンを使用して管理者モード（AdminPage）をテストできます。
+
+```bash
+# 開発サーバーを起動
+nr dev
+
+# ブラウザで以下のURLにアクセス
+# http://localhost:5173/?token=dev
+```
+
+ダミートークン（`?token=dev`）を使用すると:
+
+- 管理者専用機能（CSV 一括保存、グループ名編集など）にアクセスできます
+- 書き込み操作は `dev-fixtures/data/` に保存されます（実際の Azure Blob Storage には影響しません）
+- 本番環境では無効化されます（セキュリティ保証）
+
+**実際の SAS トークンとの共存**
+
+開発環境で実際の Azure Blob Storage SAS トークンを使用することもできます。その場合は `?token=<actual-sas-token>` でアクセスしてください。
+
+**開発用データのクリーンアップ（任意）**
+
+開発中に蓄積したテストデータをクリーンアップする場合:
+
+```bash
+# dev-fixtures/data/ 配下のデータを削除
+rm -rf dev-fixtures/data/*
+
+# または PowerShell の場合
+Remove-Item -Recurse -Force dev-fixtures/data/*
+```
+
 ### E2E テスト
 
 ```bash
