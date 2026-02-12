@@ -16,38 +16,30 @@
 
 ```mermaid
 classDiagram
-    class Group {
-        +String id
-        +String name
-        グループ（勉強会・ミーティング）
+    namespace 出席状況 {
+        class グループ {
+            名前
+        }
+        class メンバー {
+            名前
+        }
+        class セッション {
+            開催日
+        }
+        class 出席記録 {
+            参加時間
+        }
     }
 
-    class Member {
-        +String id
-        +String name
-        参加者
-    }
+    グループ "1" -- "0..*" セッション : 開催する
+    メンバー "0..*" -- "0..*" セッション : 参加する
+    セッション "1" *-- "1..*" 出席記録 : 含む
+    出席記録 "1" -- "1" メンバー : 記録する
 
-    class Session {
-        +String id
-        +Date date
-        会議の開催
-    }
-
-    class Attendance {
-        +Duration duration
-        出席記録
-    }
-
-    Group "1" -- "0..*" Session : 開催する
-    Member "0..*" -- "0..*" Session : 参加する
-    Session "1" *-- "1..*" Attendance : 含む
-    Attendance "1" -- "1" Member : 記録する
-
-    note for Group "フロントエンド勉強会<br/>TypeScript読書会<br/>などのグループ"
-    note for Member "鈴木 太郎<br/>田中 浩二<br/>などの参加者"
-    note for Session "2026-01-15 の開催<br/>2026-01-21 の開催"
-    note for Attendance "鈴木 太郎が 59分32秒 参加"
+    note for グループ "フロントエンド勉強会<br/>TypeScript読書会<br/>などのグループ"
+    note for メンバー "鈴木 太郎<br/>田中 浩二<br/>などの参加者"
+    note for セッション "2026-01-15 の開催<br/>2026-01-21 の開催"
+    note for 出席記録 "鈴木 太郎が 59分32秒 参加"
 ```
 
 ---
@@ -56,10 +48,11 @@ classDiagram
 
 | 概念 | 定義 | 例 |
 |------|------|-----|
-| **Group** | 勉強会やミーティングなどの活動グループ | フロントエンド勉強会、TypeScript読書会 |
-| **Member** | 参加者 | 鈴木 太郎、田中 浩二 |
-| **Session** | グループによる会議の1回の開催 | フロントエンド勉強会 2026-01-15 開催 |
-| **Attendance** | セッションへのメンバーの参加記録（参加時間を含む） | 鈴木 太郎が 59分32秒 参加 |
+| **出席状況** | グループ・メンバー・セッション・出席記録を包含する全体概念 | — |
+| **グループ** | 勉強会やミーティングなどの活動グループ | フロントエンド勉強会、TypeScript読書会 |
+| **メンバー** | 参加者 | 鈴木 太郎、田中 浩二 |
+| **セッション** | グループによる会議の1回の開催 | フロントエンド勉強会 2026-01-15 開催 |
+| **出席記録** | セッションへのメンバーの参加記録（参加時間を含む） | 鈴木 太郎が 59分32秒 参加 |
 
 ---
 
@@ -68,22 +61,22 @@ classDiagram
 ### CSV インポート
 1. 管理者が Teams 出席レポート CSV をアップロード
 2. システムが CSV を解析：
-   - 会議タイトル → Group を特定または新規作成
-   - 開催日 → Session を新規作成
-   - 参加者リスト → 各 Member の Attendance を作成
+   - 会議タイトル → グループを特定または新規作成
+   - 開催日 → セッションを新規作成
+   - 参加者リスト → 各メンバーの出席記録を作成
 3. データが永続化される
 
 ### グループ一覧表示
-- すべての Group とそれぞれの総参加時間を表示
-- 総参加時間 = そのグループの全セッションの全 Attendance の duration の合計
+- すべてのグループとそれぞれの総参加時間を表示
+- 総参加時間 = そのグループの全セッションの全出席記録の参加時間の合計
 
 ### メンバー一覧表示
-- すべての Member とそれぞれの総参加時間を表示
-- 総参加時間 = そのメンバーの全 Attendance の duration の合計
+- すべてのメンバーとそれぞれの総参加時間を表示
+- 総参加時間 = そのメンバーの全出席記録の参加時間の合計
 
 ### セッション詳細表示
-- 特定の Session の出席者リストと各自の参加時間を表示
-- Attendance を通じて Member と duration を取得
+- 特定のセッションの出席者リストと各自の参加時間を表示
+- 出席記録を通じてメンバーと参加時間を取得
 
 ---
 
@@ -94,7 +87,7 @@ Teams 出席レポート CSV
   ↓
 [解析]
   ↓
-Group + Session + Attendance (+ Member) の概念が生成される
+グループ + セッション + 出席記録 (+ メンバー) の概念が生成される
   ↓
 [永続化]
   ↓
@@ -111,9 +104,9 @@ JSON ファイルとして Azure Blob Storage に保存
 
 このドキュメントは概念モデルを示している。実装では以下のような形で具体化されている：
 
-- **Group**: `GroupSummary` として `index.json` に格納（集約データ）
-- **Member**: `MemberSummary` として `index.json` に格納（集約データ）
-- **Session**: `SessionRecord` として `data/sessions/{id}.json` に個別保存
-- **Attendance**: `SessionRecord` 内の配列として保存
+- **グループ**: `GroupSummary` として `index.json` に格納（集約データ）
+- **メンバー**: `MemberSummary` として `index.json` に格納（集約データ）
+- **セッション**: `SessionRecord` として `data/sessions/{id}.json` に個別保存
+- **出席記録**: `SessionRecord` 内の配列として保存
 
 詳細な実装構成は [architecture.md](architecture.md) を参照のこと。
