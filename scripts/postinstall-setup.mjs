@@ -1,4 +1,5 @@
-import { lstat, mkdir, realpath, symlink } from 'node:fs/promises';
+import { execSync } from 'node:child_process';
+import { lstat, mkdir, realpath, rm, symlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -78,8 +79,30 @@ async function ensureOpenspecJunction() {
   );
 }
 
+const args = new Set(process.argv.slice(2));
+const isInit = args.has('--init');
+const isClean = args.has('--clean');
+
+async function cleanVenv() {
+  const venvPath = path.join(repositoryRootPath, '.venv');
+  await rm(venvPath, { recursive: true, force: true });
+  console.log('[setup] .venv を削除しました。');
+}
+
+function runUvSync() {
+  console.log('[setup] uv sync を実行します...');
+  execSync('uv sync', { cwd: repositoryRootPath, stdio: 'inherit' });
+  console.log('[setup] uv sync が完了しました。');
+}
+
 try {
+  if (isClean) {
+    await cleanVenv();
+  }
   await ensureOpenspecJunction();
+  if (isInit) {
+    runUvSync();
+  }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(message);

@@ -6,6 +6,8 @@
   "description": "Teams Board — Teamsレポート集計ダッシュボード",
   "scripts": {
     "postinstall": "node scripts/postinstall-setup.mjs",
+    "init": "node scripts/postinstall-setup.mjs --init",
+    "init:clean": "node scripts/postinstall-setup.mjs --init --clean",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
