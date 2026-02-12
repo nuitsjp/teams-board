@@ -1,5 +1,6 @@
 # User-specific files
 **/writing-documents/
+docs/openspec
 
 # Git Worktree
 .worktree/
