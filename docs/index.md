@@ -1,6 +1,6 @@
-# Teams Board
+# 概要
 
-## システム概要
+## はじめに
 
 **Teams Board** は、Microsoft Teams の出席レポート CSV を集約・可視化するダッシュボード SPA 。
 
