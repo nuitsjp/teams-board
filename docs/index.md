@@ -2,7 +2,7 @@
 
 ## はじめに
 
-Teams Board は、Microsoft Teams の参加レポート CSV を集約・可視化するダッシュボード SPA 。
+Teams Board は、Microsoft Teams の参加レポート CSV を集約・可視化するダッシュボード。
 
 Teams会議のミーティングや勉強会などの会議グループごとに参加状況を管理し、メンバーの活動時間を可視化する。
 
