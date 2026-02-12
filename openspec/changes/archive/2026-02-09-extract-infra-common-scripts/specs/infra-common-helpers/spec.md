@@ -54,7 +54,7 @@
 
 ### Requirement: 既存スクリプトの共通関数への移行
 
-既存の5スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）は、Azure接続処理の重複コードを `Connect-AzureStorage` 関数の呼び出しに置き換えなければならない（MUST）。パラメータインターフェイスは変更してはならない（MUST NOT）。
+既存の5スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）は、Azure接続処理の重複コードを `Connect-AzureStorage` 関数呼び出しへ置き換えること（MUST）。パラメータインターフェイスを変更してはならない（MUST NOT）。
 
 #### Scenario: 既存スクリプトのパラメーター互換性
 

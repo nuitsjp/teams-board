@@ -83,9 +83,7 @@
 #### Scenario: 競合検出時の警告
 
 - **WHEN** 保存時の`updatedAt`がローカルキャッシュと異なる
-<!-- textlint-disable no-mix-dearu-desumasu -->
-- **THEN** システムは警告メッセージ「他のユーザーが同時に編集しています。最新データを再読み込みしてください」を表示し、保存を中断する
-<!-- textlint-enable no-mix-dearu-desumasu -->
+- **THEN** システムは警告メッセージ「他のユーザーが同時に編集中。最新データを再読み込みすること」を表示し、保存を中断する
 
 ### Requirement: UI即時反映
 

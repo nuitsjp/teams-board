@@ -2,7 +2,7 @@
 
 ### Requirement: 開発環境でのBlobWriter動作のモック化
 
-開発環境（`import.meta.env.DEV === true`）かつダミートークン（`token === "dev"`）を使用している場合、BlobWriterは実際のAzure Blob Storageへのリクエストを送信せず、ローカルの`dev-fixtures/data/`ディレクトリに書き込まなければならない（MUST）。
+開発環境（`import.meta.env.DEV === true`）かつダミートークン（`token === "dev"`）使用時、BlobWriterは実際のAzure Blob Storageへのリクエストを送信してはならない（MUST NOT）。代わりにローカルの`dev-fixtures/data/`ディレクトリへ書き込まなければならない（MUST）。
 
 #### Scenario: 開発環境でのindex.json書き込み
 
