@@ -14,8 +14,8 @@
 ## 3. package.json更新と旧ファイル削除
 
 - [x] 3.1 `package.json` の `infra:*` スクリプトを `node scripts/*.mjs` に変更する
-- [x] 3.2 旧PowerShellスクリプト（4つの.ps1ファイル）を削除する
-- [x] 3.3 `scripts/common/` ディレクトリ（3つの.ps1ファイル）を削除する
+- [x] 3.2 旧PowerShellスクリプト（4つの。ps1ファイル）を削除する
+- [x] 3.3 `scripts/common/` ディレクトリ（3つの。ps1ファイル）を削除する
 
 ## 4. 動作確認
 

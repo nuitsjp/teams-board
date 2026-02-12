@@ -1,0 +1,44 @@
+name: textlint
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/textlint.yml'
+      - 'docs/**/*.md'
+      - '*.md'
+      - '.textlintrc.json'
+      - 'package.json'
+  pull_request:
+    paths:
+      - '.github/workflows/textlint.yml'
+      - 'docs/**/*.md'
+      - '*.md'
+      - '.textlintrc.json'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  textlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: pnpm のインストール
+        uses: pnpm/action-setup@v4
+
+      - name: Node.js のセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: 依存関係のインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: textlint の実行
+        run: pnpm run lint:text

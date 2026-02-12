@@ -13,9 +13,9 @@
 
 ## 2. システム境界
 
-- フロントエンド: React SPA（`src/`）
-- 配信基盤: Azure Blob Storage Static Website（`*.web.core.windows.net`）
-- 書き込み先: Blob Service Endpoint（`*.blob.core.windows.net/$web`、SAS 必須）
+- フロントエンド： React SPA（`src/`）
+- 配信基盤： Azure Blob Storage Static Website（`*.web.core.windows.net`）
+- 書き込み先： Blob Service Endpoint（`*.blob.core.windows.net/$web`、SAS 必須）
 
 ## 3. 全体構成
 
@@ -77,7 +77,7 @@ graph TD
 - `data/sessions/<sessionId>.json`（不変・明細）
 - `data/sources/<sessionId>.csv`（管理者取り込み時の原本保存）
 
-`index.json` 例:
+`index.json` 例：
 
 ```json
 {
@@ -181,8 +181,8 @@ sequenceDiagram
 ### 7.1 CI/CD（`deploy.yml`）
 
 - トリガー: `main` への `push`（`src/**`, `tests/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, ワークフロー自身の変更時）
-- ジョブ: `deploy` のみ（このワークフローでは `test`/`lint` は実行しない）
-- 実行内容:
+- ジョブ： `deploy` のみ（このワークフローでは `test`/`lint` は実行しない）
+- 実行内容：
   - `pnpm install --frozen-lockfile`
   - `pnpm run build`
   - `az storage blob upload-batch --source dist --destination '$web'`
@@ -229,18 +229,18 @@ az storage container policy create \
 
 ## 8. セキュリティ方針
 
-- 閲覧: Static Website Endpoint から匿名 GET
-- 更新: SAS 付き Blob Service Endpoint への PUT/GET
-- トークン管理: URL から即時除去し、メモリ内のみ保持
+- 閲覧： Static Website Endpoint から匿名 GET
+- 更新： SAS 付き Blob Service Endpoint への PUT/GET
+- トークン管理： URL から即時除去し、メモリ内のみ保持
 - CORS: Static Website Endpoint から Blob Service Endpoint への `GET, PUT, HEAD, OPTIONS` を許可
-- SAS: Stored Access Policy（`dashboard-admin`）に紐づくコンテナ SAS を利用
+- SAS: Stored Access Policy（`dashboard-admin`）に紐づくコンテナー SAS を利用
 
 !!! note
     `staticwebapp.config.json` は Azure Static Web Apps 用設定であり、Blob Static Website 単体運用では適用されない。
 
 ## 9. テスト構成
 
-- 単体/結合: Vitest + jsdom（`tests/data`, `tests/logic`, `tests/react`）
+- 単体/結合： Vitest + jsdom（`tests/data`, `tests/logic`, `tests/react`）
 - E2E: Playwright（`e2e`）
 
 ## 10. 既知の制約

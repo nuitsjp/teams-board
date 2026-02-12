@@ -20,8 +20,8 @@ CSVファイルは、Microsoft Teams出席レポートの実際のフォーマ�
 #### Scenario: Summary section with required fields
 
 - **WHEN** 要約セクションが作成される
-- **THEN** 「会議のタイトル」フィールドにグループ名が含まれる
-- **THEN** 「開始時刻」フィールドに「YYYY/M/D HH:MM:SS」形式の日時が含まれる
+- **THEN**「会議のタイトル」フィールドにグループ名が含まれる
+- **THEN**「開始時刻」フィールドに「YYYY/M/D HH:MM:SS」形式の日時が含まれる
 
 #### Scenario: Participants section with required fields
 

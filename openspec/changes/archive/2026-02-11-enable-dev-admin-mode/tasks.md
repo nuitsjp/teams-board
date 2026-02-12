@@ -1,6 +1,6 @@
 ## 1. Viteプラグインの拡張
 
-- [x] 1.1 `vite.config.js`の`serveDevFixtures`プラグインにPOSTリクエストハンドラを追加
+- [x] 1.1 `vite.config.js`の`serveDevFixtures`プラグインにPOSTリクエストハンドラーを追加
 - [x] 1.2 `/dev-fixtures-write`エンドポイントのリクエストボディパース処理を実装
 - [x] 1.3 `dev-fixtures/<path>`へのファイル書き込み処理を実装（`fs.promises.writeFile`）
 - [x] 1.4 ディレクトリが存在しない場合の自動作成処理を実装（`fs.promises.mkdir`の`recursive: true`）

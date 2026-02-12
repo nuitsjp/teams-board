@@ -94,15 +94,15 @@
 
 - `name`: `blob-static-dashboard` → `teams-board`
 - `description`: `Azure Blob Storage Static website ダッシュボード` → `Teams Board — Teamsレポート集計ダッシュボード`
-- `infra:clear` スクリプト名: ファイル名変更に合わせて更新（`Clear-StudyData.ps1` → `Clear-Data.ps1`）
+- `infra:clear` スクリプト名： ファイル名変更に合わせて更新（`Clear-StudyData.ps1` → `Clear-Data.ps1`）
 
 ## Risks / Trade-offs
 
-- **[データ互換性]** `index.json` の `studyGroups` → `groups` 変更により、既にデプロイ済みの環境ではデータ形式が不整合になる → **緩和策**: デプロイ時に `infra:clear` でデータをリセットし再アップロード。本番環境が存在する場合はマイグレーションスクリプトを検討。
+- **[データ互換性]** `index.json` の `studyGroups` → `groups` 変更により、すでにデプロイ済みの環境ではデータ形式が不整合になる → **緩和策**: デプロイ時に `infra:clear` でデータをリセットし再アップロード。本番環境が存在する場合はマイグレーションスクリプトを検討。
 - **[URLの変更]** `/study-groups/:id` → `/groups/:id` により既存ブックマークが壊れる → **緩和策**: ハッシュルーター使用のため外部リンクへの影響は限定的。必要に応じてリダイレクトルートを追加可能。
 - **[大量のファイル変更]** ドメインモデル名のリネームにより多数のファイルが変更される → **緩和策**: テスト（ユニット + E2E）で回帰確認。機械的なリネームを中心とし、ロジック変更は最小限に留める。
 
 ## Open Questions
 
-- インフラスクリプトのファイル名自体も変更するか（例: `Clear-StudyData.ps1` → `Clear-Data.ps1`）？ — package.jsonのスクリプト参照も含めて更新が必要。
-- ヘッダーのアイコン（現在 `BookOpen`）を変更するか？ — 製品のブランドイメージに合わせて検討が必要。
+- インフラスクリプトのファイル名自体も変更するか（例： `Clear-StudyData.ps1` → `Clear-Data.ps1`）？　— package.jsonのスクリプト参照も含めて更新が必要。
+- ヘッダーのアイコン（現在 `BookOpen`）を変更するか？　— 製品のブランドイメージに合わせて検討が必要。

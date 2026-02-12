@@ -154,3 +154,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Python / MkDocs
+.venv
+/site
+__pycache__/
+*.py[cod]

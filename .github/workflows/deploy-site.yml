@@ -1,0 +1,130 @@
+name: Deploy Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/deploy-site.yml'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/deploy-site.yml'
+  workflow_dispatch:
+    inputs:
+      purpose:
+        description: '実行目的'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # 本番デプロイ条件: main push または workflow_dispatch で production 選択
+      IS_PRODUCTION: ${{ (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.purpose == 'production') }}
+      # 同一リポジトリからの PR か（fork PR でない）
+      IS_SAME_REPO_PR: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: pnpm のインストール
+        uses: pnpm/action-setup@v4
+
+      - name: uv のセットアップ
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Node.js のセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Mermaid CLI のインストール
+        if: env.IS_PRODUCTION == 'true'
+        run: pnpm add -g @mermaid-js/mermaid-cli
+
+      - name: 依存関係の同期
+        run: uv sync
+
+      - name: Playwright ブラウザのインストール
+        if: env.IS_PRODUCTION == 'true'
+        run: uv run python -m playwright install chromium
+
+      - name: PDF 依存関係のインストール
+        if: env.IS_PRODUCTION == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 libffi-dev fonts-noto-cjk fonts-noto-cjk-extra
+
+      - name: サイトのビルド (Web)
+        if: env.IS_PRODUCTION == 'true'
+        env:
+          RENDER_SVG: "1"
+        run: uv run mkdocs build
+
+      - name: サイトのビルド (PDF)
+        if: env.IS_PRODUCTION == 'true'
+        env:
+          RENDER_SVG: "1"
+          RENDER_PNG: "1"
+          ENABLE_PDF: "1"
+        run: |
+          # PDF生成用に別ディレクトリへビルド
+          uv run mkdocs build -d site-pdf
+          # 生成されたPDFをWeb用ディレクトリへコピー
+          mkdir -p site/pdf
+          cp site-pdf/pdf/*.pdf site/pdf/
+
+      - name: サイトのビルド (プレビュー)
+        if: env.IS_PRODUCTION != 'true'
+        run: uv run mkdocs build
+
+      - name: Azure Static Web Apps へデプロイ
+        if: env.IS_SAME_REPO_PR == 'true'
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "site"
+          api_location: ""
+          output_location: ""
+          skip_app_build: true
+
+      - name: GitHub Pages 用アーティファクトのアップロード
+        if: env.IS_PRODUCTION == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+  deploy-github-pages:
+    needs: build
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.purpose == 'production')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: GitHub Pages へデプロイ
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,8 +1,8 @@
 ## Context
 
-プロジェクトはReact + Vite + pnpm構成で、インフラ操作用に7つのPowerShellスクリプトを `scripts/` 配下に持つ。これらはAzure Blob Storageへの静的ファイルデプロイ、データクリア、SASトークン生成、URL表示を行う。Node.jsは既に必須ランタイムであるため、PowerShell依存を排除してクロスプラットフォーム対応を実現する。
+プロジェクトはReact + Vite + pnpm構成で、インフラ操作用に7つのPowerShellスクリプトを `scripts/` 配下に持つ。これらはAzure Blob Storageへの静的ファイルデプロイ、データクリア、SASトークン生成、URL表示を行う。Node.jsはすでに必須ランタイムであるため、PowerShell依存を排除してクロスプラットフォーム対応を実現する。
 
-現在のファイル構成:
+現在のファイル構成：
 
 - `scripts/Deploy-StaticFiles.ps1` - テスト・ビルド・デプロイ
 - `scripts/Clear-Data.ps1` - Blobデータクリア
@@ -51,7 +51,7 @@
 ### D4: `--env-file` CLIオプションの実装
 
 **決定**: `process.argv` を直接パースして `--env-file` オプションを取得する。
-**理由**: 引数が1つのみで単純。PowerShellの `-EnvFile` パラメータと同等の機能。
+**理由**: 引数が1つのみで単純。PowerShellの `-EnvFile` パラメーターと同等の機能。
 **代替案**: `commander` / `yargs` パッケージ → 過剰な依存のため不採用。
 
 ### D5: ファイル構成

@@ -3,7 +3,7 @@
 - [x] 1.1 `git mv .github/workflows/test.yml .github/workflows/ci.yml` でファイルをリネーム
 - [x] 1.2 ワークフロー名を "CI" に変更
 - [x] 1.3 トリガーを `push: branches: [main]` と `pull_request: branches: [main]` に設定
-- [x] 1.4 パスフィルタを追加（`src/**`, `tests/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `.eslintrc.cjs`, `.github/workflows/ci.yml`）
+- [x] 1.4 パスフィルターを追加（`src/**`, `tests/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `.eslintrc.cjs`, `.github/workflows/ci.yml`）
 - [x] 1.5 concurrency設定を追加（`group: ci-${{ github.ref }}`, `cancel-in-progress: true`）
 - [x] 1.6 testジョブを定義（Node.js 22, pnpm install, pnpm test）
 - [x] 1.7 lintジョブを定義（Node.js 22, pnpm install, pnpm run lint）
@@ -13,7 +13,7 @@
 ## 2. deploy.yml の大幅改修
 
 - [x] 2.1 トリガーを `push: branches: [main]` のみに限定（pull_request削除）
-- [x] 2.2 パスフィルタを追加（`src/**`, `tests/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `.github/workflows/deploy.yml`）
+- [x] 2.2 パスフィルターを追加（`src/**`, `tests/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `.github/workflows/deploy.yml`）
 - [x] 2.3 concurrency設定を追加（`group: deploy-prod`, `cancel-in-progress: false`）
 - [x] 2.4 testジョブを削除
 - [x] 2.5 lintジョブを削除

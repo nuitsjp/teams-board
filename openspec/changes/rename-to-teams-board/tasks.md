@@ -23,7 +23,7 @@
 ## 4. テストファイルの更新
 
 - [x] 4.1 `tests/react/components/StudyGroupList.test.jsx` → `tests/react/components/GroupList.test.jsx` にリネームし、import名・テスト名・コメント内の「勉強会」を「グループ」に変更する
-- [x] 4.2 `tests/react/pages/StudyGroupDetailPage.test.jsx` → `tests/react/pages/GroupDetailPage.test.jsx` にリネームし、import名・テスト名・パラメータ名を更新する
+- [x] 4.2 `tests/react/pages/StudyGroupDetailPage.test.jsx` → `tests/react/pages/GroupDetailPage.test.jsx` にリネームし、import名・テスト名・パラメーター名を更新する
 - [x] 4.3 `tests/react/pages/DashboardPage.test.jsx` の `studyGroups` 参照を `groups` に変更する
 - [x] 4.4 `tests/react/pages/MemberDetailPage.test.jsx` の `studyGroup` 関連の変数名・テスト名を更新する
 - [x] 4.5 `tests/data/index-merger.test.js` の `studyGroups` 参照を `groups` に変更する

@@ -70,4 +70,4 @@
 - **WHEN** メンバー詳細ページのデータを取得する
 - **THEN** `index.json` の `studyGroups` から勉強会名を取得する
 - **THEN** 各セッションの `studyGroupId` を使って勉強会別にグルーピングする
-- **THEN** DataFetcher のインターフェースは変更されない
+- **THEN** DataFetcher のインターフェイスは変更されない

@@ -1,8 +1,8 @@
 ## ADDED Requirements
 
-### Requirement: スクリプトの -EnvFile パラメータ
+### Requirement: スクリプトの -EnvFile パラメーター
 
-全メインスクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls）は `-EnvFile` パラメータを受け付けなければならない（SHALL）。このパラメータにより、使用する `.env` ファイルのパスを指定できる。未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。
+全メインスクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls）は `-EnvFile` パラメーターを受け付けなければならない（SHALL）。このパラメーターにより、使用する `.env` ファイルのパスを指定できる。未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。
 
 #### Scenario: -EnvFile 未指定時のデフォルト動作
 
@@ -31,7 +31,7 @@
 #### Scenario: Import-EnvParams による .env キーの変数設定
 
 - **WHEN** `Import-EnvParams -EnvPath $EnvFile` を呼び出す
-- **THEN** `.env` の全キーが `Set-Variable -Scope 1` で呼び出し元スコープの変数として設定される（例: `AZURE_SUBSCRIPTION_ID=xxx` → `$AZURE_SUBSCRIPTION_ID` が利用可能になる）
+- **THEN** `.env` の全キーが `Set-Variable -Scope 1` で呼び出し元スコープの変数として設定される（例： `AZURE_SUBSCRIPTION_ID=xxx` → `$AZURE_SUBSCRIPTION_ID` が利用可能になる）
 
 #### Scenario: .env.example に基づく必須キーの検証
 

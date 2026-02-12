@@ -67,7 +67,7 @@ classDiagram
 
 ### CSV インポート
 1. 管理者が Teams 出席レポート CSV をアップロード
-2. システムが CSV を解析:
+2. システムが CSV を解析：
    - 会議タイトル → Group を特定または新規作成
    - 開催日 → Session を新規作成
    - 参加者リスト → 各 Member の Attendance を作成
@@ -109,7 +109,7 @@ JSON ファイルとして Azure Blob Storage に保存
 
 ## 実装上の補足
 
-このドキュメントは概念モデルを示しています。実装では以下のような形で具体化されています:
+このドキュメントは概念モデルを示しています。実装では以下のような形で具体化されています：
 
 - **Group**: `GroupSummary` として `index.json` に格納（集約データ）
 - **Member**: `MemberSummary` として `index.json` に格納（集約データ）

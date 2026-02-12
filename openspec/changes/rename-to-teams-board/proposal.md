@@ -13,7 +13,7 @@
 - `docs/architecture.md` の製品名・説明をTeams Boardに更新
 - インフラスクリプト内の「study-log」固有の記述を汎用名に変更（`Clear-StudyData.ps1`、`Deploy-Infrastructure.ps1`）
 - `package.json` の `name` および `description` をTeams Boardに更新
-- コンポーネント名の変更: `StudyGroupList` → 汎用名、`StudyGroupDetailPage` → 汎用名
+- コンポーネント名の変更： `StudyGroupList` → 汎用名、`StudyGroupDetailPage` → 汎用名
 - テストファイル内の勉強会固有の記述・テスト名を汎用表現に更新
 - 既存のopenspec changeドキュメント内の「Study Log」「勉強会」記述はそのまま維持（履歴として）
 

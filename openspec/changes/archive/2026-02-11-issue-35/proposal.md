@@ -41,5 +41,5 @@ CSV取り込み時にグループ名の誤入力や表記ゆれが発生する�
 
 ### 依存関係
 
-- 既存: Azure Blob Storage API、SAS token認証
+- 既存： Azure Blob Storage API、SAS token認証
 - 新規依存なし

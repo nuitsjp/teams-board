@@ -54,7 +54,7 @@
 
 ### Requirement: 既存スクリプトの共通ライブラリへの移行
 
-既存の4スクリプト（clear-data, deploy-static-files, new-sas-token, show-urls）は、Azure接続パラメータを `importEnvParams` から取得したオブジェクトのプロパティとして使用しなければならない（MUST）。
+既存の4スクリプト（clear-data, deploy-static-files, new-sas-token, show-urls）は、Azure接続パラメーターを `importEnvParams` から取得したオブジェクトのプロパティとして使用しなければならない（MUST）。
 
 #### Scenario: .env からの変数利用
 
