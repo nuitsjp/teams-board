@@ -1,2 +1,275 @@
 # アーキテクチャ
 
+## 1. 目的と対象範囲
+
+本書は、Teams Board リポジトリに実装されているアプリケーション本体のソフトウェアアーキテクチャを定義する。
+
+- 対象：
+  - ブラウザで動作する SPA（React + Vite）
+  - データモデル（`data/index.json` / `data/sessions/*.json` / `data/sources/*.csv`）
+  - 管理者向け CSV 取込・保存・グループ名編集の処理
+  - 開発・テスト・デプロイの実装構成
+- 非対象：
+  - ドキュメントシステム（MkDocs）自体のアーキテクチャ
+
+## 2. システム概要
+
+Teams Board は、Microsoft Teams の参加者レポート CSV を集約し、以下を可視化する静的サイト型ダッシュボードである。
+
+- 会議グループ単位の開催回数・総参加時間
+- メンバー単位の参加回数・総参加時間
+- セッション単位の参加者詳細
+
+更新系操作（CSV 取込、グループ名編集）は管理者のみ実行でき、SAS トークンを用いて Azure Blob Storage のデータを直接更新する。
+
+## 3. システムコンテキスト
+
+```mermaid
+graph LR
+    Admin[管理者]
+    User[利用者]
+    Teams[Microsoft Teams]
+    SPA[Teams Board SPA<br/>Browser]
+    Blob[(Azure Blob Storage<br/>$web)]
+
+    Admin -->|参加者レポート取得<br/>システム外作業| Teams
+    Admin -->|CSV取込・グループ名編集| SPA
+    User -->|閲覧| SPA
+    SPA -->|GET data/index.json| Blob
+    SPA -->|GET data/sessions/*.json| Blob
+    SPA -->|PUT data/sources/*.csv| Blob
+    SPA -->|PUT data/sessions/*.json| Blob
+    SPA -->|PUT data/index.json| Blob
+```
+
+## 4. 設計方針
+
+1. サーバーレス運用  
+   動的 API を持たず、静的ファイル配信とブラウザ実行のみで完結させる。
+2. 集約データと明細データの分離  
+   集約は `index.json`、明細は `sessions/*.json` に分離し、読み込み効率と更新単位を明確化する。
+3. 依存方向の単純化  
+   `pages -> services/hooks/components` の一方向依存を基本にし、ロジックを `services` に集約する。
+4. 開発と本番の同一インターフェイス化  
+   `IndexFetcher` / `BlobStorage` を差し替える DI で、開発用ファイル書き込みと本番 Blob 書き込みを同じ上位ロジックで扱う。
+
+## 5. 論理アーキテクチャ
+
+### 5.1 レイヤー構成
+
+| レイヤー | 主なパス | 主責務 |
+| --- | --- | --- |
+| Pages | `src/pages/` | 画面単位のユースケース実行、データ取得/保存の起点 |
+| Components | `src/components/` | 再利用 UI 部品（一覧、カード、入力、進捗表示） |
+| Hooks | `src/hooks/` | 認証状態・ファイルキュー状態管理 |
+| Services | `src/services/` | CSV 解析、データ取得、マージ、保存、編集ロジック |
+| Config | `src/config/` | 環境変数由来設定の集約 |
+| Utils | `src/utils/` | 画面表示向けの軽量ユーティリティ |
+
+### 5.2 コンポーネント依存
+
+```mermaid
+graph TD
+    App[App / Router]
+    Pages[Pages]
+    Hooks[Hooks]
+    Components[Components]
+    Services[Services]
+    Config[Config]
+    Utils[Utils]
+
+    App --> Pages
+    App --> Hooks
+    Pages --> Hooks
+    Pages --> Components
+    Pages --> Services
+    Pages --> Utils
+    Components --> Utils
+    Services --> Config
+```
+
+### 5.3 主要サービス責務
+
+| サービス | 役割 | 入力 | 出力 |
+| --- | --- | --- | --- |
+| `CsvTransformer` | Teams 出席レポート（UTF-16LE/TSV）解析 | CSV `File` | `sessionRecord` と `mergeInput`、警告 |
+| `IndexMerger` | セッション追加時の `index.json` 更新 | 現在 index + 新規セッション情報 | 更新済み index + warnings |
+| `IndexEditor` | グループ名編集 | 現在 index + `groupId` + `newName` | 更新済み index または検証エラー |
+| `DataFetcher` | 参照系 JSON 取得 | 相対パス (`data/...`) | `{ ok, data/error }` |
+| `ProductionIndexFetcher` / `DevIndexFetcher` | 保存前の最新 index 取得 | Blob URL + SAS / 開発用相対 URL | `{ ok, data/error }` |
+| `AzureBlobStorage` / `DevBlobStorage` | PUT 書き込み抽象化 | path + content + contentType | `{ path, success, error? }` |
+| `BlobWriter` | 書き込みシーケンス実行 | rawCsv/newItems/indexUpdater | 各操作結果一覧と全体成否 |
+
+## 6. データアーキテクチャ
+
+### 6.1 永続データ配置
+
+| パス | 内容 | 更新方式 |
+| --- | --- | --- |
+| `data/index.json` | グループ・メンバーの集約情報 + `updatedAt` | 上書き更新 |
+| `data/sessions/<sessionId>.json` | セッション単位の参加明細 | 追記作成（重複時は同名更新の可能性あり） |
+| `data/sources/<sessionId>.csv` | 取込元 CSV 原本 | 追記作成（重複時は同名更新の可能性あり） |
+
+### 6.2 `index.json` 論理モデル
+
+| エンティティ | フィールド | 説明 |
+| --- | --- | --- |
+| GroupSummary | `id`, `name`, `totalDurationSeconds`, `sessionIds[]` | 会議グループ集約 |
+| MemberSummary | `id`, `name`, `totalDurationSeconds`, `sessionIds[]` | メンバー集約 |
+| DashboardIndex | `groups[]`, `members[]`, `updatedAt` | ダッシュボード表示基盤 |
+
+### 6.3 `sessions/*.json` 論理モデル
+
+| フィールド | 説明 |
+| --- | --- |
+| `id` | `groupId-YYYY-MM-DD` 形式のセッション ID |
+| `groupId` | 会議グループ ID |
+| `date` | 開催日（`YYYY-MM-DD`） |
+| `attendances[]` | `memberId`, `durationSeconds` の配列 |
+
+### 6.4 ID 生成ルール
+
+1. `groupId`: クリーニング後会議タイトルの SHA-256 先頭 8 hex
+2. `memberId`: メールアドレスの SHA-256 先頭 8 hex
+3. `sessionId`: `groupId-date`
+
+`IndexMerger` は既存 `sessionId` と重複した場合に集約更新を行わず warning を返す。
+
+## 7. 実行時アーキテクチャ
+
+### 7.1 閲覧系（ダッシュボード/詳細画面）
+
+1. `DataFetcher.fetchIndex()` が `data/index.json?v=<timestamp>` を取得する。
+2. ダッシュボードは集約値を直接描画する。
+3. 詳細画面は `sessionIds` を使って `data/sessions/*.json` を並列取得する。
+4. 取得失敗時は画面でエラーメッセージを表示する。
+
+### 7.2 CSV 取込・保存系（管理者）
+
+```mermaid
+sequenceDiagram
+    participant Admin as 管理者
+    participant UI as AdminPage/useFileQueue
+    participant CSV as CsvTransformer
+    participant BW as BlobWriter
+    participant Blob as Azure Blob Storage
+
+    Admin->>UI: CSV ドロップ
+    UI->>CSV: parse(file)
+    CSV-->>UI: sessionRecord + mergeInput (+warnings)
+    Admin->>UI: 一括保存
+    UI->>BW: executeWriteSequence(rawCsv,newItems,indexUpdater)
+    BW->>Blob: PUT data/sources/*.csv
+    BW->>Blob: PUT data/sessions/*.json
+    BW->>Blob: GET 最新 data/index.json
+    BW->>Blob: PUT 更新 data/index.json
+    BW-->>UI: results + allSucceeded
+```
+
+保存順序は `raw -> session -> index`。途中失敗時は即時中断し、ロールバックは行わない。
+
+### 7.3 グループ名編集系（管理者）
+
+1. 画面初期表示時に `index.json` を取得し、`cachedIndex` として保持する。
+2. 保存時に再度 `index.json` を取得し、`updatedAt` を比較する。
+3. 一致時のみ `IndexEditor.updateGroupName()` で更新 index を生成する。
+4. `BlobWriter` で `data/index.json` を上書きする。
+5. 保存後に再取得して画面状態を同期する。
+
+## 8. 認証・認可・セキュリティ
+
+### 8.1 認証情報の扱い
+
+- 初回ロード時に URL クエリ `token` から SAS トークンを抽出する。
+- 抽出後は `history.replaceState` で URL から `token` を削除する。
+- トークンは `AuthProvider` のメモリ状態のみで保持し、永続保存しない。
+
+### 8.2 認可境界
+
+- `auth.isAdmin` が `true` の場合のみ管理画面に遷移可能。
+- 管理リンク表示/管理画面アクセスはフロントエンドで制御。
+- 実際のデータ更新可否は Blob 側 SAS 権限で最終判定される。
+
+### 8.3 開発モード特例
+
+- `?token=dev` かつ `import.meta.env.DEV` の場合のみダミー管理者を有効化。
+- 本番ビルドでは `token=dev` は無効化。
+- 開発時書き込みは `/dev-fixtures-write` 経由で `dev-fixtures/data/` を更新。
+
+## 9. 一貫性・排他・障害時挙動
+
+### 9.1 重複制御
+
+- 画面初期取得済み `existingSessionIds` との照合で事前重複検知し、`duplicate_warning` 状態にする。
+- 保存時は `IndexMerger` が再度重複判定し、重複時は集約更新をスキップする。
+
+### 9.2 同時更新制御
+
+- グループ名編集は `updatedAt` 比較で楽観的ロックを実施する。
+- CSV 取込には同等の比較チェックがなく、最終書き込み優先（last write wins）になり得る。
+
+### 9.3 障害時
+
+- `BlobWriter` は fail-fast で結果を返却し、画面側で `save_failed` として再試行可能にする。
+- 途中失敗時に先行 PUT を戻す処理はないため、一時的不整合の可能性がある。
+
+## 10. 非機能特性
+
+| 観点 | 実装方針 | 現在の状態 |
+| --- | --- | --- |
+| 性能 | 集約データ先読み + 明細遅延取得 | 初期表示の I/O を最小化、詳細は必要時ロード |
+| 可用性 | 静的配信中心で依存を最小化 | API サーバー障害点を持たない |
+| 保守性 | 層分離 + サービス抽象化 | 開発/本番差異を DI で吸収 |
+| テスト容易性 | サービス単位の純粋ロジック化 | Vitest モックでユースケース検証可能 |
+| セキュリティ | SAS による書き込み制御 | トークン URL 露出を初期化時に除去 |
+
+## 11. 開発・テストアーキテクチャ
+
+### 11.1 開発データ配信
+
+- Vite プラグイン `serveDevFixtures` が `GET /data/*` を `dev-fixtures/data/` から配信。
+- `POST /dev-fixtures-write` で開発用データ更新をサポート。
+
+### 11.2 テスト構成
+
+| 種別 | 主対象 | 代表ファイル |
+| --- | --- | --- |
+| ロジック/データ単体 | `CsvTransformer`, `IndexMerger`, `IndexEditor`, `BlobWriter`, `DataFetcher` | `tests/logic/`, `tests/data/` |
+| React コンポーネント/ページ | 画面表示・遷移・操作 | `tests/react/` |
+| E2E | 主要導線（ダッシュボード、管理者導線、開発モード更新） | `e2e/*.spec.js` |
+
+E2E は `global-setup` / `global-teardown` で `dev-fixtures/data/index.json` を退避・復元し、データ変更テストの再現性を担保する。
+
+## 12. デプロイ・運用アーキテクチャ
+
+### 12.1 CI/CD
+
+`.github/workflows/deploy.yml` で以下を実行する。
+
+1. `lint` と `test` を並列実行
+2. 成功後に `build`
+3. `main` push は本番 Blob へデプロイ
+4. PR は開発 Blob へデプロイ後、E2E を実行
+
+### 12.2 環境変数
+
+| 変数 | 用途 |
+| --- | --- |
+| `VITE_APP_TITLE` | 画面タイトル |
+| `VITE_BLOB_BASE_URL` | Blob 書き込み先ベース URL |
+
+### 12.3 補足
+
+- リポジトリには `staticwebapp.config.json` が存在するが、現行 CI は Azure Blob Static Website への配備を行う構成である。
+- 本アプリ本体はバックエンド API 実装を含まない。
+
+## 13. 既知の制約と改善候補
+
+1. 書き込みトランザクションがない  
+   `raw/session/index` の途中失敗時にロールバックがなく、不整合が残る可能性がある。
+2. CSV 取込の同時更新競合制御が弱い  
+   グループ名編集と異なり `updatedAt` 比較を伴わないため、同時操作で上書き競合が起こり得る。
+3. ID の衝突可能性  
+   8 hex（32bit）ハッシュを使うため、理論上衝突リスクがある。
+4. 認可の中心が SAS トークン運用  
+   トークン配布・失効・権限範囲は運用設計に依存する。
