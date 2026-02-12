@@ -9,7 +9,7 @@
 
 ## 2. メインスクリプトの改修
 
-- [x] 2.1 `Clear-Data.ps1`: `param()` から Azure パラメーター3つを削除し `-EnvFile` を追加。`.env` 読み込みボイラープレートを `Import-EnvParams -EnvPath $EnvFile` に置換。スクリプト内の `$SubscriptionId` → `$AZURE_SUBSCRIPTION_ID`、`$ResourceGroupName` → `$AZURE_RESOURCE_GROUP_NAME`、`$StorageAccountName` → `$AZURE_STORAGE_ACCOUNT_NAME` に変更。ヘッダーコメントも更新
+- [x] 2.1 `Clear-Data.ps1`: `param()` から Azure パラメーター3つを削除し `-EnvFile` を追加。`.env` 読み込みボイラープレートを `Import-EnvParams -EnvPath $EnvFile` へ置換。変数名を変更（`$SubscriptionId` → `$AZURE_SUBSCRIPTION_ID`、`$ResourceGroupName` → `$AZURE_RESOURCE_GROUP_NAME`、`$StorageAccountName` → `$AZURE_STORAGE_ACCOUNT_NAME`）。ヘッダーコメントも更新
 - [x] 2.2 `Deploy-StaticFiles.ps1`: 同様の改修（`$SourcePath`, `$SourcePaths` パラメーターは維持）
 - [x] 2.3 `New-SasToken.ps1`: 同様の改修（`$PolicyName` パラメーターは維持）
 - [x] 2.4 `Show-Urls.ps1`: 同様の改修（`$PolicyName` パラメーターは維持）

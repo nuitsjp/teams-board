@@ -4,16 +4,16 @@
 
 ## What Changes
 
-- 開発用ダミートークン（`?token=dev`）で管理者モードに入れるようにする
-- 開発環境でBlobWriterをモック化し、実際のAzure Blob Storageへのリクエストをスキップまたはローカルファイルシステムに書き込む
+- 開発用ダミートークン（`?token=dev`）で管理者モードへ入れるようにする
+- 開発環境でBlobWriterをモック化し、実際のAzure Blob Storageへのリクエストをスキップ、またはローカルファイルシステムへ書き込む
 - E2Eテスト（Playwright）で管理者モードのシナリオをテストできるようにする
 
 ## Capabilities
 
 ### New Capabilities
 
-- `dev-auth-token`: 開発環境で使用できるダミー認証トークンのサポート。`?token=dev`で管理者モードに入れるようにする
-- `blob-writer-mock`: 開発環境でのBlobWriter動作のモック化。実際のAzure Blob Storageへのアクセスをスキップし、ローカルの`dev-fixtures/data/`に書き込むか、成功レスポンスを返す
+- `dev-auth-token`: 開発環境で使用できるダミー認証トークンのサポート。`?token=dev`で管理者モードへ入れるようにする
+- `blob-writer-mock`: 開発環境でのBlobWriter動作のモック化。実際のAzure Blob Storageへのアクセスをスキップし、ローカルの`dev-fixtures/data/`へ書き込むか、成功レスポンスを返す
 
 ### Modified Capabilities
 

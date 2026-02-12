@@ -21,7 +21,9 @@
 
 ### Requirement: 既存スクリプトの共通関数への移行
 
-既存の4スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls）は、Azure パラメーター（`SubscriptionId`, `ResourceGroupName`, `StorageAccountName`）を `param()` から廃止しなければならない（MUST）。`-EnvFile` パラメーターを追加し、`.env` 読み込み処理を `Import-EnvParams` の呼び出しに置き換えなければならない（MUST）。スクリプト内では `.env` のキー名をそのまま変数名として使用する（例： `$AZURE_SUBSCRIPTION_ID`）。
+既存の4スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls）は、Azure パラメーター3つを `param()` より削除（MUST）。
+
+`-EnvFile` を追加し、`.env` 読み込みは `Import-EnvParams` へ置き換える（MUST）。スクリプト内は `.env` キー名を変数名とする（例：`$AZURE_SUBSCRIPTION_ID`）。
 
 #### Scenario: Azure パラメーターの廃止
 

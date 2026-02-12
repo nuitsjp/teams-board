@@ -1,6 +1,8 @@
 ## Why
 
-`scripts/infra/` 配下の5つのPowerShellスクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）に、.env読み込み・Azureサブスクリプション切替・Storageアカウント接続確認・アカウントキー取得の同一コードが重複している。修正時に全スクリプトを同期更新する必要があり、保守コストが高い。また、`scripts/infra/` は `scripts/` 配下の唯一のサブフォルダーであり、`infra` 階層は不要である。スクリプトを `scripts/` 直下に引き上げ、共通処理を専用のサブフォルダーに分離し、DRY原則に従った構成にする。
+`scripts/infra/` 配下の5つのPowerShellスクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）には、同一コードが重複している。重複内容は、.env読み込み・Azureサブスクリプション切替・Storageアカウント接続確認・アカウントキー取得である。修正時は全スクリプトを同期更新する必要があり、保守コストが高い。
+
+また、`scripts/infra/` は `scripts/` 配下の唯一のサブフォルダーであり、`infra` 階層は不要である。スクリプトを `scripts/` 直下へ引き上げ、共通処理を専用のサブフォルダーへ分離する。DRY原則に従った構成とする。
 
 ## What Changes
 
