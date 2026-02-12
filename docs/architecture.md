@@ -58,7 +58,7 @@ graph TD
 
 - `#/` : ダッシュボード
 - `#/members/:memberId` : メンバー詳細
-- `#/groups/:groupId` : グループ詳細
+- `#/groups/:groupId` : 会議グループ詳細
 - `#/admin` : 管理画面（非管理者は `Navigate to="/"`）
 - `*` : ダッシュボードへリダイレクト
 
@@ -129,7 +129,7 @@ sequenceDiagram
   WEB-->>SPA: HTML/JS/CSS
   SPA->>WEB: GET data/index.json?v=timestamp
   WEB-->>SPA: DashboardIndex
-  U->>SPA: メンバー/グループを選択
+  U->>SPA: メンバー/会議グループを選択
   SPA->>WEB: GET data/sessions/<id>.json (複数)
   WEB-->>SPA: SessionRecord 群
   SPA-->>U: 一覧/詳細を表示
@@ -155,7 +155,7 @@ sequenceDiagram
   end
 ```
 
-### 6.3 グループ名修正フロー（管理者）
+### 6.3 会議グループ名修正フロー（管理者）
 
 ```mermaid
 sequenceDiagram
@@ -163,7 +163,7 @@ sequenceDiagram
   participant SPA as AdminPage
   participant BLOB as Blob Service
 
-  A->>SPA: グループ名編集
+  A->>SPA: 会議グループ名編集
   SPA->>BLOB: GET data/index.json（最新）
   SPA->>SPA: cachedIndex.updatedAt と比較
   alt 同時編集なし
@@ -246,7 +246,7 @@ az storage container policy create \
 ## 10. 既知の制約
 
 - CSV 一括保存フローは `data/index.json` の条件付き更新（ETag/If-Match）を行っていないため、同時更新時は最終書き込みが優先される。
-- グループ名修正の同時編集検知は `updatedAt` 比較ベースであり、サーバー側の強制排他ではない。
+- 会議グループ名修正の同時編集検知は `updatedAt` 比較ベースであり、サーバー側の強制排他ではない。
 - `memberId` はメールアドレス依存のため、メール欠落行は識別精度が低下する。
 
 ## 11. ディレクトリ要約

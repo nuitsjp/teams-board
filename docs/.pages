@@ -1,5 +1,5 @@
 nav:
   - index.md
-  - architecture.md
   - 参加状況管理業務: 01.参加状況管理業務
   - グループ情報管理業務: 02.グループ情報管理業務
+  - アーキテクチャ: architecture.md
