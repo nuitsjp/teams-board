@@ -38,7 +38,7 @@
 
 ## 5. ビルドジョブの実装
 
-- [x] 5.1 build ジョブを作成（needs: [lint, test]）
+- [x] 5.1 build ジョブを作成（needs:[lint, test]）
 - [x] 5.2 build ジョブに checkout アクションを追加
 - [x] 5.3 build ジョブに Node.js セットアップを追加（pnpm キャッシュ有効化）
 - [x] 5.4 build ジョブに pnpm インストールを追加

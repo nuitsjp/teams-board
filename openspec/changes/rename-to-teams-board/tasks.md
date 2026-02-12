@@ -15,15 +15,19 @@
 ## 3. コンポーネント・ファイルのリネーム
 
 - [x] 3.1 `src/components/StudyGroupList.jsx` → `src/components/GroupList.jsx` にリネームし、エクスポート名を `GroupList` に変更、UI表示テキスト「勉強会グループ」を「グループ」に変更する
-- [x] 3.2 `src/pages/StudyGroupDetailPage.jsx` → `src/pages/GroupDetailPage.jsx` にリネームし、エクスポート名を `GroupDetailPage` に変更、コメント「勉強会詳細画面」を「グループ詳細画面」に変更、`studyGroupId` → `groupId` に変更する
-- [x] 3.3 `src/App.jsx` の import パスとルーティング定義を更新する（`StudyGroupDetailPage` → `GroupDetailPage`、`StudyGroupList` が使われている箇所、パス `/study-groups/:studyGroupId` → `/groups/:groupId`）
+- [x] 3.2 `src/pages/StudyGroupDetailPage.jsx` → `src/pages/GroupDetailPage.jsx` にリネームする
+  - エクスポート名を `GroupDetailPage` に変更、コメント「勉強会詳細画面」を「グループ詳細画面」に変更
+  - `studyGroupId` → `groupId` に変更する
+- [x] 3.3 `src/App.jsx` の import パスとルーティング定義を更新する
+  - `StudyGroupDetailPage` → `GroupDetailPage`、`StudyGroupList` 参照箇所
+  - パス `/study-groups/:studyGroupId` → `/groups/:groupId`
 - [x] 3.4 `src/pages/DashboardPage.jsx` の `StudyGroupList` import を `GroupList` に変更する
 - [x] 3.5 `src/components/GroupList.jsx`（旧 StudyGroupList）内のナビゲーションパス `/study-groups/` → `/groups/` に変更する
 
 ## 4. テストファイルの更新
 
 - [x] 4.1 `tests/react/components/StudyGroupList.test.jsx` → `tests/react/components/GroupList.test.jsx` にリネームし、import名・テスト名・コメント内の「勉強会」を「グループ」に変更する
-- [x] 4.2 `tests/react/pages/StudyGroupDetailPage.test.jsx` → `tests/react/pages/GroupDetailPage.test.jsx` にリネームし、import名・テスト名・パラメータ名を更新する
+- [x] 4.2 `tests/react/pages/StudyGroupDetailPage.test.jsx` → `tests/react/pages/GroupDetailPage.test.jsx` にリネームし、import名・テスト名・パラメーター名を更新する
 - [x] 4.3 `tests/react/pages/DashboardPage.test.jsx` の `studyGroups` 参照を `groups` に変更する
 - [x] 4.4 `tests/react/pages/MemberDetailPage.test.jsx` の `studyGroup` 関連の変数名・テスト名を更新する
 - [x] 4.5 `tests/data/index-merger.test.js` の `studyGroups` 参照を `groups` に変更する

@@ -2,7 +2,7 @@
 
 ### Requirement: .env設定読み込み関数の提供
 
-`scripts/common/Load-EnvSettings.ps1` は `Load-EnvSettings` 関数を提供しなければならない（SHALL）。`Load-EnvSettings` は `-EnvPath` パラメータを受け付け、未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。指定パスに `.env` ファイルが存在しない場合はエラーをスローしなければならない（MUST）。`Apply-EnvSettings` 関数は廃止し、`Import-EnvParams` に統合する。
+`scripts/common/Load-EnvSettings.ps1` は `Load-EnvSettings` 関数を提供しなければならない（SHALL）。`Load-EnvSettings` は `-EnvPath` パラメーターを受け付け、未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。指定パスに `.env` ファイルが存在しない場合はエラーをスローしなければならない（MUST）。`Apply-EnvSettings` 関数は廃止し、`Import-EnvParams` に統合する。
 
 #### Scenario: .envファイルが存在する場合の読み込み
 
@@ -21,12 +21,14 @@
 
 ### Requirement: 既存スクリプトの共通関数への移行
 
-既存の4スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls）は、Azure パラメータ（`SubscriptionId`, `ResourceGroupName`, `StorageAccountName`）を `param()` から廃止しなければならない（MUST）。`-EnvFile` パラメータを追加し、`.env` 読み込み処理を `Import-EnvParams` の呼び出しに置き換えなければならない（MUST）。スクリプト内では `.env` のキー名をそのまま変数名として使用する（例: `$AZURE_SUBSCRIPTION_ID`）。
+既存の4スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls）は、Azure パラメーター3つを `param()` より削除（MUST）。
 
-#### Scenario: Azure パラメータの廃止
+`-EnvFile` を追加し、`.env` 読み込みは `Import-EnvParams` へ置き換える（MUST）。スクリプト内は `.env` キー名を変数名とする（例：`$AZURE_SUBSCRIPTION_ID`）。
+
+#### Scenario: Azure パラメーターの廃止
 
 - **WHEN** スクリプトの `param()` ブロックを確認する
-- **THEN** `SubscriptionId`、`ResourceGroupName`、`StorageAccountName` パラメータが存在しない
+- **THEN** `SubscriptionId`、`ResourceGroupName`、`StorageAccountName` パラメーターが存在しない
 
 #### Scenario: .env 未配置での実行
 
@@ -45,7 +47,7 @@
 
 ## REMOVED Requirements
 
-### Requirement: コマンドライン引数が未指定のパラメータへの.env値の適用
+### Requirement: コマンドライン引数が未指定のパラメーターへの.env値の適用
 
 **Reason**: `Apply-EnvSettings` 関数を廃止。`.env` のキー名をそのまま変数として設定する `Import-EnvParams` に統合したため、PascalCase ↔ SNAKE_CASE のマッピングと `BoundParameters` による上書き判定が不要になった。
-**Migration**: `Apply-EnvSettings` の呼び出しを `Import-EnvParams` に置き換える。スクリプト内の変数参照を `.env` のキー名に変更する（例: `$SubscriptionId` → `$AZURE_SUBSCRIPTION_ID`）。
+**Migration**: `Apply-EnvSettings` の呼び出しを `Import-EnvParams` に置き換える。スクリプト内の変数参照を `.env` のキー名に変更する（例： `$SubscriptionId` → `$AZURE_SUBSCRIPTION_ID`）。

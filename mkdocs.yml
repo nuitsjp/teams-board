@@ -1,0 +1,56 @@
+site_name: Teams Board
+site_description: Teams レポート集計ダッシュボード ドキュメント
+site_author: Documentation Team
+copyright: Copyright &copy; 2024 @nuits.jp
+
+theme:
+  name: material
+  language: ja
+  features:
+    - content.code.copy
+
+extra_css:
+  - stylesheets/pdf-fixes.css
+
+extra_javascript:
+  - https://unpkg.com/mermaid/dist/mermaid.min.js
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+  - pymdownx.highlight
+  - toc:
+      permalink: true
+
+watch:
+  - docs
+  - mkdocs.yml
+
+plugins:
+  - search
+  - awesome-pages
+  - mermaid-to-svg:
+      enabled_if_env: RENDER_SVG
+      image_id_enabled: true
+      image_id_prefix: mermaid-diagram
+      mermaid_config:
+        htmlLabels: false
+        flowchart:
+          htmlLabels: false
+        class:
+          htmlLabels: false
+  - svg-to-png:
+      enabled_if_env: RENDER_PNG
+  - to-pdf:
+      cover_subtitle: 'Teams Board ドキュメント'
+      toc_title: 目次
+      toc_level: 3
+      output_path: pdf/teams-board-docs.pdf
+      enabled_if_env: ENABLE_PDF

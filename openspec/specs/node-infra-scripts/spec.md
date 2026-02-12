@@ -6,7 +6,7 @@ Node.js ES Modules として実装された4つのメインスクリプトの仕
 
 ### Requirement: deploy-static-files スクリプトの提供
 
-`scripts/deploy-static-files.mjs` は、テスト・Lint・ビルドを実行した後、`dist/` 配下の成果物をAzure Blob Storage `$web` コンテナにアップロードしなければならない（SHALL）。
+`scripts/deploy-static-files.mjs` は、テスト・Lint・ビルドを実行した後、`dist/` 配下の成果物をAzure Blob Storage `$web` コンテナーにアップロードしなければならない（SHALL）。
 
 #### Scenario: テスト・Lint・ビルドの実行
 
@@ -21,21 +21,21 @@ Node.js ES Modules として実装された4つのメインスクリプトの仕
 #### Scenario: dist/配下のアップロード
 
 - **WHEN** ビルドが成功した場合
-- **THEN** `dist/` 配下のファイルが `$web` コンテナに `az storage blob upload-batch` で一括アップロードされる（`data/` ディレクトリは除外）
+- **THEN** `dist/` 配下のファイルが `$web` コンテナーに `az storage blob upload-batch` で一括アップロードされる（`data/` ディレクトリは除外）
 
 #### Scenario: 初期データの配置
 
-- **WHEN** `$web` コンテナに `data/index.json` が存在しない場合
+- **WHEN** `$web` コンテナーに `data/index.json` が存在しない場合
 - **THEN** `scripts/seed/index.json` が `data/index.json` として `content-type: application/json; charset=utf-8` でアップロードされる
 
 #### Scenario: 既存データの保持
 
-- **WHEN** `$web` コンテナに `data/index.json` が既に存在する場合
+- **WHEN** `$web` コンテナーに `data/index.json` がすでに存在する場合
 - **THEN** アップロードはスキップされ、その旨がログ出力される
 
 ### Requirement: clear-data スクリプトの提供
 
-`scripts/clear-data.mjs` は、`$web` コンテナの `data/` 配下のセッションデータを削除し、`data/index.json` をシードファイルで初期化しなければならない（SHALL）。
+`scripts/clear-data.mjs` は、`$web` コンテナーの `data/` 配下のセッションデータを削除し、`data/index.json` をシードファイルで初期化しなければならない（SHALL）。
 
 #### Scenario: data/配下のBlob削除
 
@@ -64,7 +64,7 @@ Node.js ES Modules として実装された4つのメインスクリプトの仕
 #### Scenario: SASトークンの生成
 
 - **WHEN** スクリプトを実行する
-- **THEN** `--policy-name` で指定されたPolicy（デフォルト: `dashboard-admin`）からSASトークンが生成される
+- **THEN** `--policy-name` で指定されたPolicy（デフォルト： `dashboard-admin`）からSASトークンが生成される
 
 #### Scenario: 管理者用URLの出力
 

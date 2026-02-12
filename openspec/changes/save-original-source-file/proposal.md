@@ -23,4 +23,4 @@
 - **blob-writer.js**: 書き込みシーケンスの `rawCsv` パス生成ロジックを変更
 - **AdminPage.jsx**: `handleBulkSave` 内の `rawCsv.path` をセッションIDベースに変更
 - **Azure Blob Storage**: `data/sources/` ディレクトリが新設される。既存の `raw/` ディレクトリは今後使用されなくなる
-- **既存データ**: 既にアップロード済みの `raw/` 内ファイルには影響なし（移行不要）
+- **既存データ**: すでにアップロード済みの `raw/` 内ファイルには影響なし（移行不要）

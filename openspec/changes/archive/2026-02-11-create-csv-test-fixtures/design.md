@@ -8,7 +8,7 @@
 
 - Teams出席レポート形式（UTF-16LE / タブ区切り / 3セクション構成）に準拠
 - CsvTransformer での変換結果が dev-fixtures の JSON と一致する必要がある
-- ID生成ロジック: `SHA-256(input).substring(0, 8)` — 一方向関数のため逆算不可
+- ID生成ロジック： `SHA-256(input).substring(0, 8)` — 一方向関数のため逆算不可
 - 既存のテスト（`pnpm test`）はすべてパスする必要がある
 
 ## Goals / Non-Goals

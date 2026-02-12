@@ -1,0 +1,26 @@
+{
+  "cSpell.words": [
+    "mkdocs",
+    "pymdown",
+    "pymdownx",
+    "pyproject",
+    "textlint",
+    "textlintrc",
+    "superfences",
+    "weasyprint",
+    "marp",
+    "rulesync",
+    "dearu",
+    "desumasu",
+    "joshi",
+    "icsmedia",
+    "papaparse",
+    "recharts",
+    "tailwindcss",
+    "vitest",
+    "jsdom"
+  ],
+  "textlint.configPath": ".textlintrc.json",
+  "textlint.autoFixOnSave": false,
+  "textlint.run": "onType"
+}

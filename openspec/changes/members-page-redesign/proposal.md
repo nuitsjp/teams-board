@@ -25,4 +25,4 @@
 - `src/pages/MemberDetailPage.jsx`：ページ全体のレイアウトとデータ表示ロジックの変更
 - `src/services/data-fetcher.js`：変更なし（既存のfetch APIをそのまま利用）
 - `data/index.json`、`data/sessions/*.json`：データ構造の変更なし（既存データから勉強会別にグルーピング）
-- E2Eテスト（`e2e/dashboard.spec.js`）：メンバー詳細ページのセレクタ変更が必要になる可能性あり
+- E2Eテスト（`e2e/dashboard.spec.js`）：メンバー詳細ページのセレクター変更が必要になる可能性あり

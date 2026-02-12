@@ -43,5 +43,6 @@ module.exports = {
     'data/',
     'playwright-report/',
     'coverage/',
+    'site/',
   ],
 };

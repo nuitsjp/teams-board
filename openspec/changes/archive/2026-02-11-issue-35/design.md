@@ -2,7 +2,7 @@
 
 現在、Admin画面（`AdminPage.jsx`）はCSVインポート機能のみを提供している。グループ情報は`data/index.json`の`groups`配列に格納され、各グループは`{ id, name, totalDurationSeconds, sessionIds }`の構造を持つ。IndexMergerサービスは新規セッション追加時のマージロジックを担当するが、既存グループの編集機能は存在しない。
 
-BlobWriterは`executeWriteSequence`メソッドを提供し、`indexUpdater`関数でindex.jsonを更新できる。SAS token認証は`useAuth`フックで管理され、Admin画面では既に利用されている。
+BlobWriterは`executeWriteSequence`メソッドを提供し、`indexUpdater`関数でindex.jsonを更新できる。SAS token認証は`useAuth`フックで管理され、Admin画面ではすでに利用されている。
 
 ## Goals / Non-Goals
 
@@ -30,7 +30,7 @@ BlobWriterは`executeWriteSequence`メソッドを提供し、`indexUpdater`関�
 
 **理由**:
 
-- Admin画面は既にBlobWriter、SAS token認証、index.json操作のコンテキストを持つ
+- Admin画面はすでにBlobWriter、SAS token認証、index.json操作のコンテキストを持つ
 - グループ詳細画面は閲覧専用であり、編集機能を追加すると責務が複雑化
 - 管理者向け機能を一箇所に集約することで、UIの一貫性と保守性が向上
 
@@ -98,9 +98,9 @@ BlobWriterは`executeWriteSequence`メソッドを提供し、`indexUpdater`関�
 
 **[Risk] グループ名変更がセッションデータに反映されない** → Mitigation: `data/sessions/*.json`はイミュータブルであり、変更不要。ダッシュボードはindex.jsonのnameを表示するため、自動的に反映される。
 
-**[Trade-off] グループ詳細画面からの編集不可** → 受容: 管理者はAdmin画面から編集する運用。将来必要になれば、IndexEditorを再利用して追加可能。
+**[Trade-off] グループ詳細画面からの編集不可** → 受容： 管理者はAdmin画面から編集する運用。将来必要になれば、IndexEditorを再利用して追加可能。
 
-**[Trade-off] 変更履歴なし** → 受容: 初期スコープ外。必要になれば、セッションメタデータに履歴フィールドを追加。
+**[Trade-off] 変更履歴なし** → 受容： 初期スコープ外。必要になれば、セッションメタデータに履歴フィールドを追加。
 
 ## Migration Plan
 

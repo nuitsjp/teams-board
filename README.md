@@ -1,6 +1,8 @@
 # Teams Board
 
-Microsoft Teams の出席レポートを集計・可視化するダッシュボードです。グループごとの参加状況やメンバーの活動時間を一覧表示し、CSV ファイルのインポートでデータを更新できます。
+Microsoft Teams の出席レポートを集計・可視化するダッシュボードである。グループごとの参加状況やメンバーの活動時間を一覧表示し、CSV ファイルのインポートでデータを更新できる。
+
+- [docs](https://agreeable-pebble-0bd0b0800.2.azurestaticapps.net/)
 
 ## 技術スタック
 
@@ -11,9 +13,9 @@ Microsoft Teams の出席レポートを集計・可視化するダッシュボ�
 | ルーティング   | react-router-dom（HashRouter） | 静的サイトホスティングとの相性が良いハッシュベースルーティング                                             |
 | CSS            | Tailwind CSS 4                 | ユーティリティファーストで迅速なスタイリング                                                               |
 | テスト         | Vitest + Playwright            | ユニットテストと E2E テストの両立                                                                          |
-| データ更新認可 | SAS トークン（URL パラメータ） | 閉域ネットワーク前提のため簡易方式で十分                                                                   |
+| データ更新認可 | SAS トークン（URL パラメーター） | 閉域ネットワーク前提のため簡易方式で十分                                                                   |
 
-詳細は [アーキテクチャドキュメント](./docs/architecture.md) を参照してください。
+詳細は [アーキテクチャドキュメント](./docs/architecture.md) を参照のこと。
 
 ## クイックスタート
 
@@ -30,7 +32,7 @@ ni
 nr test
 ```
 
-全テストが pass することを確認してください。
+全テストが pass することを確認する。
 
 ### ローカルで画面を確認する
 
@@ -43,11 +45,11 @@ nr build
 nr preview
 ```
 
-`nr dev` でブラウザが開き、ダッシュボード一覧が表示されます（デフォルト: `http://localhost:5173`）。
+`nr dev` でブラウザが開き、ダッシュボード一覧が表示される（デフォルト： `http://localhost:5173`）。
 
 ### 開発環境で管理者モードを使用する
 
-開発環境では、ダミートークンを使用して管理者モード（AdminPage）をテストできます。
+開発環境では、ダミートークンを使用して管理者モード（AdminPage）をテストできる。
 
 ```bash
 # 開発サーバーを起動
@@ -57,19 +59,19 @@ nr dev
 # http://localhost:5173/?token=dev
 ```
 
-ダミートークン（`?token=dev`）を使用すると:
+ダミートークン（`?token=dev`）を使用すると：
 
-- 管理者専用機能（CSV 一括保存、グループ名編集など）にアクセスできます
-- 書き込み操作は `dev-fixtures/data/` に保存されます（実際の Azure Blob Storage には影響しません）
-- 本番環境では無効化されます（セキュリティ保証）
+- 管理者専用機能（CSV 一括保存、グループ名編集など）にアクセスできる
+- 書き込み操作は `dev-fixtures/data/` に保存される（実際の Azure Blob Storage には影響しない）
+- 本番環境では無効化される（セキュリティ保証）
 
 **実際の SAS トークンとの共存**
 
-開発環境で実際の Azure Blob Storage SAS トークンを使用することもできます。その場合は `?token=<actual-sas-token>` でアクセスしてください。
+開発環境で実際の Azure Blob Storage SAS トークンを使用することもできる。その場合は `?token=<actual-sas-token>` でアクセスする。
 
 **開発用データのクリーンアップ（任意）**
 
-開発中に蓄積したテストデータをクリーンアップする場合:
+開発中に蓄積したテストデータをクリーンアップする場合：
 
 ```bash
 # dev-fixtures/data/ 配下のデータを削除
@@ -101,7 +103,7 @@ nr test:e2e:headed        # ブラウザ表示付き実行
 
 ## CI/CD パイプライン
 
-GitHub Actions による CI/CD パイプラインが `.github/workflows/deploy.yml` に定義されています。
+GitHub Actions による CI/CD パイプラインが `.github/workflows/deploy.yml` に定義されている。
 
 ### ワークフロー構成
 
@@ -124,7 +126,7 @@ pull_request (main) → lint ─┐
 
 ### Azure 認証
 
-OIDC（OpenID Connect）を使用して GitHub Actions から Azure に認証します。サービスプリンシパルのシークレットは不要で、短命なトークンで安全に認証します。
+OIDC（OpenID Connect）を使用して GitHub Actions から Azure に認証する。サービスプリンシパルのシークレットは不要で、短命なトークンで安全に認証する。
 
 ### 必要な設定
 
@@ -153,11 +155,11 @@ OIDC（OpenID Connect）を使用して GitHub Actions から Azure に認証し
 
 ### ロールバック
 
-自動ロールバックは実装していません。問題が発生した場合は `git revert` で前回の安定版にリバートし、main に push すれば CI/CD パイプラインが自動的に再デプロイします。
+自動ロールバックは実装していない。問題が発生した場合は `git revert` で前回の安定版にリバートし、main に push すれば CI/CD パイプラインが自動的に再デプロイする。
 
 ## 仕様書
 
-要件定義・技術設計・タスク分解は `.kiro/specs/` 配下に格納されています。
+要件定義・技術設計・タスク分解は `.kiro/specs/` 配下に格納されている。
 
 | 仕様                     | 内容                                        |
 | ------------------------ | ------------------------------------------- |
@@ -166,14 +168,14 @@ OIDC（OpenID Connect）を使用して GitHub Actions から Azure に認証し
 
 ## 開発ワークフロー
 
-本リポジトリでは AI-DLC（AI Development Life Cycle）に基づく Spec-Driven Development を採用しています。
+本リポジトリでは AI-DLC（AI Development Life Cycle）に基づく Spec-Driven Development を採用している。
 
 ```
 要件定義 → 技術設計 → タスク分解 → TDD 実装
 ```
 
-各フェーズで人間のレビューと承認を行い、テストを先に書いてから実装コードを書く TDD サイクルを厳守します。詳細は `CLAUDE.md` を参照してください。
+各フェーズで人間のレビューと承認を行い、テストを先に書いてから実装コードを書く TDD サイクルを厳守する。詳細は `CLAUDE.md` を参照のこと。
 
 ## ライセンス
 
-MIT License - 詳細は [LICENSE](LICENSE) を参照してください。
+MIT License - 詳細は [LICENSE](LICENSE) を参照のこと。

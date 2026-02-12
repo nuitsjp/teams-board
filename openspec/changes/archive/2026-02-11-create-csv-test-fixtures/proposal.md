@@ -5,10 +5,10 @@
 ## What Changes
 
 - `dev-fixtures/csv/` ディレクトリを新規作成し、17件のTeams出席レポート形式のCSVファイルを配置
-  - フロントエンド勉強会: 10セッション
-  - TypeScript読書会: 3セッション
-  - ソフトウェア設計勉強会: 2セッション
-  - インフラ技術研究会: 2セッション
+  - フロントエンド勉強会： 10セッション
+  - TypeScript読書会： 3セッション
+  - ソフトウェア設計勉強会： 2セッション
+  - インフラ技術研究会： 2セッション
 - 各CSVはTeams出席レポート形式（UTF-16LE / タブ区切り / 3セクション構成）に準拠
 - CSVから生成されるメンバーID・グループID・セッションIDに合わせて、`dev-fixtures/data/` のJSONファイル（`index.json` と `sessions/*.json`）を更新
 - CSV → JSON の変換結果の一貫性を保証
@@ -26,7 +26,7 @@
 ## Impact
 
 - **新規作成**: `dev-fixtures/csv/` ディレクトリと17件のCSVファイル
-- **更新**: `dev-fixtures/data/index.json` （memberIdとgroupIdの更新）
-- **更新**: `dev-fixtures/data/sessions/*.json` （sessionIdとmemberIdの更新）
+- **更新**: `dev-fixtures/data/index.json`（memberIdとgroupIdの更新）
+- **更新**: `dev-fixtures/data/sessions/*.json`（sessionIdとmemberIdの更新）
 - **影響なし**: 既存のテスト（`pnpm test`）はすべてパスする必要がある
 - **利用**: CsvTransformerのテストデータとして使用可能になる
