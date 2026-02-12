@@ -5,7 +5,10 @@
 
 #### Scenario: textlint ルール設定
 - **WHEN** `.textlintrc.json` を作成する
-- **THEN** 以下のルールが設定される： `no-mix-dearu-desumasu`（preferInBody/Header/List: "である"）、`preset-japanese`（sentence-length max 150、max-ten max 4、no-doubled-joshi 等）、`preset-ja-spacing`、`preset-jtf-style`、`prh`（icsmedia 辞書参照）
+- **THEN** 以下のルールが設定される
+  - `no-mix-dearu-desumasu`（preferInBody/Header/List: “である”）
+  - `preset-japanese`（sentence-length max 150、max-ten max 4、no-doubled-joshi 等）
+  - `preset-ja-spacing`、`preset-jtf-style`、`prh`（icsmedia 辞書参照）
 
 ### Requirement: textlint 除外設定の追加
 プロジェクトルートに `.textlintignore` を配置し、校正対象外のファイルを定義する。
@@ -19,7 +22,10 @@
 
 #### Scenario: 追加されるパッケージ
 - **WHEN** `package.json` を更新する
-- **THEN** 以下の devDependencies が追加される： `textlint`、`textlint-rule-no-mix-dearu-desumasu`、`textlint-rule-preset-icsmedia`（GitHub:ics-creative/textlint-rule-preset-icsmedia）、`textlint-rule-preset-ja-spacing`、`textlint-rule-preset-japanese`、`textlint-rule-preset-jtf-style`、`textlint-rule-prh`、`@mermaid-js/mermaid-cli`
+- **THEN** 以下の devDependencies が追加される
+  - `textlint`、`textlint-rule-no-mix-dearu-desumasu`、`textlint-rule-preset-icsmedia`（GitHub:ics-creative/textlint-rule-preset-icsmedia）
+  - `textlint-rule-preset-ja-spacing`、`textlint-rule-preset-japanese`、`textlint-rule-preset-jtf-style`
+  - `textlint-rule-prh`、`@mermaid-js/mermaid-cli`
 
 ### Requirement: textlint の npm scripts 追加
 `package.json` の scripts に textlint 実行コマンドを追加する。

@@ -5,11 +5,15 @@
 
 #### Scenario: 全ファイル共通設定
 - **WHEN** `.editorconfig` を作成する
-- **THEN** `root = true`、全ファイルに `indent_style = space`、`indent_size = 4`、`end_of_line = lf`、`charset = utf-8`、`trim_trailing_whitespace = true`、`insert_final_newline = true` が設定される
+- **THEN** `root = true` とし、全ファイルに以下が設定される
+  - `indent_style = space`、`indent_size = 4`、`end_of_line = lf`
+  - `charset = utf-8`、`trim_trailing_whitespace = true`、`insert_final_newline = true`
 
 #### Scenario: ファイルタイプ別設定
 - **WHEN** `.editorconfig` を作成する
-- **THEN** JSON ファイルは `indent_size = 2`、YAML ファイルは `indent_size = 2`、Markdown ファイルは `trim_trailing_whitespace = false`、PowerShell は `indent_size = 4`、Bash は `indent_size = 2` が設定される
+- **THEN** 以下のファイルタイプ別設定が適用される
+  - JSON/YAML: `indent_size = 2`、Markdown: `trim_trailing_whitespace = false`
+  - PowerShell: `indent_size = 4`、Bash: `indent_size = 2`
 
 ### Requirement: .gitattributes の追加
 プロジェクトルートに `.gitattributes` を配置し、改行コードを LF に統一する。

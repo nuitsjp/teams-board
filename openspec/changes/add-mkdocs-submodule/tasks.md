@@ -5,7 +5,7 @@
 
 ## 2. MkDocs 環境構築（mkdocs-environment）
 
-- [x] 2.1 `pyproject.toml` を作成する（project 名： `teams-board-docs`、requires-python >= 3.11、MkDocs 関連依存パッケージ）
+- [x] 2.1 `pyproject.toml` を作成する（project 名： `teams-board-docs`、requires-python `>= 3.11`、MkDocs 関連依存パッケージ）
 - [x] 2.2 `mkdocs.yml` を作成する（Material テーマ、Mermaid サポート、PDF 出力プラグイン、Teams Board の docs 構造に合わせた nav）
 - [x] 2.3 `scripts/mkdocs-svg.mjs` を作成する（RENDER_SVG=1 環境変数付き mkdocs build）
 - [x] 2.4 `scripts/mkdocs-pdf.mjs` を作成する（RENDER_SVG=1, RENDER_PNG=1, ENABLE_PDF=1 環境変数付き mkdocs build）
@@ -15,7 +15,10 @@
 
 ## 3. textlint 環境構築（textlint-setup）
 
-- [x] 3.1 `package.json` の devDependencies に textlint 関連パッケージを追加する（textlint、textlint-rule-no-mix-dearu-desumasu、textlint-rule-preset-icsmedia、textlint-rule-preset-ja-spacing、textlint-rule-preset-japanese、textlint-rule-preset-jtf-style、textlint-rule-prh、@mermaid-js/mermaid-cli）
+- [x] 3.1 `package.json` の devDependencies に textlint 関連パッケージを追加する
+  - textlint、textlint-rule-no-mix-dearu-desumasu、textlint-rule-preset-icsmedia
+  - textlint-rule-preset-ja-spacing、textlint-rule-preset-japanese、textlint-rule-preset-jtf-style
+  - textlint-rule-prh、@mermaid-js/mermaid-cli
 - [x] 3.2 `package.json` の scripts に `lint:text`、`lint:text:fix` を追加する
 - [x] 3.3 `.textlintrc.json` を作成する（参照元と同一のルール設定）
 - [x] 3.4 `.textlintignore` を作成する（CLAUDE.md、AGENTS.md 等のシステムファイルを除外）

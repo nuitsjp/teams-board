@@ -22,7 +22,7 @@
 #### Scenario: クォート付き値の処理
 
 - **WHEN** `.env` ファイルの値がシングルクォートまたはダブルクォートで囲まれている（例： `KEY="value"` または `KEY='value'`）
-- **THEN** クォートが除去された値がハッシュテーブルに格納される
+- **THEN** クォートを除去した値がハッシュテーブルに格納される
 
 ### Requirement: 環境変数のパラメーター適用
 
@@ -64,7 +64,8 @@
 
 ### Requirement: 全インフラスクリプトの.env対応
 
-`scripts/infra/` 配下の全インフラスクリプト（`Deploy-Infrastructure.ps1`、`Deploy-StaticFiles.ps1`、`Clear-Data.ps1`、`New-SasToken.ps1`、`Show-Urls.ps1`）は、`Load-EnvSettings.ps1` をドットソースで読み込み、`.env` ファイルから設定を取得しなければならない（SHALL）。
+`scripts/infra/` 配下の全インフラスクリプトは、`Load-EnvSettings.ps1` をドットソースで読み込み、`.env` ファイルから設定を取得しなければならない（SHALL）。
+対象： `Deploy-Infrastructure.ps1`、`Deploy-StaticFiles.ps1`、`Clear-Data.ps1`、`New-SasToken.ps1`、`Show-Urls.ps1`
 
 #### Scenario: 各スクリプトが.envから設定を読み込む
 

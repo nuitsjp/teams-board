@@ -1,7 +1,8 @@
 ## ADDED Requirements
 
 ### Requirement: サブモジュールの一時登録と削除
-ssd-mkdocs-platform/ssd-mkdocs-sample を参照用に `lib/ssd-mkdocs-sample` にサブモジュールとして登録し、必要ファイルの適用完了後に削除する。サブモジュールは最終成果物に含まれず、カレントリポジトリに直接適用されたファイル群のみが残る。
+ssd-mkdocs-platform/ssd-mkdocs-sample を参照用に `lib/ssd-mkdocs-sample` へサブモジュールとして登録し、必要ファイルの適用完了後に削除する。
+サブモジュールは最終成果物に含まれず、カレントリポジトリへ直接適用されたファイル群のみが残る。
 
 #### Scenario: サブモジュールの登録
 - **WHEN** `git submodule add` で ssd-mkdocs-sample を `lib/ssd-mkdocs-sample` に登録する
@@ -16,7 +17,10 @@ ssd-mkdocs-platform/ssd-mkdocs-sample を参照用に `lib/ssd-mkdocs-sample` �
 
 #### Scenario: pyproject.toml の内容
 - **WHEN** `pyproject.toml` を作成する
-- **THEN** project 名は `teams-board-docs`、`requires-python >= "3.11"` とし、以下の依存パッケージを含む： `mkdocs>=1.5.0`、`mkdocs-material>=9.0.0`、`pymdown-extensions>=10.0.0`、`mkdocs-mermaid-to-svg>=1.1.3`、`mkdocs-svg-to-png>=0.0.7`、`mkdocs-mermaid2-plugin>=1.1.0`、`mkdocs-to-pdf>=0.1.0`、`weasyprint>=60.0`、`playwright>=1.40.0`
+- **THEN** project 名は `teams-board-docs`、`requires-python >= "3.11"` とし、以下の依存パッケージを含む
+  - `mkdocs>=1.5.0`、`mkdocs-material>=9.0.0`、`pymdown-extensions>=10.0.0`
+  - `mkdocs-mermaid-to-svg>=1.1.3`、`mkdocs-svg-to-png>=0.0.7`、`mkdocs-mermaid2-plugin>=1.1.0`
+  - `mkdocs-to-pdf>=0.1.0`、`weasyprint>=60.0`、`playwright>=1.40.0`
 
 #### Scenario: uv sync による環境構築
 - **WHEN** `uv sync` を実行する
@@ -27,7 +31,8 @@ Teams Board の `docs/` ディレクトリをソースとした MkDocs 設定フ
 
 #### Scenario: テーマとプラグイン設定
 - **WHEN** `mkdocs.yml` を作成する
-- **THEN** Material テーマ（`language: ja`、`content.code.copy` feature）を使用し、以下のプラグインを含む： search、mermaid-to-svg（`enabled_if_env: RENDER_SVG`）、svg-to-png（`enabled_if_env: RENDER_PNG`）、to-pdf（`enabled_if_env: ENABLE_PDF`）
+- **THEN** Material テーマ（`language: ja`、`content.code.copy` feature）を使用し、以下のプラグインを含む
+  - search、mermaid-to-svg（`enabled_if_env: RENDER_SVG`）、svg-to-png（`enabled_if_env: RENDER_PNG`）、to-pdf（`enabled_if_env: ENABLE_PDF`）
 
 #### Scenario: nav 構成
 - **WHEN** `mkdocs.yml` の nav を定義する

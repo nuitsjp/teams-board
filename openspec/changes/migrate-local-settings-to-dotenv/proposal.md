@@ -18,7 +18,7 @@
 
 ### Modified Capabilities
 
-（既存のspecsにこの変更に該当するものはなし）
+（既存のspecsでこの変更に該当するものはなし）
 
 ## Impact
 

@@ -2,7 +2,7 @@
 
 ## システム概要
 
-**Teams Board** は、Microsoft Teams の出席レポート CSV を集約・可視化するダッシュボード SPA です。勉強会やミーティングのグループごとに参加状況を管理し、メンバーの活動時間を可視化します。
+**Teams Board** は、Microsoft Teams の出席レポート CSV を集約・可視化するダッシュボード SPA である。勉強会やミーティングのグループごとに参加状況を管理し、メンバーの活動時間を可視化する。
 
 ## ドキュメント案内
 
@@ -109,11 +109,11 @@ JSON ファイルとして Azure Blob Storage に保存
 
 ## 実装上の補足
 
-このドキュメントは概念モデルを示しています。実装では以下のような形で具体化されています：
+このドキュメントは概念モデルを示している。実装では以下のような形で具体化されている：
 
 - **Group**: `GroupSummary` として `index.json` に格納（集約データ）
 - **Member**: `MemberSummary` として `index.json` に格納（集約データ）
 - **Session**: `SessionRecord` として `data/sessions/{id}.json` に個別保存
 - **Attendance**: `SessionRecord` 内の配列として保存
 
-詳細な実装構成は [architecture.md](architecture.md) を参照してください。
+詳細な実装構成は [architecture.md](architecture.md) を参照のこと。

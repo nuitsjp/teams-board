@@ -68,7 +68,7 @@
 
 #### Scenario: デプロイ実行中に新しいpushがあってもキャンセルされない
 
-- **WHEN** 本番デプロイが実行中にmainブランチに新しいコミットがpushされる
+- **WHEN** 本番デプロイが実行中にmainブランチへ新しいコミットがpushされる
 - **THEN** 実行中のデプロイは継続して完了し、新しいデプロイはその後に開始される
 
 ### Requirement: Uses OIDC authentication

@@ -24,7 +24,9 @@
 
 #### Scenario: 本番ビルド（main push）
 - **WHEN** main ブランチへの push またはワークフロー手動実行で purpose=production が選択される
-- **THEN** uv sync、Mermaid CLI インストール、Playwright ブラウザインストール、PDF 依存関係インストール（fonts-noto-cjk 等）が実行され、Web ビルド（RENDER_SVG=1）と PDF ビルド（RENDER_SVG=1, RENDER_PNG=1, ENABLE_PDF=1）が生成される
+- **THEN** 以下が実行される
+  - uv sync、Mermaid CLI インストール、Playwright ブラウザインストール、PDF 依存関係インストール（fonts-noto-cjk 等）
+  - Web ビルド（RENDER_SVG=1）と PDF ビルド（RENDER_SVG=1, RENDER_PNG=1, ENABLE_PDF=1）が生成される
 
 #### Scenario: プレビュービルド（PR）
 - **WHEN** pull_request が発生する

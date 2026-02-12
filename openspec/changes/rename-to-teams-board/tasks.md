@@ -15,8 +15,12 @@
 ## 3. コンポーネント・ファイルのリネーム
 
 - [x] 3.1 `src/components/StudyGroupList.jsx` → `src/components/GroupList.jsx` にリネームし、エクスポート名を `GroupList` に変更、UI表示テキスト「勉強会グループ」を「グループ」に変更する
-- [x] 3.2 `src/pages/StudyGroupDetailPage.jsx` → `src/pages/GroupDetailPage.jsx` にリネームし、エクスポート名を `GroupDetailPage` に変更、コメント「勉強会詳細画面」を「グループ詳細画面」に変更、`studyGroupId` → `groupId` に変更する
-- [x] 3.3 `src/App.jsx` の import パスとルーティング定義を更新する（`StudyGroupDetailPage` → `GroupDetailPage`、`StudyGroupList` が使われている箇所、パス `/study-groups/:studyGroupId` → `/groups/:groupId`）
+- [x] 3.2 `src/pages/StudyGroupDetailPage.jsx` → `src/pages/GroupDetailPage.jsx` にリネームする
+  - エクスポート名を `GroupDetailPage` に変更、コメント「勉強会詳細画面」を「グループ詳細画面」に変更
+  - `studyGroupId` → `groupId` に変更する
+- [x] 3.3 `src/App.jsx` の import パスとルーティング定義を更新する
+  - `StudyGroupDetailPage` → `GroupDetailPage`、`StudyGroupList` 参照箇所
+  - パス `/study-groups/:studyGroupId` → `/groups/:groupId`
 - [x] 3.4 `src/pages/DashboardPage.jsx` の `StudyGroupList` import を `GroupList` に変更する
 - [x] 3.5 `src/components/GroupList.jsx`（旧 StudyGroupList）内のナビゲーションパス `/study-groups/` → `/groups/` に変更する
 

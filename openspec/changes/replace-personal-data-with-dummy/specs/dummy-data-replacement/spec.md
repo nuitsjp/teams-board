@@ -61,7 +61,7 @@
 
 ### Requirement: E2Eテストのデータ参照をダミーに合わせる
 
-`e2e/dashboard.spec.js` 内で参照している実名・勉強会名を、`public/data/index.json` に合わせたダミー名に更新しなければならない（SHALL）。
+`e2e/dashboard.spec.js` 内で参照している実名・勉強会名を、`public/data/index.json` と整合するダミー名へ更新しなければならない（SHALL）。
 
 #### Scenario: E2Eテスト内の勉強会名の更新
 

@@ -5,11 +5,11 @@ Teams Board プロジェクトには `docs/` 配下に業務定義・機能定�
 ## What Changes
 
 - **git サブモジュールの一時登録と削除**: `ssd-mkdocs-platform/ssd-mkdocs-sample` を参照用にサブモジュール登録し、必要ファイルの適用完了後に削除する
-- **Python 環境の導入**: `pyproject.toml` を追加し、MkDocs およびプラグイン群（mkdocs-material, pymdown-extensions, mkdocs-mermaid-to-svg, mkdocs-svg-to-png, mkdocs-to-pdf, weasyprint, playwright）を uv で管理
+- **Python 環境の導入**: `pyproject.toml` を追加し、MkDocs およびプラグイン群（mkdocs-material 等）を uv で管理
 - **mkdocs.yml の作成**: Teams Board 用に `docs/` をソースとした MkDocs 設定ファイルを作成（Material テーマ、Mermaid サポート、PDF 出力等）
 - **textlint の導入**: `.textlintrc.json`、`.textlintignore` を追加し、日本語文書校正ルール（preset-japanese, preset-ja-spacing, preset-jtf-style, no-mix-dearu-desumasu, prh）を設定
 - **npm scripts の追加**: `package.json` に MkDocs 関連コマンド（`mkdocs`, `mkdocs:build`, `mkdocs:build:svg`, `mkdocs:pdf`）と textlint コマンド（`lint:text`, `lint:text:fix`）を追加
-- **devDependencies の追加**: textlint 本体および各種ルールプリセット（textlint-rule-preset-japanese, textlint-rule-preset-ja-spacing, textlint-rule-preset-jtf-style, textlint-rule-no-mix-dearu-desumasu, textlint-rule-prh, textlint-rule-preset-icsmedia）、@mermaid-js/mermaid-cli を追加
+- **devDependencies の追加**: textlint 本体および各種ルールプリセット、`@mermaid-js/mermaid-cli` を追加
 - **ビルドスクリプトの追加**: `scripts/mkdocs-svg.mjs`、`scripts/mkdocs-pdf.mjs` を追加
 - **エディター設定の追加/更新**: `.editorconfig` の追加、`.vscode/settings.json` への textlint 設定追加、`.vscode/extensions.json` への textlint 拡張推奨追加
 - **.gitattributes の追加**: 改行コード LF 統一（`* text=auto eol=lf`）

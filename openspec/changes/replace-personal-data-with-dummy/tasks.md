@@ -6,7 +6,9 @@
 
 ## 2. テストファイルの置き換え
 
-- [x] 2.1 `tests/logic/csv-transformer.test.js` のテストデータを置き換える（テスト太郎→佐藤一郎、 テスト花子→高橋美咲、 taro@example.com→ichiro.sato@example.com, hanako@example.com→misaki.takahashi@example.com）
+- [x] 2.1 `tests/logic/csv-transformer.test.js` のテストデータを置き換える
+  - テスト太郎→佐藤一郎、テスト花子→高橋美咲
+  - taro@example.com→ichiro.sato@example.com、hanako@example.com→misaki.takahashi@example.com
 - [x] 2.2 `tests/data/data-fetcher.test.js` のテストデータを置き換える（もくもく勉強会→フロントエンド勉強会、 テスト太郎→佐藤一郎）
 - [x] 2.3 `tests/data/index-merger.test.js` のテストデータを置き換える（もくもく勉強会→フロントエンド勉強会、 テスト太郎→佐藤一郎、 テスト花子→高橋美咲）
 - [x] 2.4 `tests/react/components/MemberList.test.jsx` のテストデータを置き換える（たなか→佐藤、 すずき→田中、 やまだ→山本等）
