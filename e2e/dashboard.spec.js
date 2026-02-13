@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
-import { getIndexFixture, registerIndexRoute } from '../e2e-helpers/test-helpers.js';
+import { getIndexFixture, registerIndexRoute } from './helpers/route-fixtures.js';
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

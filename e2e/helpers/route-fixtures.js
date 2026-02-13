@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const indexFixturePath = resolve(__dirname, '..', 'dev-fixtures', 'data', 'index.json');
-const sessionFixturesDir = resolve(__dirname, '..', 'dev-fixtures', 'data', 'sessions');
+const indexFixturePath = resolve(__dirname, '..', '..', 'dev-fixtures', 'data', 'index.json');
+const sessionFixturesDir = resolve(__dirname, '..', '..', 'dev-fixtures', 'data', 'sessions');
 const indexFixtureText = readFileSync(indexFixturePath, 'utf-8');
 const indexFixture = JSON.parse(indexFixtureText);
 
