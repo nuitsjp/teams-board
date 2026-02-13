@@ -36,7 +36,7 @@ permissions:
 
 jobs:
   lint:
-    name: textlint
+    name: Text Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
         run: pnpm run lint:text
 
   build:
-    name: build docs
+    name: Build Docs
     needs: lint
     runs-on: ubuntu-latest
     env:
@@ -113,7 +113,7 @@ jobs:
           retention-days: 1
 
   deploy-swa:
-    name: deploy swa
+    name: Deploy SWA
     needs: build
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -139,7 +139,7 @@ jobs:
           skip_app_build: true
 
   deploy-github-pages:
-    name: deploy github pages
+    name: Deploy GitHub Pages
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest

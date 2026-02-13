@@ -46,7 +46,7 @@ permissions:
 
 jobs:
   lint:
-    name: lint
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
         run: pnpm run lint
 
   test:
-    name: test
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +80,7 @@ jobs:
         run: pnpm test
 
   build:
-    name: build
+    name: Build
     needs: [lint, test]
     runs-on: ubuntu-latest
     steps:
@@ -115,7 +115,7 @@ jobs:
           retention-days: 1
 
   deploy:
-    name: アプリデプロイ
+    name: Deploy App
     needs: build
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'pull_request' && 'dev' || 'prod' }}
@@ -168,7 +168,7 @@ jobs:
           echo "| 静的サイトURL | ${WEB_URL} |" >> "$GITHUB_STEP_SUMMARY"
 
   e2e-dev:
-    name: E2E テスト
+    name: E2E Tests
     needs: deploy
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   close-preview:
+    name: Close Preview
     if: github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     steps:
