@@ -20,6 +20,8 @@ function StatusIcon({ status }) {
     case 'error':
     case 'save_failed':
       return <X size={size} className="text-error" />;
+    case 'missing_group':
+      return <AlertTriangle size={size} className="text-error" />;
     case 'duplicate_warning':
       return <AlertTriangle size={size} className="text-warning" />;
     default:
@@ -50,6 +52,7 @@ function getBorderColorClass(status) {
       return 'border-l-green-500';
     case 'error':
     case 'save_failed':
+    case 'missing_group':
       return 'border-l-red-500';
     case 'duplicate_warning':
       return 'border-l-amber-500';
@@ -64,16 +67,24 @@ function getBorderColorClass(status) {
  * 統合ファイルキューカード
  * 1ファイル = 1カード。ファイルメタ + パース結果サマリー + 展開テーブル + エラー/警告 + アクションボタン
  *
- * @param {{ item: object, onRemove: (id: string) => void, onApproveDuplicate: (id: string) => void }} props
+ * @param {{ item: object, groups: Array, onRemove: (id: string) => void, onApproveDuplicate: (id: string) => void, onSelectGroup: (fileId: string, groupId: string, groupName: string) => void }} props
  */
-export function FileQueueCard({ item, onRemove, onApproveDuplicate }) {
+export function FileQueueCard({ item, groups = [], onRemove, onApproveDuplicate, onSelectGroup }) {
   const [expanded, setExpanded] = useState(false);
 
   const hasParseResult = item.parseResult && item.parseResult.ok;
   const canExpand = hasParseResult && item.status !== 'saving';
+  const isMissingGroup = item.status === 'missing_group';
 
   // パース結果からサマリー情報を抽出
   const mergeInput = hasParseResult ? item.parseResult.mergeInput : null;
+
+  // 表示用のグループ情報（上書きがあればそちらを優先）
+  const displayGroupId = item.groupOverride?.groupId ?? mergeInput?.groupId;
+
+  // 自動検出グループが既存グループに含まれるか
+  const isAutoDetectedExisting = mergeInput && groups.some((g) => g.id === mergeInput.groupId);
+  const isDisabled = item.status === 'saving' || item.status === 'saved';
   const totalDuration = mergeInput
     ? mergeInput.attendances.reduce((sum, a) => sum + a.durationSeconds, 0)
     : 0;
@@ -93,6 +104,13 @@ export function FileQueueCard({ item, onRemove, onApproveDuplicate }) {
         {item.status === 'error' && (
           <span className="text-xs text-error bg-red-50 px-1.5 py-0.5 rounded">
             {item.errors.join(', ')}
+          </span>
+        )}
+
+        {/* グループ未選択の警告 */}
+        {isMissingGroup && (
+          <span className="text-xs text-error bg-red-50 px-1.5 py-0.5 rounded">
+            グループを選択してください
           </span>
         )}
 
@@ -136,7 +154,36 @@ export function FileQueueCard({ item, onRemove, onApproveDuplicate }) {
               ) : (
                 <ChevronRight className="w-4 h-4 text-text-muted" />
               ))}
-            <span className="font-semibold text-text-primary">{mergeInput.groupName}</span>
+            <select
+              className={`font-semibold text-text-primary bg-surface border border-border-light rounded px-2 py-1 text-sm ${isMissingGroup ? 'border-red-500' : ''}`}
+              value={displayGroupId || ''}
+              disabled={isDisabled}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                e.stopPropagation();
+                const selectedId = e.target.value;
+                if (!selectedId) return;
+                // 自動検出グループ（新規）を選択した場合
+                if (selectedId === mergeInput?.groupId && !isAutoDetectedExisting) {
+                  onSelectGroup?.(item.id, mergeInput.groupId, mergeInput.groupName);
+                  return;
+                }
+                const selected = groups.find((g) => g.id === selectedId);
+                if (selected) {
+                  onSelectGroup?.(item.id, selected.id, selected.name);
+                }
+              }}
+            >
+              {isMissingGroup && (
+                <option value="">グループを選択してください</option>
+              )}
+              {!isAutoDetectedExisting && mergeInput?.groupName && (
+                <option value={mergeInput.groupId}>（新規）{mergeInput.groupName}</option>
+              )}
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
             <span className="text-text-secondary text-sm">{mergeInput.date}</span>
             <span className="text-sm text-text-secondary">
               参加者: {mergeInput.attendances.length}名

@@ -103,6 +103,41 @@ function fileQueueReducer(state, action) {
       };
     case 'SET_EXISTING_IDS':
       return { ...state, existingSessionIds: action.payload };
+    case 'SELECT_GROUP': {
+      const { id, groupId, groupName } = action.payload;
+      return {
+        ...state,
+        queue: state.queue.map((item) => {
+          if (item.id !== id) return item;
+          const override = { groupId, groupName };
+          // グループ変更後の sessionId を再計算して重複チェック
+          const date = item.parseResult?.mergeInput?.date;
+          const newSessionId = date ? `${groupId}-${date}` : null;
+          const isDuplicate = newSessionId && state.existingSessionIds.has(newSessionId);
+          const newStatus = isDuplicate ? 'duplicate_warning' : 'ready';
+          return {
+            ...item,
+            groupOverride: override,
+            status: newStatus,
+            hasDuplicate: isDuplicate,
+          };
+        }),
+      };
+    }
+    case 'MISSING_GROUP':
+      return {
+        ...state,
+        queue: state.queue.map((item) =>
+          item.id === action.payload.id
+            ? {
+                ...item,
+                status: 'missing_group',
+                parseResult: action.payload.result,
+                warnings: action.payload.result.warnings || [],
+              }
+            : item
+        ),
+      };
     case 'RESET_TO_READY':
       return {
         ...state,
@@ -157,6 +192,12 @@ export function useFileQueue(csvTransformer) {
         return;
       }
 
+      // グループ名が空の場合は missing_group ステータス
+      if (!result.mergeInput.groupName) {
+        dispatch({ type: 'MISSING_GROUP', payload: { id: item.id, result } });
+        return;
+      }
+
       const sessionId = result.sessionRecord.id;
       if (state.existingSessionIds.has(sessionId)) {
         dispatch({ type: 'DUPLICATE_DETECTED', payload: { id: item.id, result } });
@@ -187,6 +228,10 @@ export function useFileQueue(csvTransformer) {
 
   const approveDuplicate = useCallback((fileId) => {
     dispatch({ type: 'APPROVE_DUPLICATE', payload: fileId });
+  }, []);
+
+  const selectGroup = useCallback((fileId, groupId, groupName) => {
+    dispatch({ type: 'SELECT_GROUP', payload: { id: fileId, groupId, groupName } });
   }, []);
 
   const setExistingSessionIds = useCallback((ids) => {
@@ -226,6 +271,7 @@ export function useFileQueue(csvTransformer) {
     addFiles,
     removeFile,
     approveDuplicate,
+    selectGroup,
     setExistingSessionIds,
     updateStatus,
     readyItems,
