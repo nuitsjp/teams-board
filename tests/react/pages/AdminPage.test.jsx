@@ -124,6 +124,100 @@ describe('AdminPage — ソースファイル保存パス', () => {
   });
 });
 
+describe('AdminPage — グループ選択による mergeInput 上書き', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('グループ選択後の一括保存で groupOverride が mergeInput/sessionRecord に反映される', async () => {
+    const user = userEvent.setup();
+
+    // DataFetcher: 既存グループを返す
+    const mockFetchIndex = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        groups: [
+          { id: 'existgrp1', name: '既存グループ', totalDurationSeconds: 3600, sessionIds: [] },
+        ],
+        members: [],
+        updatedAt: '2026-02-08T00:00:00.000Z',
+      },
+    });
+    vi.mocked(await import('../../../src/services/data-fetcher.js')).DataFetcher.mockImplementation(
+      () => ({
+        fetchIndex: mockFetchIndex,
+      })
+    );
+
+    // CsvTransformer: 新規グループの CSV パース結果
+    mockParse.mockResolvedValue({
+      ok: true,
+      sessionRecord: {
+        id: 'newgrp01-2026-02-08',
+        groupId: 'newgrp01',
+        date: '2026-02-08',
+        attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
+      },
+      mergeInput: {
+        sessionId: 'newgrp01-2026-02-08',
+        groupId: 'newgrp01',
+        groupName: '新しい勉強会',
+        date: '2026-02-08',
+        attendances: [{ memberId: 'mem001', memberName: '佐藤 一郎', durationSeconds: 3600 }],
+      },
+      warnings: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    // 既存グループの読み込みを待つ
+    await waitFor(() => {
+      expect(screen.getByText('グループ管理')).toBeInTheDocument();
+    });
+
+    // CSVファイルを追加
+    const csvContent = new Blob(['dummy csv'], { type: 'text/csv' });
+    const file = new File([csvContent], 'test-report.csv', { type: 'text/csv' });
+    const fileInput = document.querySelector('input[type="file"]');
+    await user.upload(fileInput, file);
+
+    // パース完了を待つ
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    // プルダウンで既存グループを選択
+    const select = screen.getByRole('combobox');
+    await user.selectOptions(select, 'existgrp1');
+
+    // 一括保存ボタンをクリック
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /一括保存/ })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: /一括保存/ }));
+
+    // BlobWriter.executeWriteSequence が呼ばれたことを確認
+    await waitFor(() => {
+      expect(mockExecuteWriteSequence).toHaveBeenCalled();
+    });
+
+    // 上書きされたパスを検証
+    const callArgs = mockExecuteWriteSequence.mock.calls[0][0];
+    // groupOverride により sessionId が existgrp1-2026-02-08 に変更される
+    expect(callArgs.rawCsv.path).toBe('data/sources/existgrp1-2026-02-08.csv');
+    expect(callArgs.newItems[0].path).toBe('data/sessions/existgrp1-2026-02-08.json');
+
+    // sessionRecord の中身も上書きされていることを確認
+    const sessionRecord = JSON.parse(callArgs.newItems[0].content);
+    expect(sessionRecord.id).toBe('existgrp1-2026-02-08');
+    expect(sessionRecord.groupId).toBe('existgrp1');
+  });
+});
+
 describe('AdminPage — グループ管理セクション', () => {
   beforeEach(() => {
     vi.clearAllMocks();

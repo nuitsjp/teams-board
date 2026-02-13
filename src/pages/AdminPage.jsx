@@ -55,6 +55,7 @@ export function AdminPage() {
     addFiles,
     removeFile,
     approveDuplicate,
+    selectGroup,
     setExistingSessionIds,
     updateStatus,
     readyItems,
@@ -97,7 +98,15 @@ export function AdminPage() {
       updateStatus(item.id, 'saving');
       setSaveStatusText(`保存中... ${item.file.name}`);
 
-      const { sessionRecord, mergeInput } = item.parseResult;
+      let { sessionRecord, mergeInput } = item.parseResult;
+
+      // グループ上書きがある場合、mergeInput / sessionRecord を上書き
+      if (item.groupOverride) {
+        const { groupId, groupName } = item.groupOverride;
+        const newSessionId = `${groupId}-${mergeInput.date}`;
+        mergeInput = { ...mergeInput, groupId, groupName, sessionId: newSessionId };
+        sessionRecord = { ...sessionRecord, groupId, id: newSessionId };
+      }
 
       const result = await blobWriter.executeWriteSequence({
         rawCsv: {
@@ -245,8 +254,10 @@ export function AdminPage() {
 
       <FileQueueCardList
         queue={queue}
+        groups={groups}
         onRemove={removeFile}
         onApproveDuplicate={approveDuplicate}
+        onSelectGroup={selectGroup}
       />
 
       {saving ? (
