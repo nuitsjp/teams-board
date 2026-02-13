@@ -1,0 +1,110 @@
+name: CI Workflow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'e2e/**'
+      - 'public/**'
+      - 'dev-fixtures/**'
+      - 'index.html'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.js'
+      - 'vitest.config.js'
+      - 'playwright.config.js'
+      - 'eslint.config.js'
+      - '.github/workflows/ci-workflow.yml'
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/setup-node-pnpm-uv/**'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'e2e/**'
+      - 'public/**'
+      - 'dev-fixtures/**'
+      - 'index.html'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.js'
+      - 'vitest.config.js'
+      - 'playwright.config.js'
+      - 'eslint.config.js'
+      - '.github/workflows/ci-workflow.yml'
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/setup-node-pnpm-uv/**'
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: lint 実行
+        run: pnpm run lint
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: test 実行
+        run: pnpm test
+
+  build:
+    name: build
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: ビルド用環境変数の設定
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_DEV }}" >> "$GITHUB_ENV"
+          else
+            echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_PROD }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: build 実行
+        run: pnpm run build
+        env:
+          VITE_APP_TITLE: ${{ vars.VITE_APP_TITLE }}

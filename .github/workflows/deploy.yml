@@ -1,138 +1,143 @@
-# CI/CD パイプライン
-# main ブランチ push → Lint・テスト・ビルド → 本番デプロイ
-# Pull Request → Lint・テスト・ビルド → 開発デプロイ → E2E テスト
-name: CI/CD Pipeline
+name: App Deployment
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'e2e/**'
+      - 'public/**'
+      - 'dev-fixtures/**'
+      - 'index.html'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.js'
+      - 'vitest.config.js'
+      - 'playwright.config.js'
+      - 'eslint.config.js'
+      - '.github/workflows/ci-workflow.yml'
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/setup-node-pnpm-uv/**'
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'e2e/**'
+      - 'public/**'
+      - 'dev-fixtures/**'
+      - 'index.html'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.config.js'
+      - 'vitest.config.js'
+      - 'playwright.config.js'
+      - 'eslint.config.js'
+      - '.github/workflows/ci-workflow.yml'
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/setup-node-pnpm-uv/**'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: app-deployment-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 permissions:
-  id-token: write
+  actions: read
   contents: read
+  id-token: write
 
 jobs:
-  # ── Lint ジョブ（test と並列実行）──────────────────────
-  lint:
-    name: Lint
+  verify-ci:
+    name: ci-workflow ゲート
     runs-on: ubuntu-latest
     steps:
+      - name: ci-workflow 成功を確認
+        uses: actions/github-script@v7
+        env:
+          TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          TARGET_EVENT: ${{ github.event_name == 'pull_request' && 'pull_request' || 'push' }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const workflowId = 'ci-workflow.yml';
+            const targetSha = process.env.TARGET_SHA;
+            const targetEvent = process.env.TARGET_EVENT;
+            const timeoutMs = 30 * 60 * 1000;
+            const intervalMs = 15 * 1000;
+            const startedAt = Date.now();
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            while (Date.now() - startedAt < timeoutMs) {
+              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                owner,
+                repo,
+                workflow_id: workflowId,
+                event: targetEvent,
+                per_page: 100,
+              });
+
+              const matchedRun = runs.find((run) => run.head_sha === targetSha);
+              if (!matchedRun) {
+                core.info(`対象SHA ${targetSha} の ci-workflow 実行を待機中`);
+                await sleep(intervalMs);
+                continue;
+              }
+
+              core.info(
+                `ci-workflow run_id=${matchedRun.id} status=${matchedRun.status} conclusion=${matchedRun.conclusion}`
+              );
+
+              if (matchedRun.status !== 'completed') {
+                await sleep(intervalMs);
+                continue;
+              }
+
+              if (matchedRun.conclusion === 'success') {
+                core.notice(`ci-workflow 成功を確認: run_id=${matchedRun.id}`);
+                return;
+              }
+
+              core.setFailed(`ci-workflow が成功していません: conclusion=${matchedRun.conclusion}`);
+              return;
+            }
+
+            core.setFailed(`ci-workflow 成功待機がタイムアウトしました（SHA: ${targetSha}）`);
+
+  deploy:
+    name: アプリデプロイ
+    needs: verify-ci
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'pull_request' && 'dev' || 'prod' }}
+    steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
         with:
-          version: 10.27.0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
-      - name: uv のセットアップ
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
 
       - name: 依存パッケージのインストール
         run: pnpm install --frozen-lockfile
 
-      - name: Lint 実行
-        run: pnpm run lint
-
-  # ── テストジョブ（lint と並列実行）─────────────────────
-  test:
-    name: ユニットテスト
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.27.0
-
-      - name: uv のセットアップ
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: 依存パッケージのインストール
-        run: pnpm install --frozen-lockfile
-
-      - name: ユニットテスト実行
-        run: pnpm test
-
-  # ── ビルドジョブ（lint + test 成功後に実行）────────────
-  build:
-    name: ビルド
-    needs: [lint, test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.27.0
-
-      - name: uv のセットアップ
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: 依存パッケージのインストール
-        run: pnpm install --frozen-lockfile
-
-      - name: 環境変数の設定
+      - name: ビルド用環境変数の設定
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_PROD }}" >> "$GITHUB_ENV"
-          else
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "DEPLOY_ENV=dev" >> "$GITHUB_ENV"
             echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_DEV }}" >> "$GITHUB_ENV"
+          else
+            echo "DEPLOY_ENV=prod" >> "$GITHUB_ENV"
+            echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_PROD }}" >> "$GITHUB_ENV"
           fi
 
-      - name: プロダクションビルド
+      - name: build 実行
         run: pnpm run build
         env:
           VITE_APP_TITLE: ${{ vars.VITE_APP_TITLE }}
 
-      - name: ビルド成果物のアップロード
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
-
-  # ── 本番デプロイジョブ（main ブランチのみ）─────────────
-  deploy-prod:
-    name: 本番デプロイ
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: prod
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
       - name: Azure にログイン
         uses: azure/login@v2
         with:
@@ -140,7 +145,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Azure Blob Storage にデプロイ
+      - name: Azure Blob Storage に配信
         run: |
           az storage blob upload-batch \
             --source dist \
@@ -149,86 +154,32 @@ jobs:
             --overwrite \
             --auth-mode login
 
-      - name: デプロイ結果の表示
+      - name: 配信結果を記録
         run: |
           WEB_URL=$(az storage account show \
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP_NAME }}" \
             --name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
             --query "primaryEndpoints.web" \
             --output tsv)
-          echo "## :rocket: デプロイ完了" >> "$GITHUB_STEP_SUMMARY"
+          echo "## アプリ配信完了" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| 項目 | 値 |" >> "$GITHUB_STEP_SUMMARY"
           echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| 環境 | \`prod\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 環境 | \`${DEPLOY_ENV}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| 静的サイトURL | ${WEB_URL} |" >> "$GITHUB_STEP_SUMMARY"
 
-  # ── 開発デプロイジョブ（Pull Request のみ）─────────────
-  deploy-dev:
-    name: 開発デプロイ
-    needs: build
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    environment: dev
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
-      - name: Azure にログイン
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Azure Blob Storage にデプロイ
-        run: |
-          az storage blob upload-batch \
-            --source dist \
-            --destination '$web' \
-            --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
-            --overwrite \
-            --auth-mode login
-
-      - name: デプロイ結果の表示
-        run: |
-          WEB_URL=$(az storage account show \
-            --resource-group "${{ vars.AZURE_RESOURCE_GROUP_NAME }}" \
-            --name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
-            --query "primaryEndpoints.web" \
-            --output tsv)
-          echo "## :rocket: デプロイ完了" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| 項目 | 値 |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| 環境 | \`dev\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| 静的サイトURL | ${WEB_URL} |" >> "$GITHUB_STEP_SUMMARY"
-
-  # ── E2E テストジョブ（開発デプロイ後、PR のみ）─────────
   e2e-dev:
     name: E2E テスト
-    needs: deploy-dev
+    needs: deploy
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
         with:
-          version: 10.27.0
+          ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: uv のセットアップ
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
 
       - name: 依存パッケージのインストール
         run: pnpm install --frozen-lockfile
@@ -254,8 +205,8 @@ jobs:
           VITE_BLOB_BASE_URL: ${{ vars.VITE_BLOB_BASE_URL_DEV }}
 
       - name: テストレポートのアップロード
-        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/

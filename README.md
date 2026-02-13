@@ -105,26 +105,41 @@ nr test:e2e:headed        # ブラウザ表示付き実行
 
 ## CI/CD パイプライン
 
-GitHub Actions による CI/CD パイプラインが `.github/workflows/deploy.yml` に定義されている。
+GitHub Actions の主要ワークフローは以下の4つで構成する。
+
+- `.github/workflows/ci-workflow.yml`
+- `.github/workflows/deploy.yml`
+- `.github/workflows/deploy-site.yml`
+- `.github/workflows/close-preview.yml`
 
 ### ワークフロー構成
 
 ```
-push (main)        → lint ─┐
-                     test ─┤→ build → deploy-prod
-                           │
-pull_request (main) → lint ─┐
-                     test ─┤→ build → deploy-dev → e2e-dev
+pull_request / push (main)
+  └─ CI Workflow
+      ├─ lint
+      ├─ test
+      └─ build
+           └─ App Deployment（CI成功ゲート）
+                ├─ pull_request: dev へ配信 → E2E
+                └─ push(main): prod へ配信
+
+docs 変更の pull_request / push(main)
+  └─ Deploy Site
+      ├─ pnpm run lint:text
+      ├─ preview 配信（PR）
+      └─ production 配信（main push）
+
+pull_request_target: closed
+  └─ Close Preview（冪等クリーンアップ）
 ```
 
-| ジョブ        | トリガー       | 説明                                                  |
+| ワークフロー | トリガー | 説明 |
 | ------------- | -------------- | ----------------------------------------------------- |
-| `lint`        | push / PR      | ESLint による静的解析                                 |
-| `test`        | push / PR      | Vitest によるユニットテスト                           |
-| `build`       | push / PR      | Vite プロダクションビルド（lint + test 成功後）       |
-| `deploy-prod` | push (main)    | 本番 Azure Blob Storage へデプロイ                    |
-| `deploy-dev`  | PR             | 開発 Azure Blob Storage へデプロイ                    |
-| `e2e-dev`     | PR             | Playwright E2E テスト（開発デプロイ後）               |
+| `CI Workflow` | `pull_request: main`, `push: main`（アプリ関連変更） | `lint/test/build` のみを実行する品質検証 |
+| `App Deployment` | `pull_request: main`, `push: main`（アプリ関連変更） | 対象SHAの `CI Workflow` 成功を確認後に Azure Blob Storage へ配信 |
+| `Deploy Site` | `pull_request: main`, `push: main`（docs関連変更） | `pnpm run lint:text` 成功後に MkDocs を preview/production 配信 |
+| `Close Preview` | `pull_request_target: closed` | プレビュー環境を冪等にクローズ（対象なしでも失敗停止しない） |
 
 ### Azure 認証
 
@@ -157,7 +172,7 @@ OIDC（OpenID Connect）を使用して GitHub Actions から Azure に認証す
 
 ### ロールバック
 
-自動ロールバックは実装していない。問題が発生した場合は `git revert` で前回の安定版にリバートし、main に push すれば CI/CD パイプラインが自動的に再デプロイする。
+自動ロールバックは実装していない。問題が発生した場合は `git revert` で前回の安定版にリバートし、main に push すれば各配信ワークフローが再実行される。
 
 ## 仕様書
 

@@ -1,0 +1,40 @@
+name: Node.js/pnpm/uv セットアップ
+description: Node.js、pnpm、uv を共通手順でセットアップする
+
+inputs:
+  node-version:
+    description: Node.js のバージョン
+    required: false
+    default: '22'
+  pnpm-version:
+    description: pnpm のバージョン
+    required: false
+    default: '10.27.0'
+  python-version:
+    description: uv で利用する Python バージョン
+    required: false
+    default: '3.13'
+  cache-dependency-path:
+    description: Node.js キャッシュに使うロックファイルのパス
+    required: false
+    default: pnpm-lock.yaml
+
+runs:
+  using: composite
+  steps:
+    - name: pnpm のセットアップ
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm-version }}
+
+    - name: Node.js のセットアップ
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}
+
+    - name: uv のセットアップ
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: ${{ inputs.python-version }}
