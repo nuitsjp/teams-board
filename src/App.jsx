@@ -34,6 +34,11 @@ function AppLayout() {
             <span className="text-lg font-bold tracking-tight">
               {import.meta.env.VITE_APP_TITLE || 'Teams Board'}
             </span>
+            {import.meta.env.VITE_APP_DESCRIPTION && (
+              <span className="hidden sm:inline text-xs text-text-muted font-normal ml-2">
+                {import.meta.env.VITE_APP_DESCRIPTION}
+              </span>
+            )}
           </a>
           {isAdmin && (
             <a
