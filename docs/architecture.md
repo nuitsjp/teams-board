@@ -176,11 +176,17 @@ sequenceDiagram
 4. `BlobWriter` で `data/index.json` を上書きする。
 5. 保存後に再取得して画面状態を同期する。
 
+### 7.4 業務操作の連携方式
+
+- 管理者の登録・修正操作は `data/index.json` と `data/sessions/*.json` を更新する。
+- 利用者の閲覧操作は更新済みの静的データを参照して行われ、管理者の更新操作とは非同期で連携する。
+- グループ名修正では `index.json` の `updatedAt` を更新時刻として扱い、保存時の整合性確認に利用する。
+
 ## 8. 認証・認可・セキュリティ
 
 ### 8.1 認証情報の扱い
 
-- 初回ロード時に URL クエリ `token` から SAS トークンを抽出する。
+- 管理者アクセスでは SAS トークン付き URL を利用し、初回ロード時にクエリ `token` から SAS トークンを抽出する。
 - 抽出後は `history.replaceState` で URL から `token` を削除する。
 - トークンは `AuthProvider` のメモリ状態のみで保持し、永続保存しない。
 
