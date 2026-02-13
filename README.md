@@ -32,7 +32,7 @@ ni
 nr test
 ```
 
-Windows 環境では、`pnpm install`（`ni` 経由を含む）時に `docs/openspec` ジャンクションを自動作成する。`docs/openspec` が通常フォルダやファイルとして既に存在する場合は競合としてエラー終了するため、手動で解消してから再実行すること。
+Windows 環境では、`pnpm install`（`ni` 経由を含む）時に `docs/openspec` ジャンクションを自動作成する。`docs/openspec` が通常フォルダーやファイルとしてすでに存在する場合は競合としてエラー終了するため、手動で解消してから再実行すること。
 
 全テストが pass することを確認する。
 
