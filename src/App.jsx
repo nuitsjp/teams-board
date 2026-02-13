@@ -34,6 +34,9 @@ function AppLayout() {
             <span className="text-lg font-bold tracking-tight">
               {import.meta.env.VITE_APP_TITLE || 'Teams Board'}
             </span>
+            <span className="hidden sm:inline text-xs text-text-muted font-normal ml-2">
+              Teams レポート集計ダッシュボード
+            </span>
           </a>
           {isAdmin && (
             <a
