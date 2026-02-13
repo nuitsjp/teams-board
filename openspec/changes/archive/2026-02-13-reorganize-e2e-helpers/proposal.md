@@ -1,6 +1,6 @@
 ## Why
 
-ルート直下の `e2e-helpers/` が `e2e/` と分離されているため、E2E関連コードの探索性と責務境界が分かりづらくなっています。E2Eテスト資産を同一ドメイン配下へ集約し、今後の保守と拡張のコストを下げる必要があります。
+ルート直下の `e2e-helpers/` が `e2e/` と分離されているため、E2E関連コードの探索性と責務境界が分かりづらい。E2Eテスト資産を同一ドメイン配下へ集約し、今後の保守と拡張のコストを下げる必要である。
 
 ## What Changes
 
@@ -19,6 +19,6 @@
 
 ## Impact
 
-- 影響コード: `e2e/` 配下の spec ファイル、`e2e/global-setup.js`、`e2e/global-teardown.js`、`e2e/helpers/`（新設）
-- テスト実行系: Playwright E2E の import 解決とヘルパー呼び出し経路
-- 非影響: アプリ本体 (`src/`)、ランタイム機能、公開API、データフォーマット
+- 影響コード： `e2e/` 配下の spec ファイル、`e2e/global-setup.js`、`e2e/global-teardown.js`、`e2e/helpers/`（新設）
+- テスト実行系： Playwright E2E の import 解決とヘルパー呼び出し経路
+- 非影響： アプリ本体 (`src/`)、ランタイム機能、公開API、データフォーマット
