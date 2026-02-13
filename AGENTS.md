@@ -17,23 +17,41 @@ You are running on Windows. Bash isn't available directly, so please use Bash (v
 ## Common Commands
 
 ```bash
-pnpm install              # Install dependencies
-pnpm run dev              # Start dev server (http://localhost:5173, with HMR)
-pnpm run build            # Production build (output to dist/)
-pnpm test                 # Run unit tests with Vitest
-pnpm run test:watch       # Vitest watch mode
-pnpm run test:coverage    # Run tests with coverage
-pnpm run lint             # ESLint static analysis
-pnpm run format           # Prettier code formatting
+# 初期セットアップ
+pnpm install              # 依存関係のインストール（postinstall スクリプトが自動実行）
+pnpm install:clean        # クリーンインストール（キャッシュをクリアしてセットアップ）
 
-# E2E tests (Playwright)
-pnpm exec playwright install   # First time only: install browsers
-pnpm run test:e2e              # Headless execution
-pnpm run test:e2e:headed       # Run with browser visible
+# 開発サーバー
+pnpm run dev              # 開発サーバー起動 (http://localhost:5173, HMR対応)
+                          # 管理者モード: http://localhost:5173/?token=dev
 
-# Run a single test file
-pnpm vitest run tests/logic/csv-transformer.test.js
-pnpm vitest run tests/react/pages/DashboardPage.test.jsx
+# ビルド・プレビュー
+pnpm run build            # 本番用ビルド (dist/ に出力)
+pnpm run preview          # ビルド後のプレビュー
+
+# テスト
+pnpm test                 # Vitest で全ユニットテストを実行
+pnpm run test:watch       # Vitest ウォッチモード
+pnpm run test:coverage    # テストカバレッジ付きで実行
+pnpm vitest run tests/logic/csv-transformer.test.js           # 単一テストファイル実行
+pnpm vitest run tests/react/pages/DashboardPage.test.jsx      # React コンポーネントテスト
+
+# E2E テスト (Playwright)
+pnpm exec playwright install   # 初回のみ: ブラウザをインストール
+pnpm run test:e2e              # ヘッドレスで実行
+pnpm run test:e2e:headed       # ブラウザ表示で実行
+
+# Linting・Formatting
+pnpm run lint             # ESLint で JavaScript を検査
+pnpm run lint:text        # textlint で日本語テキストを検査
+pnpm run lint:text:fix    # textlint で日本語テキストを自動修正
+pnpm run format           # Prettier でコード整形
+
+# ドキュメンテーション（mkdocs）
+pnpm run mkdocs           # ドキュメントサイトをローカルで提供
+pnpm run mkdocs:build     # ドキュメントサイトをビルド
+pnpm run mkdocs:build:svg # Mermaid 図を SVG に変換
+pnpm run mkdocs:pdf       # PDF ドキュメントを生成
 ```
 
 ## Tech Stack
@@ -58,6 +76,7 @@ A dashboard SPA that aggregates and visualizes Microsoft Teams attendance report
 | Components | `src/components/` | Reusable UI parts (FileDropZone, GroupList, MemberList, SummaryCard, etc.)         |
 | Hooks      | `src/hooks/`      | State management (`useAuth` = SAS token auth, `useFileQueue` = file queue)         |
 | Services   | `src/services/`   | I/O and domain logic (see below)                                                   |
+| Utils      | `src/utils/`      | Helper functions (e.g., `format-duration` for time formatting)                     |
 | Config     | `src/config/`     | Environment variable based config (`APP_CONFIG.blobBaseUrl`)                       |
 
 ### Services Layer Roles
@@ -84,6 +103,18 @@ A dashboard SPA that aggregates and visualizes Microsoft Teams attendance report
 
 Development JSON fixtures are placed in `dev-fixtures/data/`. The Vite plugin `serveDevFixtures` (in vite.config.js) serves `/data/` requests from this directory on the dev server. Not included in `public/` since Azure Blob Storage serves this data in production.
 
+#### Dev Fixtures Plugin Features
+
+- **GET `/data/*`** — Serves development JSON fixtures from `dev-fixtures/` directory
+- **POST `/dev-fixtures-write`** — Allows writing updated JSON during development (管理者モードのテスト用)
+  - Request body: `{ "path": "data/index.json", "data": {...} }`
+  - Useful for testing CSV uploads and data mutations in admin page
+- **Admin Mode URL** — When dev server starts, it displays: `http://localhost:5173/?token=dev` for testing admin page
+
+#### Development Token
+
+The SAS token is extracted from the URL query parameter (`token`) on first load, then immediately removed via `history.replaceState` and held in memory. For development, use `?token=dev` to enable admin page testing.
+
 ### Test Structure
 
 - `tests/data/` — DataFetcher, BlobWriter, IndexMerger tests
@@ -101,3 +132,90 @@ GitHub Actions (`.github/workflows/deploy.yml`) runs lint and tests in parallel,
 
 - `VITE_APP_TITLE` — App title (default: 'Teams Board')
 - `VITE_BLOB_BASE_URL` — Blob Service Endpoint URL
+
+## Development Setup
+
+### Postinstall Configuration
+
+Running `pnpm install` automatically executes the postinstall script (`scripts/postinstall-setup.mjs`), which initializes the development environment. Use `pnpm install:clean` to perform a clean setup if needed.
+
+### Environment Configuration
+
+Copy `.env.example` to `.env.local` for local development:
+
+```bash
+# フロントエンド設定（Vite）
+VITE_APP_TITLE=Teams Board
+
+# Azure インフラ設定（本番デプロイ時に必要）
+AZURE_SUBSCRIPTION_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_RESOURCE_GROUP_NAME=<your-resource-group-name>
+AZURE_STORAGE_ACCOUNT_NAME=<your-storage-account-name>
+```
+
+Build-time variables (prefixed with `VITE_`) are embedded in the bundle. For development, the dev server uses default values.
+
+## Documentation Tooling
+
+This project uses **mkdocs** with Material theme for documentation. Documentation is built with Python using `uv` as the package manager.
+
+### Python Dependencies
+
+Documentation dependencies are managed via `pyproject.toml`:
+- **mkdocs** — Documentation site generator
+- **mkdocs-material** — Material Design theme
+- **mkdocs-mermaid2-plugin** — Mermaid diagram support
+- **pymdown-extensions** — Markdown extensions
+- **weasyprint** — PDF generation for documentation
+
+### Japanese Text Linting
+
+textlint is configured (`.textlintrc.json`) to check Japanese text quality:
+
+```bash
+pnpm run lint:text        # 日本語テキストを検査
+pnpm run lint:text:fix    # 自動修正
+```
+
+Linting rules:
+- Consistent Japanese particles (である/ですます の混在を検査)
+- Proper spacing around Japanese and English
+- JTF Style Guide compliance
+- ICS Media preset rules
+
+## Documentation
+
+### RIDW Customized Documents
+
+業務定義・シナリオ・機能定義は `docs/` 配下に格納します（`Document/` フォルダーは使用しません）。
+
+ドキュメント作成には `writing-documents` スキルを使用し、以下の構造に従います：
+
+```
+docs/
+├── .pages
+├── index.md                    # システム概要・ドメインモデル
+├── 01.[業務名]/               # 業務定義フォルダ
+│   ├── .pages
+│   ├── [業務名].md            # 業務定義
+│   ├── シナリオ/
+│   │   ├── .pages
+│   │   └── XX.[シナリオ名].md  # 業務シナリオ
+│   └── 機能定義/
+│       ├── .pages
+│       └── [機能名]/           # 機能定義
+│           ├── .pages
+│           ├── [機能名].md
+│           └── シナリオ/       # 機能シナリオ（画面機能のみ）
+│               └── XX.[シナリオ名].md
+```
+
+**業務の定義**：
+- 業務 = 複数の機能またはアクター間のコラボレーションを表す
+- 例: CSV アップロードによるセッション登録から、メンバー/グループの参加履歴閲覧までの一連の流れ
+
+**ドキュメント種別**：
+- **業務定義** — 業務の全体像、目的、スコープ、アクティビティ図
+- **業務シナリオ** — 業務に基づいた具体的なユースケース
+- **機能定義** — 業務を実現するための個別機能（画面/バッチ/API）
+- **機能シナリオ** — 機能の具体的な操作シナリオ（画面機能のみ作成）
