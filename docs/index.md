@@ -11,14 +11,14 @@ Teams会議の同名の会議を会議グループとしてまとめ、参加状
 
 ![ドメインモデル図](./domain.drawio.svg)
 
-| 名称 | 英語名 | 定義 |
-|------|------|-----|
-| 参加者レポート | AttendanceReport | Microsoft Teams が出力する参加者情報ファイル |
-| 参加記録 | AttendanceRecord | 会議グループ・メンバー・会議・参加を包含する全体概念。参加者レポートに依存する |
-| 会議グループ | SessionGroup | 同名の会議をまとめたもの |
-| メンバー | Member | 参加者 |
-| 会議 | Session | 会議グループによる1回の開催 |
-| 参加 | Attendance | 会議へのメンバーの参加記録（参加時間を含む） |
+| 名称 | 英語名 | 定義 | コード表現 |
+|------|------|-----|------------|
+| 参加者レポート | AttendanceReport | Microsoft Teams が出力する参加者情報ファイル | — |
+| 参加記録 | AttendanceRecord | 会議グループ・メンバー・会議・参加を包含する全体概念。参加者レポートに依存する | — |
+| 会議グループ | SessionGroup | 同名の会議をまとめたもの | `group`, `groupId` |
+| メンバー | Member | 参加者 | `member`, `memberId` |
+| 会議 | Session | 会議グループによる1回の開催 | `session`, `sessionId` |
+| 参加 | Attendance | 会議へのメンバーの参加記録（参加時間を含む） | `attendance` |
 
 ## ビジネスユースケース図
 
