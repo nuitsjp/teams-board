@@ -1,4 +1,4 @@
-import { backupIndexJson, restoreFromGit } from '../e2e-helpers/fixture-manager.js';
+import { backupIndexJson, restoreFromGit } from './helpers/fixture-lifecycle.js';
 
 /**
  * Playwrightグローバルセットアップ

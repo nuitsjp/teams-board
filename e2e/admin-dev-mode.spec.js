@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
-import { restoreIndexJson } from '../e2e-helpers/fixture-manager.js';
+import { restoreIndexJson } from './helpers/fixture-lifecycle.js';
 
 test.describe('開発モード — ダミートークンでの管理者機能', () => {
   // データ変更テストは並列実行から分離してシーケンシャルに実行
