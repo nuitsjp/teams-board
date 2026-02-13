@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Teams Board — Teamsレポート集計ダッシュボード",
   "scripts": {
-    "postinstall": "node scripts/postinstall-setup.mjs",
+    "postinstall": "node scripts/postinstall-setup.mjs --init",
+    "install:clean": "node scripts/postinstall-setup.mjs --init --clean",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
