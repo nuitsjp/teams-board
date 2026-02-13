@@ -8,10 +8,10 @@ docs/index.md のドメインモデルテーブルには日本語の概念定義
 - 以下の英語用語を定義：
   - 参加者レポート → Attendance Report
   - 参加記録 → Attendance Record
-  - 会議グループ → Meeting Group (コード内: group, groupId)
-  - メンバー → Member (コード内: member, memberId)
-  - 会議 → Session (コード内: session, sessionId)
-  - 参加 → Attendance (コード内: attendance)
+  - 会議グループ → Meeting Group（コード内：group, groupId）
+  - メンバー → Member（コード内：member, memberId）
+  - 会議 → Session（コード内：session, sessionId）
+  - 参加 → Attendance（コード内：attendance）
 - コード実装との整合性を確認し、不一致があれば修正
 
 ## Capabilities
@@ -26,7 +26,7 @@ docs/index.md のドメインモデルテーブルには日本語の概念定義
 
 ## Impact
 
-- **影響ファイル**: docs/index.md（ドメインモデルテーブルの更新）
-- **コード変更**: なし（用語が既に統一されている場合）または軽微な命名修正
-- **API変更**: なし
-- **破壊的変更**: なし
+- **影響ファイル**：docs/index.md（ドメインモデルテーブルの更新）
+- **コード変更**：なし（用語がすでに統一されている場合）または軽微な命名修正
+- **API変更**：なし
+- **破壊的変更**：なし
