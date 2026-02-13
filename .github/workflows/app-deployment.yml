@@ -94,18 +94,11 @@ jobs:
       - name: 依存パッケージのインストール
         run: pnpm install --frozen-lockfile
 
-      - name: ビルド用環境変数の設定
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_DEV }}" >> "$GITHUB_ENV"
-          else
-            echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_PROD }}" >> "$GITHUB_ENV"
-          fi
-
       - name: build 実行
         run: pnpm run build
         env:
           VITE_APP_TITLE: ${{ vars.VITE_APP_TITLE }}
+          VITE_BLOB_BASE_URL: ${{ github.event_name == 'pull_request' && vars.VITE_BLOB_BASE_URL_DEV || vars.VITE_BLOB_BASE_URL_PROD }}
 
       - name: ビルド成果物のアップロード
         uses: actions/upload-artifact@v4
