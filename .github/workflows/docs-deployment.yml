@@ -33,16 +33,11 @@ concurrency:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-  pull-requests: write
 
 jobs:
-  docs-deployment:
+  lint:
+    name: textlint
     runs-on: ubuntu-latest
-    env:
-      IS_PRODUCTION: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-      IS_SAME_REPO_PR: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +49,21 @@ jobs:
 
       - name: textlint の実行（失敗時は中断）
         run: pnpm run lint:text
+
+  build:
+    name: build docs
+    needs: lint
+    runs-on: ubuntu-latest
+    env:
+      IS_PRODUCTION: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
+
+      - name: 依存関係のインストール（Node.js 側）
+        run: pnpm install --frozen-lockfile
 
       - name: Mermaid CLI のインストール
         if: env.IS_PRODUCTION == 'true'
@@ -95,8 +105,29 @@ jobs:
         if: env.IS_PRODUCTION != 'true'
         run: uv run mkdocs build
 
+      - name: サイト成果物のアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site
+          path: site/
+          retention-days: 1
+
+  deploy-swa:
+    name: deploy swa
+    needs: build
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: サイト成果物のダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-site
+          path: site/
+
       - name: Azure Static Web Apps へデプロイ
-        if: env.IS_SAME_REPO_PR == 'true'
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_API_TOKEN }}
@@ -107,16 +138,15 @@ jobs:
           output_location: ""
           skip_app_build: true
 
-      - name: GitHub Pages 用アーティファクトのアップロード
-        if: env.IS_PRODUCTION == 'true'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site/
-
   deploy-github-pages:
-    needs: docs-deployment
+    name: deploy github pages
+    needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -140,6 +170,19 @@ jobs:
               }
               throw error;
             }
+
+      - name: サイト成果物のダウンロード
+        if: steps.pages-check.outputs.enabled == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-site
+          path: site/
+
+      - name: GitHub Pages 用アーティファクトのアップロード
+        if: steps.pages-check.outputs.enabled == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
 
       - name: GitHub Pages へデプロイ
         id: deployment
