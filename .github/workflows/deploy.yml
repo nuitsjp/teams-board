@@ -29,6 +29,11 @@ jobs:
         with:
           version: 10.27.0
 
+      - name: uv のセットアップ
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -51,6 +56,11 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10.27.0
+
+      - name: uv のセットアップ
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
 
       - uses: actions/setup-node@v4
         with:
@@ -75,6 +85,11 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10.27.0
+
+      - name: uv のセットアップ
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
 
       - uses: actions/setup-node@v4
         with:
@@ -203,6 +218,11 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10.27.0
+
+      - name: uv のセットアップ
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
 
       - uses: actions/setup-node@v4
         with:

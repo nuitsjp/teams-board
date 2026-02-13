@@ -31,6 +31,11 @@ jobs:
       - name: pnpm のインストール
         uses: pnpm/action-setup@v4
 
+      - name: uv のセットアップ
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
+
       - name: Node.js のセットアップ
         uses: actions/setup-node@v4
         with:
