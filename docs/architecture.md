@@ -250,12 +250,17 @@ E2E は `global-setup` / `global-teardown` で `dev-fixtures/data/index.json` �
 
 ### 12.1 CI/CD
 
-`.github/workflows/deploy.yml` で以下を実行する。
+以下のワークフローで責務分離して実行する。
 
-1. `lint` と `test` を並列実行
-2. 成功後に `build`
-3. `main` push は本番 Blob へデプロイ
-4. PR は開発 Blob へデプロイ後、E2E を実行
+1. `.github/workflows/ci-workflow.yml`  
+   `pull_request: main` / `push: main` で `lint` と `test` を並列実行し、成功後に `build` を実行する。
+2. `.github/workflows/deploy.yml`  
+   `pull_request: main` / `push: main` で起動し、対象SHAの `ci-workflow` 成功をゲートとして確認した後に配信する。  
+   `pull_request` は `dev`、`push: main` は `prod` に配信し、PR時のみ配信後に E2E を実行する。
+3. `.github/workflows/deploy-site.yml`  
+   docs関連変更の `pull_request: main` / `push: main` で起動し、先頭で `pnpm run lint:text` を実行してから preview/production を分岐する。
+4. `.github/workflows/close-preview.yml`  
+   `pull_request_target: closed` のみで起動し、プレビュー環境クローズを冪等に実行する。
 
 ### 12.2 環境変数
 

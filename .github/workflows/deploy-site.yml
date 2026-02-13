@@ -8,25 +8,28 @@ on:
       - 'mkdocs.yml'
       - 'pyproject.toml'
       - 'uv.lock'
+      - '.textlintrc.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/deploy-site.yml'
+      - '.github/actions/setup-node-pnpm-uv/**'
   pull_request:
+    branches: [main]
     types: [opened, synchronize, reopened]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
       - 'pyproject.toml'
       - 'uv.lock'
+      - '.textlintrc.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
       - '.github/workflows/deploy-site.yml'
-  workflow_dispatch:
-    inputs:
-      purpose:
-        description: '実行目的'
-        required: true
-        default: 'preview'
-        type: choice
-        options:
-          - preview
-          - production
+      - '.github/actions/setup-node-pnpm-uv/**'
+
+concurrency:
+  group: docs-site-deployment-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -35,29 +38,22 @@ permissions:
   pull-requests: write
 
 jobs:
-  build:
+  docs-site-deployment:
     runs-on: ubuntu-latest
     env:
-      # 本番デプロイ条件: main push または workflow_dispatch で production 選択
-      IS_PRODUCTION: ${{ (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.purpose == 'production') }}
-      # 同一リポジトリからの PR か（fork PR でない）
+      IS_PRODUCTION: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
       IS_SAME_REPO_PR: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: pnpm のインストール
-        uses: pnpm/action-setup@v4
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
 
-      - name: uv のセットアップ
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: "3.13"
+      - name: 依存関係のインストール（textlint 用）
+        run: pnpm install --frozen-lockfile
 
-      - name: Node.js のセットアップ
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "pnpm"
+      - name: textlint の実行（失敗時は中断）
+        run: pnpm run lint:text
 
       - name: Mermaid CLI のインストール
         if: env.IS_PRODUCTION == 'true'
@@ -118,8 +114,8 @@ jobs:
           path: site/
 
   deploy-github-pages:
-    needs: build
-    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.purpose == 'production')
+    needs: docs-site-deployment
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
