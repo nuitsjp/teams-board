@@ -1,4 +1,4 @@
-name: Deploy Site
+name: Docs Deployment
 
 on:
   push:
@@ -11,7 +11,7 @@ on:
       - '.textlintrc.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      - '.github/workflows/deploy-site.yml'
+      - '.github/workflows/docs-deployment.yml'
       - '.github/actions/setup-node-pnpm-uv/**'
   pull_request:
     branches: [main]
@@ -24,11 +24,11 @@ on:
       - '.textlintrc.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
-      - '.github/workflows/deploy-site.yml'
+      - '.github/workflows/docs-deployment.yml'
       - '.github/actions/setup-node-pnpm-uv/**'
 
 concurrency:
-  group: docs-site-deployment-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: docs-deployment-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -38,7 +38,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  docs-site-deployment:
+  docs-deployment:
     runs-on: ubuntu-latest
     env:
       IS_PRODUCTION: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
@@ -114,7 +114,7 @@ jobs:
           path: site/
 
   deploy-github-pages:
-    needs: docs-site-deployment
+    needs: docs-deployment
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:

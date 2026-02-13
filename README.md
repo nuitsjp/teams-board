@@ -105,41 +105,39 @@ nr test:e2e:headed        # ブラウザ表示付き実行
 
 ## CI/CD パイプライン
 
-GitHub Actions の主要ワークフローは以下の4つで構成する。
+GitHub Actions の主要ワークフローは以下の3つで構成する。
 
-- `.github/workflows/ci-workflow.yml`
-- `.github/workflows/deploy.yml`
-- `.github/workflows/deploy-site.yml`
-- `.github/workflows/close-preview.yml`
+- `.github/workflows/app-deployment.yml`
+- `.github/workflows/docs-deployment.yml`
+- `.github/workflows/preview-environment-cleanup.yml`
 
 ### ワークフロー構成
 
 ```
 pull_request / push (main)
-  └─ CI Workflow
+  └─ App Deployment
       ├─ lint
       ├─ test
-      └─ build
-           └─ App Deployment（CI成功ゲート）
-                ├─ pull_request: dev へ配信 → E2E
-                └─ push(main): prod へ配信
+      ├─ build
+      └─ deploy
+           ├─ pull_request: dev へ配信 → E2E
+           └─ push(main): prod へ配信
 
 docs 変更の pull_request / push(main)
-  └─ Deploy Site
+  └─ Docs Deployment
       ├─ pnpm run lint:text
       ├─ preview 配信（PR）
       └─ production 配信（main push）
 
 pull_request_target: closed
-  └─ Close Preview（冪等クリーンアップ）
+  └─ Preview Environment Cleanup（冪等クリーンアップ）
 ```
 
 | ワークフロー | トリガー | 説明 |
 | ------------- | -------------- | ----------------------------------------------------- |
-| `CI Workflow` | `pull_request: main`, `push: main`（アプリ関連変更） | `lint/test/build` のみを実行する品質検証 |
-| `App Deployment` | `pull_request: main`, `push: main`（アプリ関連変更） | 対象SHAの `CI Workflow` 成功を確認後に Azure Blob Storage へ配信 |
-| `Deploy Site` | `pull_request: main`, `push: main`（docs関連変更） | `pnpm run lint:text` 成功後に MkDocs を preview/production 配信 |
-| `Close Preview` | `pull_request_target: closed` | プレビュー環境を冪等にクローズ（対象なしでも失敗停止しない） |
+| `App Deployment` | `pull_request: main`, `push: main`（アプリ関連変更） | `lint/test/build` の品質検証後に Azure Blob Storage へ配信（PR時のみ E2E 実行） |
+| `Docs Deployment` | `pull_request: main`, `push: main`（docs関連変更） | `pnpm run lint:text` 成功後に MkDocs を preview/production 配信 |
+| `Preview Environment Cleanup` | `pull_request_target: closed` | プレビュー環境を冪等にクローズ（対象なしでも失敗停止しない） |
 
 ### Azure 認証
 

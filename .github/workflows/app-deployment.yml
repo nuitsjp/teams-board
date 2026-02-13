@@ -16,8 +16,7 @@ on:
       - 'vitest.config.js'
       - 'playwright.config.js'
       - 'eslint.config.js'
-      - '.github/workflows/ci-workflow.yml'
-      - '.github/workflows/deploy.yml'
+      - '.github/workflows/app-deployment.yml'
       - '.github/actions/setup-node-pnpm-uv/**'
   pull_request:
     branches: [main]
@@ -35,8 +34,7 @@ on:
       - 'vitest.config.js'
       - 'playwright.config.js'
       - 'eslint.config.js'
-      - '.github/workflows/ci-workflow.yml'
-      - '.github/workflows/deploy.yml'
+      - '.github/workflows/app-deployment.yml'
       - '.github/actions/setup-node-pnpm-uv/**'
 
 concurrency:
@@ -44,74 +42,47 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  actions: read
   contents: read
-  id-token: write
 
 jobs:
-  verify-ci:
-    name: ci-workflow ゲート
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     steps:
-      - name: ci-workflow 成功を確認
-        uses: actions/github-script@v7
-        env:
-          TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          TARGET_EVENT: ${{ github.event_name == 'pull_request' && 'pull_request' || 'push' }}
+      - uses: actions/checkout@v4
         with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const workflowId = 'ci-workflow.yml';
-            const targetSha = process.env.TARGET_SHA;
-            const targetEvent = process.env.TARGET_EVENT;
-            const timeoutMs = 30 * 60 * 1000;
-            const intervalMs = 15 * 1000;
-            const startedAt = Date.now();
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
-            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
 
-            while (Date.now() - startedAt < timeoutMs) {
-              const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                owner,
-                repo,
-                workflow_id: workflowId,
-                event: targetEvent,
-                per_page: 100,
-              });
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
 
-              const matchedRun = runs.find((run) => run.head_sha === targetSha);
-              if (!matchedRun) {
-                core.info(`対象SHA ${targetSha} の ci-workflow 実行を待機中`);
-                await sleep(intervalMs);
-                continue;
-              }
+      - name: lint 実行
+        run: pnpm run lint
 
-              core.info(
-                `ci-workflow run_id=${matchedRun.id} status=${matchedRun.status} conclusion=${matchedRun.conclusion}`
-              );
-
-              if (matchedRun.status !== 'completed') {
-                await sleep(intervalMs);
-                continue;
-              }
-
-              if (matchedRun.conclusion === 'success') {
-                core.notice(`ci-workflow 成功を確認: run_id=${matchedRun.id}`);
-                return;
-              }
-
-              core.setFailed(`ci-workflow が成功していません: conclusion=${matchedRun.conclusion}`);
-              return;
-            }
-
-            core.setFailed(`ci-workflow 成功待機がタイムアウトしました（SHA: ${targetSha}）`);
-
-  deploy:
-    name: アプリデプロイ
-    needs: verify-ci
+  test:
+    name: test
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'pull_request' && 'dev' || 'prod' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Node.js/pnpm/uv のセットアップ
+        uses: ./.github/actions/setup-node-pnpm-uv
+
+      - name: 依存パッケージのインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: test 実行
+        run: pnpm test
+
+  build:
+    name: build
+    needs: [lint, test]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -126,10 +97,8 @@ jobs:
       - name: ビルド用環境変数の設定
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "DEPLOY_ENV=dev" >> "$GITHUB_ENV"
             echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_DEV }}" >> "$GITHUB_ENV"
           else
-            echo "DEPLOY_ENV=prod" >> "$GITHUB_ENV"
             echo "VITE_BLOB_BASE_URL=${{ vars.VITE_BLOB_BASE_URL_PROD }}" >> "$GITHUB_ENV"
           fi
 
@@ -137,6 +106,36 @@ jobs:
         run: pnpm run build
         env:
           VITE_APP_TITLE: ${{ vars.VITE_APP_TITLE }}
+
+      - name: ビルド成果物のアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-dist
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    name: アプリデプロイ
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'pull_request' && 'dev' || 'prod' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: ビルド成果物のダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: app-dist
+          path: dist/
+
+      - name: 配信環境の設定
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "DEPLOY_ENV=dev" >> "$GITHUB_ENV"
+          else
+            echo "DEPLOY_ENV=prod" >> "$GITHUB_ENV"
+          fi
 
       - name: Azure にログイン
         uses: azure/login@v2

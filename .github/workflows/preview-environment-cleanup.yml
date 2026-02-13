@@ -1,4 +1,4 @@
-name: Close Preview
+name: Preview Environment Cleanup
 
 on:
   pull_request_target:
