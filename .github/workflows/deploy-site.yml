@@ -17,16 +17,6 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
       - '.github/workflows/deploy-site.yml'
-  workflow_dispatch:
-    inputs:
-      purpose:
-        description: '実行目的'
-        required: true
-        default: 'preview'
-        type: choice
-        options:
-          - preview
-          - production
 
 permissions:
   contents: read
@@ -38,8 +28,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # 本番デプロイ条件: main push または workflow_dispatch で production 選択
-      IS_PRODUCTION: ${{ (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.purpose == 'production') }}
+      # 本番デプロイ条件: main push
+      IS_PRODUCTION: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
       # 同一リポジトリからの PR か（fork PR でない）
       IS_SAME_REPO_PR: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
@@ -48,16 +38,22 @@ jobs:
       - name: pnpm のインストール
         uses: pnpm/action-setup@v4
 
-      - name: uv のセットアップ
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: "3.13"
-
       - name: Node.js のセットアップ
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "pnpm"
+
+      - name: 依存関係のインストール（textlint 用）
+        run: pnpm install --frozen-lockfile
+
+      - name: textlint の実行（失敗時は中断）
+        run: pnpm run lint:text
+
+      - name: uv のセットアップ
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
 
       - name: Mermaid CLI のインストール
         if: env.IS_PRODUCTION == 'true'
@@ -119,7 +115,7 @@ jobs:
 
   deploy-github-pages:
     needs: build
-    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.purpose == 'production')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
