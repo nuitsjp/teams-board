@@ -1,4 +1,4 @@
-import { restoreIndexJson, cleanupBackup } from '../e2e-helpers/fixture-manager.js';
+import { restoreIndexJson, cleanupBackup } from './helpers/fixture-lifecycle.js';
 
 /**
  * Playwrightグローバルティアダウン

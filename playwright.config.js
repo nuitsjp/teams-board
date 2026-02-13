@@ -24,7 +24,7 @@ export default defineConfig({
   projects: [
     {
       name: 'readonly-tests',
-      testMatch: /^(?!.*admin-dev-mode\.spec\.js$).*/,
+      testMatch: /^(?!.*admin-dev-mode\.spec\.js$).*\.spec\.js$/,
       use: { browserName: 'chromium' },
     },
     {
