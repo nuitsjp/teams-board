@@ -1,6 +1,6 @@
 ## 1. Viteプラグインの拡張
 
-- [x] 1.1 `vite.config.js`の`serveDevFixtures`プラグインにPOSTリクエストハンドラを追加
+- [x] 1.1 `vite.config.js`の`serveDevFixtures`プラグインにPOSTリクエストハンドラーを追加
 - [x] 1.2 `/dev-fixtures-write`エンドポイントのリクエストボディパース処理を実装
 - [x] 1.3 `dev-fixtures/<path>`へのファイル書き込み処理を実装（`fs.promises.writeFile`）
 - [x] 1.4 ディレクトリが存在しない場合の自動作成処理を実装（`fs.promises.mkdir`の`recursive: true`）
@@ -13,19 +13,19 @@
 - [x] 2.1 `src/hooks/useAuth.jsx`を開いて現在の実装を確認
 - [x] 2.2 ダミートークン判定ロジックを追加（`token === "dev" && import.meta.env.DEV`）
 - [x] 2.3 ダミートークン使用時に`isAdmin: true`を返すように修正
-- [x] 2.4 本番環境では`token === "dev"`を無効化することを確認（`import.meta.env.DEV`が`false`の場合）
+- [x] 2.4 本番環境では`token === "dev"`を無効化することを確認（`import.meta.env.DEV`の値が`false`の場合）
 - [x] 2.5 実際のSASトークン使用時の動作が変わらないことを確認（既存のロジックを保持）
-- [x] 2.6 開発環境でダミートークン使用時にコンソールに情報メッセージを表示（`console.info`）
+- [x] 2.6 開発環境でダミートークン使用時へコンソールの情報メッセージを表示（`console.info`）
 
 ## 3. BlobWriterの修正
 
 - [x] 3.1 `src/services/BlobWriter.js`を開いて現在の実装を確認
 - [x] 3.2 開発環境とダミートークンの検出ロジックを追加（`import.meta.env.DEV`と`token === "dev"`）
 - [x] 3.3 モック動作用の`writeToDevFixtures`関数を実装（`POST /dev-fixtures-write`へのfetchリクエスト）
-- [x] 3.4 `putBlob`関数内で開発環境かつダミートークン使用時に`writeToDevFixtures`を呼び出すように分岐
+- [x] 3.4 `putBlob`関数内で開発環境かつダミートークン使用時へ`writeToDevFixtures`を呼び出すように分岐
 - [x] 3.5 実際のSASトークン使用時は通常のAzure Blob Storage APIを呼び出すロジックを保持
 - [x] 3.6 本番環境では通常のAzure Blob Storage APIのみを使用することを確認
-- [x] 3.7 モック動作初回使用時にコンソールに警告を表示（`console.warn`）
+- [x] 3.7 モック動作初回使用時へコンソールの警告を表示（`console.warn`）
 - [x] 3.8 エラー時の適切なエラーハンドリングを実装（Viteプラグインからのエラーレスポンスを伝播）
 
 ## 4. ドキュメントの更新

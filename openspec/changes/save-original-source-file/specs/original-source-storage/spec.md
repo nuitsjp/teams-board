@@ -13,7 +13,7 @@
 #### Scenario: 複数ファイルの一括アップロード時
 
 - **WHEN** 管理者が複数のCSVファイルを一括アップロードし保存を実行する
-- **THEN** 各CSVファイルがそれぞれのセッションIDに対応する `data/sources/{sessionId}.csv` に保存される
+- **THEN** 各CSVファイルがそれぞれのセッションIDに対応する `data/sources/{sessionId}.csv` へ保存される
 
 ### Requirement: セッションデータとソースファイルの一対一対応
 

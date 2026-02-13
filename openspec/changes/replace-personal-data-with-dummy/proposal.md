@@ -4,7 +4,7 @@
 
 ## What Changes
 
-- `public/data/index.json` 内の実名4名（中村 充志、山浦 哲朗、崔 文、谷戸 大輔）をダミーの人名に置き換え
+- `public/data/index.json` 内の実名4名（中村充志、山浦哲朗、崔文、谷戸大輔）をダミーの人名に置き換え
 - `public/data/index.json` 内の勉強会名4件（もくもく勉強会、React読書会、アーキテクチャ設計塾、クラウド技術研究会）をダミーの勉強会名に置き換え
 - `public/data/sessions/*.json`（17ファイル）のセッションデータ内のメンバーID参照を新しいダミーデータに整合させる
 - `e2e/dashboard.spec.js` のE2Eテストで参照している実名・勉強会名をダミーデータに合わせて更新

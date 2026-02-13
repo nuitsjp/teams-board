@@ -1,0 +1,32 @@
+name: Preview Environment Cleanup
+
+on:
+  pull_request_target:
+    types: [closed]
+
+concurrency:
+  group: preview-cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  close-preview:
+    name: Close Preview
+    if: github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: プレビュー環境のクローズ（対象なしでも続行）
+        continue-on-error: true
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_API_TOKEN }}
+          action: close
+
+      - name: クリーンアップ結果を記録
+        if: always()
+        run: |
+          echo "## プレビュークリーンアップ完了" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "対象が既に存在しない場合も正常終了として扱います。" >> "$GITHUB_STEP_SUMMARY"

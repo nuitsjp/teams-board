@@ -1,6 +1,6 @@
 ## MODIFIED Requirements
 
-### Requirement: スクリプトの -EnvFile パラメータ
+### Requirement: スクリプトの -EnvFile パラメーター
 
 全メインスクリプト（clear-data, deploy-static-files, new-sas-token, show-urls）は `--env-file` CLIオプションを受け付けなければならない（SHALL）。このオプションにより、使用する `.env` ファイルのパスを指定できる。未指定時はプロジェクトルートの `.env` をデフォルトとして使用する。
 
@@ -31,7 +31,7 @@
 #### Scenario: importEnvParams による .env キーのオブジェクト返却
 
 - **WHEN** `importEnvParams(envFile)` を呼び出す
-- **THEN** `.env` の全キーがプロパティとして設定されたオブジェクトが返される（例: `AZURE_SUBSCRIPTION_ID=xxx` → `env.AZURE_SUBSCRIPTION_ID` が利用可能になる）
+- **THEN** `.env` の全キーがプロパティとして設定されたオブジェクトが返される（例： `AZURE_SUBSCRIPTION_ID=xxx` → `env.AZURE_SUBSCRIPTION_ID` が利用可能になる）
 
 #### Scenario: .env.example に基づく必須キーの検証
 

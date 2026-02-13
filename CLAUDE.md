@@ -101,3 +101,40 @@ GitHub Actions (`.github/workflows/deploy.yml`) runs lint and tests in parallel,
 
 - `VITE_APP_TITLE` — App title (default: 'Teams Board')
 - `VITE_BLOB_BASE_URL` — Blob Service Endpoint URL
+
+## Documentation
+
+### RIDW Customized Documents
+
+業務定義・シナリオ・機能定義は `docs/` 配下に格納します（`Document/` フォルダーは使用しません）。
+
+ドキュメント作成には `writing-documents` スキルを使用し、以下の構造に従います：
+
+```
+docs/
+├── .pages
+├── index.md                    # システム概要・ドメインモデル
+├── 01.[業務名]/               # 業務定義フォルダ
+│   ├── .pages
+│   ├── [業務名].md            # 業務定義
+│   ├── シナリオ/
+│   │   ├── .pages
+│   │   └── XX.[シナリオ名].md  # 業務シナリオ
+│   └── 機能定義/
+│       ├── .pages
+│       └── [機能名]/           # 機能定義
+│           ├── .pages
+│           ├── [機能名].md
+│           └── シナリオ/       # 機能シナリオ（画面機能のみ）
+│               └── XX.[シナリオ名].md
+```
+
+**業務の定義**：
+- 業務 = 複数の機能またはアクター間のコラボレーションを表す
+- 例: CSV アップロードによるセッション登録から、メンバー/グループの参加履歴閲覧までの一連の流れ
+
+**ドキュメント種別**：
+- **業務定義** — 業務の全体像、目的、スコープ、アクティビティ図
+- **業務シナリオ** — 業務に基づいた具体的なユースケース
+- **機能定義** — 業務を実現するための個別機能（画面/バッチ/API）
+- **機能シナリオ** — 機能の具体的な操作シナリオ（画面機能のみ作成）

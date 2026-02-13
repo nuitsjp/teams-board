@@ -21,22 +21,22 @@
 
 #### Scenario: クォート付き値の処理
 
-- **WHEN** `.env` ファイルの値がシングルクォートまたはダブルクォートで囲まれている（例: `KEY="value"` または `KEY='value'`）
-- **THEN** クォートが除去された値がハッシュテーブルに格納される
+- **WHEN** `.env` ファイルの値がシングルクォートまたはダブルクォートで囲まれている（例： `KEY="value"` または `KEY='value'`）
+- **THEN** クォートを除去した値がハッシュテーブルに格納される
 
-### Requirement: 環境変数のパラメータ適用
+### Requirement: 環境変数のパラメーター適用
 
-`Apply-EnvSettings` 関数は、`.env` から読み込んだ設定値を、コマンドライン引数で明示指定されていないパラメータにのみ適用しなければならない（SHALL）。
+`Apply-EnvSettings` 関数は、`.env` から読み込んだ設定値を、コマンドライン引数で明示指定されていないパラメーターにのみ適用しなければならない（SHALL）。
 
 #### Scenario: コマンドライン引数が未指定の場合
 
-- **WHEN** スクリプトのコマンドライン引数でパラメータが明示指定されていない
+- **WHEN** スクリプトのコマンドライン引数でパラメーターが明示指定されていない
 - **AND** `.env` ファイルに該当する変数が定義されている
-- **THEN** `.env` の値がパラメータに適用される
+- **THEN** `.env` の値がパラメーターに適用される
 
 #### Scenario: コマンドライン引数が指定済みの場合
 
-- **WHEN** スクリプトのコマンドライン引数でパラメータが明示指定されている
+- **WHEN** スクリプトのコマンドライン引数でパラメーターが明示指定されている
 - **THEN** `.env` の値は無視され、コマンドライン引数の値が維持される
 
 #### Scenario: .envに該当変数が存在しない場合
@@ -50,8 +50,8 @@
 
 #### Scenario: Azure環境変数の命名
 
-- **WHEN** Azure関連パラメータ（サブスクリプションID、リソースグループ名、ストレージアカウント名、リージョン）を `.env` で定義する
-- **THEN** 以下の変数名が使用される: `AZURE_SUBSCRIPTION_ID`、`AZURE_RESOURCE_GROUP_NAME`、`AZURE_STORAGE_ACCOUNT_NAME`、`AZURE_LOCATION`
+- **WHEN** Azure関連パラメーター（サブスクリプションID、リソースグループ名、ストレージアカウント名、リージョン）を `.env` で定義する
+- **THEN** 以下の変数名が使用される： `AZURE_SUBSCRIPTION_ID`、`AZURE_RESOURCE_GROUP_NAME`、`AZURE_STORAGE_ACCOUNT_NAME`、`AZURE_LOCATION`
 
 ### Requirement: .env.exampleの更新
 
@@ -64,13 +64,14 @@
 
 ### Requirement: 全インフラスクリプトの.env対応
 
-`scripts/infra/` 配下の全インフラスクリプト（`Deploy-Infrastructure.ps1`、`Deploy-StaticFiles.ps1`、`Clear-Data.ps1`、`New-SasToken.ps1`、`Show-Urls.ps1`）は、`Load-EnvSettings.ps1` をドットソースで読み込み、`.env` ファイルから設定を取得しなければならない（SHALL）。
+`scripts/infra/` 配下の全インフラスクリプトは、`Load-EnvSettings.ps1` をドットソースで読み込み、`.env` ファイルから設定を取得しなければならない（SHALL）。
+対象： `Deploy-Infrastructure.ps1`、`Deploy-StaticFiles.ps1`、`Clear-Data.ps1`、`New-SasToken.ps1`、`Show-Urls.ps1`
 
 #### Scenario: 各スクリプトが.envから設定を読み込む
 
 - **WHEN** インフラスクリプトが実行される
 - **AND** `.env` ファイルにAzure環境変数が定義されている
-- **THEN** スクリプトは `Load-EnvSettings.ps1` 経由で `.env` から設定を読み込み、未指定のパラメータに適用する
+- **THEN** スクリプトは `Load-EnvSettings.ps1` 経由で `.env` から設定を読み込み、未指定のパラメーターに適用する
 
 #### Scenario: local.settings.jsonからの読み込み機構の廃止
 

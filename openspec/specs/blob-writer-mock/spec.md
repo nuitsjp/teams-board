@@ -2,7 +2,7 @@
 
 ### Requirement: 開発環境でのBlobWriter動作のモック化
 
-開発環境（`import.meta.env.DEV === true`）かつダミートークン（`token === "dev"`）を使用している場合、BlobWriterは実際のAzure Blob Storageへのリクエストを送信せず、ローカルの`dev-fixtures/data/`ディレクトリに書き込まなければならない（MUST）。
+開発環境（`import.meta.env.DEV === true`）かつダミートークン（`token === "dev"`）を使用している場合、BlobWriterは実際のAzure Blob Storageへのリクエストを送信しない。ローカルの`dev-fixtures/data/`ディレクトリに書き込まなければならない（MUST）。
 
 #### Scenario: 開発環境でのindex.json書き込み
 
@@ -73,8 +73,8 @@
 
 #### Scenario: モック動作の警告表示
 
-- **WHEN** 開発環境でダミートークン使用中にBlobWriterが初めて呼び出される
-- **THEN** コンソールに「[開発モード] BlobWriterはdev-fixtures/data/に書き込みます」という情報メッセージが表示される
+- **WHEN** 開発環境でダミートークン使用中にBlobWriterがはじめて呼び出される
+- **THEN** コンソールに「[開発モード］BlobWriterはdev-fixtures/data/に書き込みます」という情報メッセージが表示される
 - **THEN** この警告は1回のみ表示される（重複しない）
 
 ### Requirement: DataFetcherとの統合
@@ -123,5 +123,5 @@
 #### Scenario: POSTリクエストの新規サポート
 
 - **WHEN** 開発環境でBlobWriterが`POST /dev-fixtures-write`をリクエストする
-- **THEN** `serveDevFixtures`プラグインが新しいハンドラでこのリクエストを処理する
+- **THEN** `serveDevFixtures`プラグインが新しいハンドラーでこのリクエストを処理する
 - **THEN** ファイルシステムへの書き込みを実行する

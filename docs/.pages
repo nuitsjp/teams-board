@@ -1,0 +1,6 @@
+nav:
+  - index.md
+  - 参加状況管理: 01.参加状況管理
+  - 会議グループ管理: 02.会議グループ管理
+  - アーキテクチャ: architecture.md
+  - OpenSpec: openspec

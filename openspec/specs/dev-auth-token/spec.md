@@ -2,7 +2,7 @@
 
 ### Requirement: 開発用ダミートークンの認識
 
-開発環境（`import.meta.env.DEV === true`）において、URLクエリパラメータ`?token=dev`で管理者モードに入ることができなければならない（MUST）。
+開発環境（`import.meta.env.DEV === true`）において、URLクエリパラメーター`?token=dev`で管理者モードに入ることができなければならない（MUST）。
 
 #### Scenario: 開発環境でダミートークンを使用
 
@@ -18,10 +18,10 @@
 
 #### Scenario: ダミートークン使用後のURL
 
-- **WHEN** 開発環境で`?token=dev`でアクセスする
+- **WHEN** 開発環境にて`?token=dev`でアクセスする
 - **THEN** `useAuth`がトークンをメモリに保持する
 - **THEN** `history.replaceState`によりURLから`?token=dev`が削除される
-- **THEN** URLが`http://localhost:5173/`（クエリパラメータなし）になる
+- **THEN** URLが`http://localhost:5173/`（クエリパラメーターなし）になる
 
 ### Requirement: 実際のSASトークンとの共存
 
@@ -29,7 +29,7 @@
 
 #### Scenario: 実際のSASトークンを使用
 
-- **WHEN** 開発環境で`?token=<valid-sas-token>`でアクセスする（`dev`以外のトークン）
+- **WHEN** 開発環境にて`?token=<valid-sas-token>`でアクセスする（`dev`以外のトークン）
 - **THEN** `useAuth`が実際のSASトークンとして処理する
 - **THEN** `isAdmin: true`を返す
 - **THEN** BlobWriterが実際のAzure Blob Storageに書き込む
@@ -40,7 +40,7 @@
 
 #### Scenario: Vite開発サーバーでの検出
 
-- **WHEN** `pnpm run dev`で起動した環境でコードを実行する
+- **WHEN** `pnpm run dev`で起動した環境にてコードを実行する
 - **THEN** `import.meta.env.DEV`が`true`を返す
 - **THEN** ダミートークン`dev`が有効になる
 
@@ -62,7 +62,7 @@
 
 #### Scenario: 本番環境での不正アクセス試行
 
-- **WHEN** 本番環境（Azure Blob Storage静的サイト）で`?token=dev`でアクセスする
+- **WHEN** 本番環境（Azure Blob Storage静的サイト）にて`?token=dev`でアクセスする
 - **THEN** `useAuth`が`isAdmin: false`を返す
 - **THEN** 管理者機能へのアクセスが拒否される
 - **THEN** コンソールにエラーや警告が表示されない（攻撃者に情報を与えない）
@@ -80,4 +80,4 @@
 #### Scenario: エラー時のフィードバック
 
 - **WHEN** 開発環境で`?token=dev`を使用してAdminPageにアクセスする
-- **THEN** コンソールに「開発モード: ダミートークンを使用中」といった情報メッセージが表示される（開発者への確認）
+- **THEN** コンソールに「開発モード： ダミートークンを使用中」といった情報メッセージが表示される（開発者への確認）

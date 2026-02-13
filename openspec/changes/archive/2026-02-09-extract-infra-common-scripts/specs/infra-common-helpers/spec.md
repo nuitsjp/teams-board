@@ -2,7 +2,7 @@
 
 ### Requirement: .env設定読み込み関数の提供
 
-`scripts/common/Load-EnvSettings.ps1` は `Load-EnvSettings` 関数と `Apply-EnvSettings` 関数を提供しなければならない（SHALL）。`Load-EnvSettings` はプロジェクトルートの `.env` ファイルを読み込み、キーと値のハッシュテーブルを返す。`Apply-EnvSettings` はコマンドライン引数で明示指定されていないパラメータに .env の値を適用する。
+`scripts/common/Load-EnvSettings.ps1` は `Load-EnvSettings` 関数と `Apply-EnvSettings` 関数を提供しなければならない（SHALL）。`Load-EnvSettings` はプロジェクトルートの `.env` ファイルを読み込み、キーと値のハッシュテーブルを返す。`Apply-EnvSettings` はコマンドライン引数で明示指定されていないパラメーターに .env の値を適用する。
 
 #### Scenario: .envファイルが存在する場合の読み込み
 
@@ -14,10 +14,10 @@
 - **WHEN** プロジェクトルートに `.env` ファイルが存在しない
 - **THEN** `Load-EnvSettings` は `$null` を返す
 
-#### Scenario: コマンドライン引数が未指定のパラメータへの.env値の適用
+#### Scenario: コマンドライン引数が未指定のパラメーターへの.env値の適用
 
 - **WHEN** `Apply-EnvSettings` に Settings、BoundParameters、ParameterMap を渡す
-- **THEN** BoundParameters に含まれないパラメータのみ、ParameterMap に基づいて .env の値が適用される
+- **THEN** BoundParameters に含まれないパラメーターのみ、ParameterMap に基づいて .env の値が適用される
 
 ### Requirement: Azure Storage接続関数の提供
 
@@ -54,11 +54,11 @@
 
 ### Requirement: 既存スクリプトの共通関数への移行
 
-既存の5スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）は、Azure接続処理の重複コードを `Connect-AzureStorage` 関数の呼び出しに置き換えなければならない（MUST）。パラメータインターフェースは変更してはならない（MUST NOT）。
+既存の5スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）は、Azure接続処理の重複コードを `Connect-AzureStorage` 関数呼び出しへ置き換えること（MUST）。パラメータインターフェイスを変更してはならない（MUST NOT）。
 
-#### Scenario: 既存スクリプトのパラメータ互換性
+#### Scenario: 既存スクリプトのパラメーター互換性
 
-- **WHEN** 移行後のスクリプトを既存のパラメータで呼び出す
+- **WHEN** 移行後のスクリプトを既存のパラメーターで呼び出す
 - **THEN** 移行前と同じ動作結果が得られる
 
 #### Scenario: .env読み込みと共通関数の併用

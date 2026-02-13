@@ -1,11 +1,13 @@
 ## Why
 
-`scripts/infra/` 配下の5つのPowerShellスクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）に、.env読み込み・Azureサブスクリプション切替・Storageアカウント接続確認・アカウントキー取得の同一コードが重複している。修正時に全スクリプトを同期更新する必要があり、保守コストが高い。また、`scripts/infra/` は `scripts/` 配下の唯一のサブフォルダであり、`infra` 階層は不要である。スクリプトを `scripts/` 直下に引き上げ、共通処理を専用のサブフォルダに分離し、DRY原則に従った構成にする。
+`scripts/infra/` 配下の5つのPowerShellスクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）には、同一コードが重複している。重複内容は、.env読み込み・Azureサブスクリプション切替・Storageアカウント接続確認・アカウントキー取得である。修正時は全スクリプトを同期更新する必要があり、保守コストが高い。
+
+また、`scripts/infra/` は `scripts/` 配下の唯一のサブフォルダーであり、`infra` 階層は不要である。スクリプトを `scripts/` 直下へ引き上げ、共通処理を専用のサブフォルダーへ分離する。DRY原則に従った構成とする。
 
 ## What Changes
 
 - `scripts/infra/` 配下の全スクリプトを `scripts/` 直下に移動し、`infra` 階層を廃止する
-- `scripts/common/` サブフォルダを新設し、共通ヘルパー関数を集約する
+- `scripts/common/` サブフォルダーを新設し、共通ヘルパー関数を集約する
 - `Load-EnvSettings.ps1` を `scripts/common/` に移動する
 - Azure接続処理（サブスクリプション切替・Storageアカウント接続確認・アカウントキー取得）を共通関数化し `scripts/common/` に配置する
 - 既存の5スクリプト（Clear-Data, Deploy-StaticFiles, New-SasToken, Show-Urls, Deploy-Infrastructure）のドットソースパスと重複コードを共通関数呼び出しに置き換える
@@ -28,5 +30,5 @@
 - **共通処理移動**: `scripts/infra/Load-EnvSettings.ps1` → `scripts/common/Load-EnvSettings.ps1`
 - **新規ファイル**: `scripts/common/Connect-AzureStorage.ps1`（Azure接続共通関数）
 - **ディレクトリ削除**: `scripts/infra/`（移動完了後に削除）
-- **依存関係**: 各スクリプトのパスが変更されるため、スクリプトを個別に呼び出している外部ワークフロー（CI/CDなど）のパス参照を更新する必要がある（パラメータインターフェースは不変）
+- **依存関係**: 各スクリプトのパスが変更されるため、スクリプトを個別に呼び出している外部ワークフロー（CI/CDなど）のパス参照を更新する必要がある（パラメータインターフェイスは不変）
 - **対象外**: `generate-dummy-data.sh` は削除済みのため対象外
