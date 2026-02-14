@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Check, X, AlertTriangle, Clock, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { formatDuration } from '../utils/format-duration.js';
 
@@ -69,7 +69,7 @@ function getBorderColorClass(status) {
  *
  * @param {{ item: object, groups: Array, onRemove: (id: string) => void, onApproveDuplicate: (id: string) => void, onSelectGroup: (fileId: string, groupId: string, groupName: string) => void }} props
  */
-export function FileQueueCard({ item, groups = [], onRemove, onApproveDuplicate, onSelectGroup }) {
+export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], onRemove, onApproveDuplicate, onSelectGroup }) {
   const [expanded, setExpanded] = useState(false);
 
   const hasParseResult = item.parseResult && item.parseResult.ok;
@@ -223,4 +223,4 @@ export function FileQueueCard({ item, groups = [], onRemove, onApproveDuplicate,
       )}
     </div>
   );
-}
+});
