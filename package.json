@@ -23,7 +23,7 @@
     "mkdocs:build": "uv run mkdocs build",
     "mkdocs:build:svg": "node scripts/mkdocs-svg.mjs",
     "mkdocs:pdf": "node scripts/mkdocs-pdf.mjs",
-    "rulesync:generate": "rulesync generate --targets claudecode,agentsskills --features skills",
+    "rulesync:generate": "rulesync generate --targets claudecode,agentsskills,copilot --features skills",
     "rulesync:ignore": "rulesync gitignore"
   },
   "devDependencies": {
