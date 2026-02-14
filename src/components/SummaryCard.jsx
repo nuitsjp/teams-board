@@ -1,4 +1,6 @@
-export function SummaryCard({ title, value, icon: Icon, className = '' }) {
+import { memo } from 'react';
+
+export const SummaryCard = memo(function SummaryCard({ title, value, icon: Icon, className = '' }) {
   return (
     <div
       className={`bg-surface rounded-xl border border-border-light p-6 flex items-center space-x-5 ${className}`}
@@ -14,4 +16,4 @@ export function SummaryCard({ title, value, icon: Icon, className = '' }) {
       </div>
     </div>
   );
-}
+});

@@ -1,8 +1,10 @@
+import { memo } from 'react';
+
 /**
  * 一括保存の進捗バーコンポーネント
  * @param {{ current: number, total: number, visible: boolean, statusText: string }} props
  */
-export function ProgressBar({ current, total, visible, statusText }) {
+export const ProgressBar = memo(function ProgressBar({ current, total, visible, statusText }) {
   if (!visible) return null;
 
   const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
@@ -20,4 +22,4 @@ export function ProgressBar({ current, total, visible, statusText }) {
       </div>
     </div>
   );
-}
+});
