@@ -49,7 +49,7 @@
 
 ## 8. 手動対応（ユーザー実施）
 
-- [ ] 8.1 Azure Static Web Apps リソースを作成する（Azure Portal / CLI）
-- [ ] 8.2 SWA デプロイトークンを取得し、GitHub Secrets に `AZURE_SWA_API_TOKEN` として登録する
-- [ ] 8.3 GitHub Pages を有効にする（Settings → Pages → Source: GitHub Actions）
-- [ ] 8.4 GitHub Environments で `github-pages` environment を設定する（必要に応じて保護ルールを追加）
+- [x] 8.1 Azure Static Web Apps リソースを作成する（Azure Portal / CLI）
+- [x] 8.2 SWA デプロイトークンを取得し、GitHub Secrets に `AZURE_SWA_API_TOKEN` として登録する
+- [x] 8.3 GitHub Pages を有効にする（Settings → Pages → Source: GitHub Actions）
+- [x] 8.4 GitHub Environments で `github-pages` environment を設定する（必要に応じて保護ルールを追加）

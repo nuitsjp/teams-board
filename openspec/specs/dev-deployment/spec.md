@@ -1,90 +1,73 @@
 ## ADDED Requirements
 
+### Requirement: Development deployment uses shared application deployment workflow
+
+開発デプロイ機能は、productionデプロイと同一のアプリデプロイ実体を共有し、環境値とトリガー条件のみを切り替えて実行されなければならない（SHALL）。CIワークフロー内に開発デプロイ処理を直接定義してはならない（SHALL NOT）。
+
+#### Scenario: 開発/本番デプロイが共通実体で管理される
+
+- **WHEN** アプリデプロイワークフロー定義を確認する
+- **THEN** 開発デプロイと本番デプロイは同一ワークフロー実体内で管理され、環境値のみが分岐している
+
+#### Scenario: CI定義に開発デプロイ処理が混在しない
+
+- **WHEN** CIワークフロー定義を確認する
+- **THEN** 開発デプロイ環境（dev）へのデプロイジョブは定義されていない
+
+### Requirement: Development deployment reuses shared setup contract
+
+開発デプロイでビルド前セットアップを行う場合、Node.js、pnpm、uvの準備はCIと同じ共通セットアップ契約を再利用しなければならない（SHALL）。
+
+#### Scenario: 開発デプロイが共通セットアップを参照する
+
+- **WHEN** 開発デプロイワークフロー内のビルド前処理を確認する
+- **THEN** Node.js、pnpm、uvのセットアップは共通化された定義を利用している
+
+#### Scenario: 共通セットアップ変更が開発デプロイにも反映される
+
+- **WHEN** 共通セットアップ定義の更新を適用する
+- **THEN** 開発デプロイのビルド前セットアップにも同じ更新が反映される
+
+### Requirement: Development deployment requires successful CI
+
+開発デプロイワークフローは、対象refに対する `ci-workflow`（lint/test/build）が成功している場合のみ実行しなければならない（SHALL）。CIが失敗または未実行の場合、デプロイ処理を開始してはならない（SHALL NOT）。
+
+#### Scenario: CI成功時に開発デプロイが実行される
+
+- **WHEN** mainブランチ向けPull Requestの対象コミットに対する `ci-workflow` が成功している
+- **THEN** 開発デプロイワークフローはデプロイ処理を開始する
+
+#### Scenario: CI未成功時に開発デプロイが中断される
+
+- **WHEN** mainブランチ向けPull Requestの対象コミットに対する `ci-workflow` が失敗または未実行である
+- **THEN** 開発デプロイワークフローはデプロイ処理を開始せず、失敗として終了する
+
+## MODIFIED Requirements
+
 ### Requirement: Deployment triggers only on manual dispatch
 
-開発デプロイワークフローは、workflow_dispatchによる手動実行時のみ発火しなければならない（SHALL）。自動トリガー（push, pull_request等）を持ってはならない（SHALL NOT）。
+開発デプロイワークフローは、mainブランチ向けPull Requestの作成・更新時に自動実行されなければならない（SHALL）。`workflow_dispatch` のみを前提とする運用にしてはならない（SHALL NOT）。
 
-#### Scenario: 手動実行でデプロイが開始される
+#### Scenario: PR作成・更新時に開発デプロイが発火する
 
-- **WHEN** GitHub Actions UIから開発デプロイワークフローを手動実行する
-- **THEN** 開発デプロイワークフローが開始され、指定されたブランチからビルドとデプロイが実行される
+- **WHEN** mainブランチ向けPull Requestが作成または更新される
+- **THEN** 開発デプロイワークフローが自動的に開始される
 
-#### Scenario: pushイベントでデプロイが発火しない
+#### Scenario: pushイベントのみでは開発デプロイが発火しない
 
-- **WHEN** 任意のブランチにコミットがpushされる
-- **THEN** 開発デプロイワークフローは発火しない
-
-#### Scenario: PR作成時にデプロイが発火しない
-
-- **WHEN** Pull Requestが作成される
+- **WHEN** Pull Requestを伴わずにブランチへコミットがpushされる
 - **THEN** 開発デプロイワークフローは発火しない
 
 ### Requirement: Supports deployment from any branch
 
-開発デプロイワークフローは、任意のブランチからデプロイ可能でなければならない（SHALL）。mainブランチに限定してはならない（SHALL NOT）。
+開発デプロイワークフローは、mainブランチ向けPull Requestのソースとなる任意のブランチからデプロイ可能でなければならない（SHALL）。ソースブランチをmainのみに制限してはならない（SHALL NOT）。
 
-#### Scenario: feature branchから開発環境にデプロイできる
+#### Scenario: feature branchをソースにしたPRで開発デプロイできる
 
-- **WHEN** feature branchを指定して開発デプロイワークフローを手動実行する
-- **THEN** 指定されたfeature branchのコードがビルドされ、開発環境にデプロイされる
+- **WHEN** feature branchからmainへのPull Requestが作成される
+- **THEN** feature branchの内容が開発環境へデプロイされる
 
-#### Scenario: mainブランチから開発環境にデプロイできる
+#### Scenario: release branchをソースにしたPRで開発デプロイできる
 
-- **WHEN** mainブランチを指定して開発デプロイワークフローを手動実行する
-- **THEN** mainブランチのコードがビルドされ、開発環境にデプロイされる
-
-### Requirement: Deploys to development environment
-
-開発デプロイワークフローは、ビルド成果物をAzure Blob Storageの開発環境（dev）にデプロイしなければならない（SHALL）。本番環境にデプロイしてはならない（SHALL NOT）。
-
-#### Scenario: ビルド成果物が開発環境にデプロイされる
-
-- **WHEN** 開発デプロイワークフローが実行される
-- **THEN** Viteビルドで生成された `dist/` ディレクトリの内容がAzure Blob Storageのdev環境にアップロードされる
-
-#### Scenario: 環境変数がdev用に設定される
-
-- **WHEN** 開発デプロイワークフローが実行される
-- **THEN** デプロイ先環境は `dev` として識別され、開発用の設定が適用される
-
-#### Scenario: 本番環境には影響しない
-
-- **WHEN** 開発デプロイワークフローが実行される
-- **THEN** 本番環境（prod）のデータやファイルは一切変更されない
-
-### Requirement: Concurrency allows cancellation
-
-開発デプロイワークフローは、`deploy-dev` グループでconcurrency制御され、新しい実行時に古い実行をキャンセル可能でなければならない（SHALL）。
-
-#### Scenario: 新しい手動実行で古い実行がキャンセルされる
-
-- **WHEN** 開発デプロイが実行中に新しい手動実行が開始される
-- **THEN** 実行中の古いデプロイは自動的にキャンセルされ、新しいデプロイが開始される
-
-#### Scenario: 本番デプロイと干渉しない
-
-- **WHEN** 開発デプロイと本番デプロイが同時に実行される
-- **THEN** 両方のデプロイは互いに干渉せず、それぞれ独立して完了する
-
-### Requirement: Uses OIDC authentication
-
-開発デプロイワークフローは、Azure Blob Storageへの認証にOIDC（OpenID Connect）を使用しなければならない（SHALL）。SASトークンやアクセスキーを使用してはならない（SHALL NOT）。
-
-#### Scenario: OIDCでAzure認証が成功する
-
-- **WHEN** 開発デプロイワークフローが実行される
-- **THEN** GitHub ActionsのOIDCプロバイダーを使用してAzureに認証し、デプロイが成功する
-
-### Requirement: Provides extension point for E2E tests
-
-開発デプロイワークフローは、将来のE2Eテスト統合のための拡張ポイントをコメントで明示しなければならない（SHALL）。
-
-#### Scenario: E2Eテスト統合のコメントが存在する
-
-- **WHEN** 開発デプロイワークフローの定義を確認する
-- **THEN** E2Eテスト統合の拡張ポイントを示すコメントが含まれている
-
-#### Scenario: 拡張ポイントはデプロイ後に配置される
-
-- **WHEN** 開発デプロイワークフローの定義を確認する
-- **THEN** E2Eテスト拡張ポイントのコメントは、デプロイステップの後に配置されている
+- **WHEN** release branchからmainへのPull Requestが作成される
+- **THEN** release branchの内容が開発環境へデプロイされる

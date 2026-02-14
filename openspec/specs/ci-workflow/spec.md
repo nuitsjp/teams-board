@@ -1,95 +1,43 @@
 ## ADDED Requirements
 
-### Requirement: CI triggers on PR to main
+### Requirement: CI workflow has single responsibility
 
-CIワークフローは、mainブランチへのPull Request作成時および更新時に自動的に発火しなければならない（SHALL）。
+CIワークフローは品質検証ジョブのみを含まなければならない（SHALL）。デプロイ、プレビュー環境操作、環境クローズのような配信系ジョブを含んではならない（SHALL NOT）。
 
-#### Scenario: PR to mainでCIが発火する
+#### Scenario: CI定義に配信系ジョブが存在しない
 
-- **WHEN** mainブランチへのPull Requestが作成または更新される
-- **THEN** CIワークフローが自動的に開始され、test/lint/buildジョブが並列実行される
+- **WHEN** CIワークフロー定義を確認する
+- **THEN** lint/test/buildなどの品質検証ジョブのみが定義され、deploy系ジョブは存在しない
 
-#### Scenario: 他のブランチへのPRではCIが発火しない
+#### Scenario: PR向けCI実行で品質検証のみが実行される
 
-- **WHEN** main以外のブランチへのPull Requestが作成される
-- **THEN** CIワークフローは発火しない
+- **WHEN** mainブランチ向けPull RequestでCIワークフローが発火する
+- **THEN** 品質検証ジョブだけが実行され、デプロイ処理は実行されない
 
-### Requirement: CI triggers on push to main
+### Requirement: CI jobs reuse shared setup
 
-CIワークフローは、mainブランチへのpush時に自動的に発火しなければならない（SHALL）。
+CIワークフロー内でNode.js、pnpm、uvのセットアップを必要とするジョブは、共通化されたセットアップ手段を再利用しなければならない（SHALL）。ジョブごとに独立した重複セットアップ定義を持ってはならない（SHALL NOT）。
 
-#### Scenario: mainブランチへのpushでCIが発火する
+#### Scenario: 複数ジョブが同一のセットアップ定義を参照する
 
-- **WHEN** mainブランチにコミットがpushされる
-- **THEN** CIワークフローが自動的に開始され、test/lint/buildジョブが並列実行される
+- **WHEN** CIワークフロー内のlint/test/buildジョブ定義を確認する
+- **THEN** 各ジョブは同一の共通セットアップ定義を再利用している
 
-#### Scenario: feature branchへのpushでCIが発火しない（PRがない場合）
+#### Scenario: セットアップ更新が一箇所で反映される
 
-- **WHEN** feature branchにコミットがpushされるが、PRが存在しない
-- **THEN** CIワークフローは発火しない
+- **WHEN** 共通セットアップのNode.jsバージョンを更新する
+- **THEN** CIワークフロー内のすべての品質検証ジョブで同じ更新内容が適用される
 
-### Requirement: Path filters optimize CI execution
+### Requirement: CI result can be used as deployment gate
 
-CIワークフローは、コードや設定ファイルに変更があった場合のみ発火しなければならない（SHALL）。対象パスは `src/**`, `tests/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `.eslintrc.cjs`, `.github/workflows/ci.yml` とする。
+CIワークフローは、lint/test/buildジョブの総合結果をデプロイ可否判定に利用できる形で提供しなければならない（SHALL）。
 
-#### Scenario: コード変更時にCIが発火する
+#### Scenario: すべてのジョブ成功時にCI成功として判定される
 
-- **WHEN** `src/` ディレクトリ内のファイルを変更したPRが作成される
-- **THEN** CIワークフローが発火する
+- **WHEN** lint、test、buildの3ジョブがすべて成功する
+- **THEN** CIワークフローは成功と判定され、後続デプロイのゲート条件を満たす
 
-#### Scenario: テストコード変更時にCIが発火する
+#### Scenario: いずれかのジョブ失敗時にCI失敗として判定される
 
-- **WHEN** `tests/` または `e2e/` ディレクトリ内のファイルを変更したPRが作成される
-- **THEN** CIワークフローが発火する
-
-#### Scenario: 設定ファイル変更時にCIが発火する
-
-- **WHEN** `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `.eslintrc.cjs` のいずれかが変更されたPRが作成される
-- **THEN** CIワークフローが発火する
-
-#### Scenario: ドキュメントのみの変更時にCIが発火しない
-
-- **WHEN** `README.md` のみが変更されたPRが作成される
-- **THEN** CIワークフローは発火しない
-
-### Requirement: Jobs execute in parallel
-
-test/lint/buildの3つのジョブは、互いに独立して並列実行されなければならない（SHALL）。
-
-#### Scenario: 3ジョブが並列実行される
-
-- **WHEN** CIワークフローが開始される
-- **THEN** test, lint, buildの3ジョブが同時に開始され、互いを待たずに実行される
-
-#### Scenario: 1つのジョブが失敗しても他のジョブは継続する
-
-- **WHEN** testジョブが失敗する
-- **THEN** lintとbuildジョブは継続して実行され、それぞれの結果を報告する
-
-### Requirement: Concurrency controls cancel outdated runs
-
-CIワークフローは、PR単位で実行をグループ化し、同じPRに新しいpushがあった場合は古い実行をキャンセルしなければならない（SHALL）。
-
-#### Scenario: 新しいpushで古いCI実行がキャンセルされる
-
-- **WHEN** PR #123に新しいコミットがpushされ、前回のCI実行がまだ進行中である
-- **THEN** 前回のCI実行は自動的にキャンセルされ、新しいCI実行が開始される
-
-#### Scenario: 異なるPRの実行は干渉しない
-
-- **WHEN** PR #123とPR #456の両方でCIが実行されている
-- **THEN** 両方のCI実行は互いに干渉せず、並行して完了する
-
-#### Scenario: mainブランチへのpushは並列実行される
-
-- **WHEN** mainブランチに連続して2つのコミットがpushされる
-- **THEN** 両方のCI実行は並行して実行され、古い実行はキャンセルされない
-
-### Requirement: CI workflow file is self-triggering
-
-CIワークフロー定義ファイル（`.github/workflows/ci.yml`）自体が変更された場合、CIワークフローは発火しなければならない（SHALL）。
-
-#### Scenario: ci.yml変更時にCIが発火する
-
-- **WHEN** `.github/workflows/ci.yml` が変更されたPRが作成される
-- **THEN** CIワークフローが発火し、変更されたワークフロー定義で実行される
+- **WHEN** lint、test、buildのいずれか1つ以上が失敗する
+- **THEN** CIワークフローは失敗と判定され、後続デプロイのゲート条件を満たさない
