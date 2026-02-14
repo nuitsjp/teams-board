@@ -1,17 +1,33 @@
+import { lazy, Suspense } from 'react';
 import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { DashboardPage } from './pages/DashboardPage.jsx';
 import { MemberDetailPage } from './pages/MemberDetailPage.jsx';
 import { GroupDetailPage } from './pages/GroupDetailPage.jsx';
-import { AdminPage } from './pages/AdminPage.jsx';
 import { BookOpen, Settings } from 'lucide-react';
+
+const loadAdminPage = () => import('./pages/AdminPage.jsx');
+const LazyAdminPage = lazy(loadAdminPage);
+
+const adminLoadingFallback = (
+  <div className="rounded-lg border border-border-light bg-surface px-4 py-3 text-sm text-text-muted">
+    管理画面を読み込み中...
+  </div>
+);
 
 // ルート定義
 const router = createHashRouter([
   { path: '/', element: <DashboardPage /> },
   { path: '/members/:memberId', element: <MemberDetailPage /> },
   { path: '/groups/:groupId', element: <GroupDetailPage /> },
-  { path: '/admin', element: <AdminPage /> },
+  {
+    path: '/admin',
+    element: (
+      <Suspense fallback={adminLoadingFallback}>
+        <LazyAdminPage />
+      </Suspense>
+    ),
+  },
   { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
@@ -43,6 +59,8 @@ function AppLayout() {
           {isAdmin && (
             <a
               href="#/admin"
+              onMouseEnter={loadAdminPage}
+              onFocus={loadAdminPage}
               className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary-600 transition-colors"
             >
               <Settings className="w-4 h-4" />
