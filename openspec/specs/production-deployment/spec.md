@@ -1,100 +1,59 @@
 ## ADDED Requirements
 
-### Requirement: Deployment triggers only on push to main
+### Requirement: Production deployment uses shared application deployment workflow
 
-本番デプロイワークフローは、mainブランチへのpush時のみ発火しなければならない（SHALL）。Pull Request時やfeature branchへのpush時には発火してはならない（SHALL NOT）。
+本番デプロイ機能は、devデプロイと同一のアプリデプロイ実体を共有し、環境値とトリガー条件のみを切り替えて実行されなければならない（SHALL）。CIワークフロー内に本番デプロイ処理を直接定義してはならない（SHALL NOT）。
 
-#### Scenario: mainブランチへのpushでデプロイが発火する
+#### Scenario: 開発/本番デプロイが共通実体で管理される
 
-- **WHEN** mainブランチにコミットがpushされる
-- **THEN** 本番デプロイワークフローが自動的に開始される
+- **WHEN** アプリデプロイワークフロー定義を確認する
+- **THEN** 本番デプロイと開発デプロイは同一ワークフロー実体内で管理され、環境値のみが分岐している
 
-#### Scenario: PRマージ時にデプロイが発火する
+#### Scenario: CI定義に本番デプロイ処理が混在しない
 
-- **WHEN** Pull Requestがmainブランチにマージされる
-- **THEN** 本番デプロイワークフローが自動的に開始される
+- **WHEN** CIワークフロー定義を確認する
+- **THEN** 本番環境（prod）へのデプロイジョブは定義されていない
 
-#### Scenario: PR作成時にデプロイが発火しない
+### Requirement: Production deployment reuses shared setup contract
 
-- **WHEN** mainブランチへのPull Requestが作成される
-- **THEN** 本番デプロイワークフローは発火しない
+本番デプロイでビルドまたは成果物検証を行う場合、Node.js、pnpm、uvの準備はCIと同じ共通セットアップ契約を再利用しなければならない（SHALL）。
 
-#### Scenario: feature branchへのpushでデプロイが発火しない
+#### Scenario: 本番デプロイが共通セットアップを参照する
 
-- **WHEN** feature branchにコミットがpushされる
-- **THEN** 本番デプロイワークフローは発火しない
+- **WHEN** 本番デプロイワークフロー内でビルド関連ステップを確認する
+- **THEN** Node.js、pnpm、uvのセットアップは共通化された定義を利用している
 
-### Requirement: Path filters prevent unnecessary deployments
+#### Scenario: 共通セットアップ更新が本番デプロイにも反映される
 
-本番デプロイワークフローは、コードや設定ファイルに変更があった場合のみ発火しなければならない（SHALL）。対象パスは `src/**`, `tests/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.js`, `.github/workflows/deploy.yml` とする。
+- **WHEN** 共通セットアップ定義の更新を適用する
+- **THEN** 本番デプロイのビルド関連ステップにも同じ更新が反映される
 
-#### Scenario: コード変更時にデプロイが発火する
+### Requirement: Production deployment requires successful CI
 
-- **WHEN** `src/` ディレクトリ内のファイルが変更されてmainブランチにマージされる
-- **THEN** 本番デプロイワークフローが発火する
+本番デプロイワークフローは、同一コミットに対する `ci-workflow`（lint/test/build）が成功している場合のみデプロイ処理を開始しなければならない（SHALL）。CIが失敗または未完了の場合、デプロイ処理を開始してはならない（SHALL NOT）。
 
-#### Scenario: ドキュメントのみの変更時にデプロイが発火しない
+#### Scenario: CI成功後に本番デプロイが開始される
 
-- **WHEN** `README.md` のみが変更されてmainブランチにマージされる
-- **THEN** 本番デプロイワークフローは発火しない
+- **WHEN** mainブランチ上の対象コミットに対する `ci-workflow` が成功している
+- **THEN** 本番デプロイワークフローはデプロイ処理を開始する
 
-#### Scenario: ワークフロー定義変更時にデプロイが発火する
+#### Scenario: CI未成功時に本番デプロイが中断される
 
-- **WHEN** `.github/workflows/deploy.yml` が変更されてmainブランチにマージされる
-- **THEN** 本番デプロイワークフローが発火する
+- **WHEN** mainブランチ上の対象コミットに対する `ci-workflow` が失敗または未完了である
+- **THEN** 本番デプロイワークフローはデプロイ処理を開始せず、失敗として終了する
 
-### Requirement: Deploys to production environment
-
-本番デプロイワークフローは、ビルド成果物をAzure Blob Storageの本番環境（prod）にデプロイしなければならない（SHALL）。
-
-#### Scenario: ビルド成果物が本番環境にデプロイされる
-
-- **WHEN** 本番デプロイワークフローが実行される
-- **THEN** Viteビルドで生成された `dist/` ディレクトリの内容がAzure Blob Storageのprod環境にアップロードされる
-
-#### Scenario: 環境変数がprod用に設定される
-
-- **WHEN** 本番デプロイワークフローが実行される
-- **THEN** デプロイ先環境は `prod` として識別され、本番用の設定が適用される
-
-### Requirement: Concurrency ensures deployment integrity
-
-本番デプロイワークフローは、`deploy-prod` グループでconcurrency制御され、実行中のデプロイはキャンセルされてはならない（SHALL NOT）。
-
-#### Scenario: 連続したpushでデプロイが順次実行される
-
-- **WHEN** mainブランチに短時間で2つのコミットが連続してpushされる
-- **THEN** 最初のデプロイが完了するまで2つ目のデプロイは待機し、両方のデプロイが順次完了する
-
-#### Scenario: デプロイ実行中に新しいpushがあってもキャンセルされない
-
-- **WHEN** 本番デプロイが実行中にmainブランチへ新しいコミットがpushされる
-- **THEN** 実行中のデプロイは継続して完了し、新しいデプロイはその後に開始される
-
-### Requirement: Uses OIDC authentication
-
-本番デプロイワークフローは、Azure Blob Storageへの認証にOIDC（OpenID Connect）を使用しなければならない（SHALL）。SASトークンやアクセスキーを使用してはならない（SHALL NOT）。
-
-#### Scenario: OIDCでAzure認証が成功する
-
-- **WHEN** 本番デプロイワークフローが実行される
-- **THEN** GitHub ActionsのOIDCプロバイダーを使用してAzureに認証し、デプロイが成功する
-
-#### Scenario: SASトークンは使用されない
-
-- **WHEN** 本番デプロイワークフローが実行される
-- **THEN** デプロイプロセスでSASトークンやストレージアカウントキーは参照されない
+## MODIFIED Requirements
 
 ### Requirement: No test or lint jobs in deployment workflow
 
-本番デプロイワークフローは、test/lintジョブを含んではならない（SHALL NOT）。これらはCIワークフローの責務である。
+本番デプロイワークフローは、test/lintジョブを含んではならない（SHALL NOT）。これらはCIワークフローの責務であり、デプロイ前提としてCI成功を参照しなければならない（SHALL）。
 
 #### Scenario: デプロイワークフローにtest/lintジョブが存在しない
 
 - **WHEN** 本番デプロイワークフローの定義を確認する
 - **THEN** test, lintジョブは定義されておらず、デプロイジョブのみが存在する
 
-#### Scenario: CIの成功を待たずにデプロイが開始される
+#### Scenario: CI成功後にデプロイが開始される
 
 - **WHEN** mainブランチへのpushでCIと本番デプロイの両方が発火する
-- **THEN** 本番デプロイワークフローはCIワークフローの完了を待たずに開始される（並列実行）
+- **THEN** 本番デプロイワークフローは対象コミットのCI成功を確認した後に開始される
