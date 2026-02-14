@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useFileQueue } from '../../../src/hooks/useFileQueue.js';
 
 // テスト用のモック CsvTransformer
@@ -63,7 +63,7 @@ describe('useFileQueue — SELECT_GROUP', () => {
         });
 
         // パース完了を待つ
-        await vi.waitFor(() => {
+        await waitFor(() => {
             expect(result.current.queue[0].status).toBe('ready');
         });
 
@@ -96,7 +96,7 @@ describe('useFileQueue — SELECT_GROUP', () => {
             result.current.addFiles([file]);
         });
 
-        await vi.waitFor(() => {
+        await waitFor(() => {
             expect(result.current.queue[0].status).toBe('ready');
         });
 
@@ -122,7 +122,7 @@ describe('useFileQueue — MISSING_GROUP', () => {
             result.current.addFiles([file]);
         });
 
-        await vi.waitFor(() => {
+        await waitFor(() => {
             expect(result.current.queue[0].status).toBe('missing_group');
         });
 
@@ -139,7 +139,7 @@ describe('useFileQueue — MISSING_GROUP', () => {
             result.current.addFiles([file]);
         });
 
-        await vi.waitFor(() => {
+        await waitFor(() => {
             expect(result.current.queue[0].status).toBe('missing_group');
         });
 
