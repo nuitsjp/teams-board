@@ -52,8 +52,13 @@ export function DashboardPage() {
 
   const { groups, members } = data;
 
-  const totalSessions = groups.reduce((acc, g) => acc + g.sessionIds.length, 0);
-  const totalDuration = groups.reduce((acc, g) => acc + g.totalDurationSeconds, 0);
+  const { totalSessions, totalDuration } = groups.reduce(
+    (acc, g) => ({
+      totalSessions: acc.totalSessions + g.sessionIds.length,
+      totalDuration: acc.totalDuration + g.totalDurationSeconds,
+    }),
+    { totalSessions: 0, totalDuration: 0 }
+  );
 
   return (
     <div className="space-y-8">

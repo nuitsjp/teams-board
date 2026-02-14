@@ -54,7 +54,7 @@ export function MemberList({ members }) {
     }, [members, searchQuery]);
 
     const sortedMembers = useMemo(
-        () => [...filteredMembers].sort((a, b) => a.name.localeCompare(b.name, 'ja')),
+        () => filteredMembers.toSorted((a, b) => a.name.localeCompare(b.name, 'ja')),
         [filteredMembers]
     );
 

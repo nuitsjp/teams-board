@@ -23,7 +23,7 @@
     "mkdocs:build": "uv run mkdocs build",
     "mkdocs:build:svg": "node scripts/mkdocs-svg.mjs",
     "mkdocs:pdf": "node scripts/mkdocs-pdf.mjs",
-    "rulesync:generate": "rulesync generate --targets claudecode,agentsskills --features skills",
+    "rulesync:generate": "rulesync generate --targets claudecode,agentsskills,copilot --features skills",
     "rulesync:ignore": "rulesync gitignore"
   },
   "devDependencies": {
@@ -58,8 +58,7 @@
     "papaparse": "^5.5.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.0",
-    "recharts": "^3.7.0"
+    "react-router-dom": "^7.13.0"
   },
   "packageManager": "pnpm@10.27.0"
 }

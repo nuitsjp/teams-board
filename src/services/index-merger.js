@@ -28,11 +28,13 @@ export class IndexMerger {
       (sum, a) => sum + a.durationSeconds,
       0
     );
-    const groups = currentIndex.groups.map((g) => ({
-      ...g,
-      sessionIds: [...g.sessionIds],
-    }));
-    const existingGroup = groups.find((g) => g.id === newSession.groupId);
+    const groupMap = new Map();
+    const groups = currentIndex.groups.map((g) => {
+      const copy = { ...g, sessionIds: [...g.sessionIds] };
+      groupMap.set(copy.id, copy);
+      return copy;
+    });
+    const existingGroup = groupMap.get(newSession.groupId);
     if (existingGroup) {
       existingGroup.totalDurationSeconds += sessionTotalDuration;
       existingGroup.sessionIds.push(newSession.sessionId);
@@ -46,12 +48,14 @@ export class IndexMerger {
     }
 
     // MemberSummary の更新
-    const members = currentIndex.members.map((m) => ({
-      ...m,
-      sessionIds: [...m.sessionIds],
-    }));
+    const memberMap = new Map();
+    const members = currentIndex.members.map((m) => {
+      const copy = { ...m, sessionIds: [...m.sessionIds] };
+      memberMap.set(copy.id, copy);
+      return copy;
+    });
     for (const attendance of newSession.attendances) {
-      const existingMember = members.find((m) => m.id === attendance.memberId);
+      const existingMember = memberMap.get(attendance.memberId);
       if (existingMember) {
         existingMember.totalDurationSeconds += attendance.durationSeconds;
         existingMember.sessionIds.push(newSession.sessionId);
