@@ -15,8 +15,13 @@ export class IndexEditor {
     }
 
     // グループを検索
-    const groups = currentIndex.groups.map((g) => ({ ...g, sessionIds: [...g.sessionIds] }));
-    const targetGroup = groups.find((g) => g.id === groupId);
+    const groupMap = new Map();
+    const groups = currentIndex.groups.map((g) => {
+      const copy = { ...g, sessionIds: [...g.sessionIds] };
+      groupMap.set(copy.id, copy);
+      return copy;
+    });
+    const targetGroup = groupMap.get(groupId);
 
     if (!targetGroup) {
       return { index: currentIndex, error: `グループID ${groupId} が見つかりません` };
