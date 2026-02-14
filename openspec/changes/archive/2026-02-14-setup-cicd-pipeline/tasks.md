@@ -1,19 +1,19 @@
 ## 1. Azure OIDC 認証の設定
 
-- [ ] 1.1 Azure Portal でアプリケーション登録を作成
-- [ ] 1.2 フェデレーション資格情報を追加（GitHub リポジトリ、main ブランチ用と Pull Request 用）
-- [ ] 1.3 本番環境のストレージアカウントに `Storage Blob Data Contributor` ロールを付与
-- [ ] 1.4 開発環境のストレージアカウントに `Storage Blob Data Contributor` ロールを付与
+- [x] 1.1 Azure Portal でアプリケーション登録を作成
+- [x] 1.2 フェデレーション資格情報を追加（GitHub リポジトリ、main ブランチ用と Pull Request 用）
+- [x] 1.3 本番環境のストレージアカウントに `Storage Blob Data Contributor` ロールを付与
+- [x] 1.4 開発環境のストレージアカウントに `Storage Blob Data Contributor` ロールを付与
 
 ## 2. GitHub Secrets の設定
 
-- [ ] 2.1 `AZURE_CLIENT_ID` を GitHub Secrets に追加
-- [ ] 2.2 `AZURE_TENANT_ID` を GitHub Secrets に追加
-- [ ] 2.3 `AZURE_SUBSCRIPTION_ID` を GitHub Secrets に追加
-- [ ] 2.4 `AZURE_STORAGE_ACCOUNT_PROD` を GitHub Secrets に追加
-- [ ] 2.5 `AZURE_STORAGE_ACCOUNT_DEV` を GitHub Secrets に追加
-- [ ] 2.6 `VITE_BLOB_BASE_URL_PROD` を GitHub Secrets に追加
-- [ ] 2.7 `VITE_BLOB_BASE_URL_DEV` を GitHub Secrets に追加
+- [x] 2.1 `AZURE_CLIENT_ID` を GitHub Secrets に追加
+- [x] 2.2 `AZURE_TENANT_ID` を GitHub Secrets に追加
+- [x] 2.3 `AZURE_SUBSCRIPTION_ID` を GitHub Secrets に追加
+- [x] 2.4 `AZURE_STORAGE_ACCOUNT_PROD` を GitHub Secrets に追加
+- [x] 2.5 `AZURE_STORAGE_ACCOUNT_DEV` を GitHub Secrets に追加
+- [x] 2.6 `VITE_BLOB_BASE_URL_PROD` を GitHub Secrets に追加
+- [x] 2.7 `VITE_BLOB_BASE_URL_DEV` を GitHub Secrets に追加
 
 ## 3. ワークフローファイルの基本構造作成
 
@@ -77,13 +77,13 @@
 
 ## 9. テストと検証
 
-- [ ] 9.1 テスト用ブランチで PR を作成し、開発環境デプロイワークフローが実行されることを確認
-- [ ] 9.2 Lint、テスト、ビルドが成功することを確認
-- [ ] 9.3 開発環境へのデプロイが成功することを確認
-- [ ] 9.4 E2E テストが実行され成功することを確認
-- [ ] 9.5 PR を main にマージし、本番環境デプロイワークフローが実行されることを確認
-- [ ] 9.6 本番環境へのデプロイが成功することを確認
-- [ ] 9.7 本番環境で E2E テストが実行されないことを確認
+- [x] 9.1 テスト用ブランチで PR を作成し、開発環境デプロイワークフローが実行されることを確認
+- [x] 9.2 Lint、テスト、ビルドが成功することを確認
+- [x] 9.3 開発環境へのデプロイが成功することを確認
+- [x] 9.4 E2E テストが実行され成功することを確認
+- [x] 9.5 PR を main にマージし、本番環境デプロイワークフローが実行されることを確認
+- [x] 9.6 本番環境へのデプロイが成功することを確認
+- [x] 9.7 本番環境で E2E テストが実行されないことを確認
 
 ## 10. ドキュメント作成
 
