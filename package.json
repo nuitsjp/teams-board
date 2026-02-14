@@ -22,7 +22,9 @@
     "mkdocs": "uv run mkdocs serve --livereload",
     "mkdocs:build": "uv run mkdocs build",
     "mkdocs:build:svg": "node scripts/mkdocs-svg.mjs",
-    "mkdocs:pdf": "node scripts/mkdocs-pdf.mjs"
+    "mkdocs:pdf": "node scripts/mkdocs-pdf.mjs",
+    "rulesync:generate": "rulesync generate --targets claudecode,agentsskills --features skills",
+    "rulesync:ignore": "rulesync gitignore"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
