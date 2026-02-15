@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 import { getIndexFixture, registerIndexRoute } from './helpers/route-fixtures.js';
+import { navigateTo } from './helpers/navigation.js';
 
 const fetchIndex = async () => getIndexFixture();
 
@@ -10,7 +11,10 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('管理者パネル — グループ名編集', () => {
   test('グループ管理セクションが表示されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token#/admin');
+    await navigateTo(page, '/?token=test-sas-token#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションの見出しが表示されること
     await expect(page.getByRole('heading', { name: 'グループ管理' })).toBeVisible();
@@ -22,7 +26,10 @@ test.describe('管理者パネル — グループ名編集', () => {
   });
 
   test('グループ一覧が表示されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token#/admin');
+    await navigateTo(page, '/?token=test-sas-token#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションまでスクロール
     await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
@@ -41,7 +48,10 @@ test.describe('管理者パネル — グループ名編集', () => {
   });
 
   test('グループ名の編集ボタンが表示されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token#/admin');
+    await navigateTo(page, '/?token=test-sas-token#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションまでスクロール
     await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
@@ -52,7 +62,10 @@ test.describe('管理者パネル — グループ名編集', () => {
   });
 
   test('編集ボタンをクリックすると入力フィールドが表示されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token#/admin');
+    await navigateTo(page, '/?token=test-sas-token#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションまでスクロール
     await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
@@ -72,7 +85,10 @@ test.describe('管理者パネル — グループ名編集', () => {
   });
 
   test('キャンセルボタンをクリックすると編集モードが解除されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token#/admin');
+    await navigateTo(page, '/?token=test-sas-token#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションまでスクロール
     await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
@@ -93,7 +109,10 @@ test.describe('管理者パネル — グループ名編集', () => {
   });
 
   test('Escapeキーで編集モードが解除されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token#/admin');
+    await navigateTo(page, '/?token=test-sas-token#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションまでスクロール
     await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
@@ -114,7 +133,10 @@ test.describe('管理者パネル — グループ名編集', () => {
   });
 
   test('空文字での保存を試みるとエラーメッセージが表示されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token#/admin');
+    await navigateTo(page, '/?token=test-sas-token#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションまでスクロール
     await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();

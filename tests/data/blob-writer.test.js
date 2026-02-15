@@ -77,6 +77,38 @@ describe('BlobWriter', () => {
       expect(putCalls[0].path).toContain('data/items/');
       expect(putCalls[1].path).toContain('data/index.json');
     });
+
+    it('itemsのPUTが並列実行されること', async () => {
+      const resolvers = new Map();
+      mockBlobStorage.write.mockImplementation((path, content, contentType) => {
+        putCalls.push({ path, content, contentType });
+        if (path === 'data/index.json') {
+          return Promise.resolve({ path, success: true });
+        }
+        return new Promise((resolve) => {
+          resolvers.set(path, resolve);
+        });
+      });
+
+      const executePromise = writer.executeWriteSequence({
+        newItems: [
+          { path: 'data/items/a.json', content: '{}', contentType: 'application/json' },
+          { path: 'data/items/b.json', content: '{}', contentType: 'application/json' },
+        ],
+        indexUpdater: (idx) => idx,
+      });
+
+      await Promise.resolve();
+
+      expect(mockBlobStorage.write).toHaveBeenCalledTimes(2);
+      expect(mockIndexFetcher.fetch).not.toHaveBeenCalled();
+
+      resolvers.get('data/items/a.json')({ path: 'data/items/a.json', success: true });
+      resolvers.get('data/items/b.json')({ path: 'data/items/b.json', success: true });
+
+      await executePromise;
+      expect(mockIndexFetcher.fetch).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('index更新', () => {
@@ -96,7 +128,32 @@ describe('BlobWriter', () => {
       const updater = vi.fn((idx) => ({ ...idx, updatedAt: '2026-02-06' }));
       await writer.executeWriteSequence({ newItems: [], indexUpdater: updater });
 
-      expect(updater).toHaveBeenCalledWith(currentIndex);
+      expect(updater).toHaveBeenCalledWith(currentIndex, []);
+    });
+
+    it('indexUpdaterにはnewItemsの書き込み結果が渡されること', async () => {
+      const currentIndex = { items: [{ id: 'old' }], updatedAt: '2026-01-01' };
+      mockIndexFetcher.fetch.mockResolvedValue({ ok: true, data: currentIndex });
+
+      const updater = vi.fn((idx) => idx);
+      await writer.executeWriteSequence({
+        newItems: [{ path: 'data/items/new-1.json', content: '{}', contentType: 'application/json' }],
+        indexUpdater: updater,
+      });
+
+      expect(updater).toHaveBeenCalledWith(currentIndex, [
+        expect.objectContaining({ path: 'data/items/new-1.json', success: true }),
+      ]);
+    });
+
+    it('indexUpdaterがnullを返した場合はindex.jsonのPUTをスキップすること', async () => {
+      await writer.executeWriteSequence({
+        newItems: [{ path: 'data/items/new-1.json', content: '{}', contentType: 'application/json' }],
+        indexUpdater: () => null,
+      });
+
+      const indexPuts = putCalls.filter((c) => c.path.includes('data/index.json'));
+      expect(indexPuts).toHaveLength(0);
     });
 
     it('最新index取得失敗時に書き込みシーケンス全体が中断されること', async () => {
@@ -147,6 +204,24 @@ describe('BlobWriter', () => {
       const failed = result.results.find((r) => !r.success);
       expect(failed).toBeDefined();
       expect(failed.path).toContain('fail.json');
+    });
+
+    it('onItemCompleteがnewItemsごとに呼ばれること', async () => {
+      const onItemComplete = vi.fn();
+      await writer.executeWriteSequence({
+        newItems: [
+          { path: 'data/items/a.json', content: '{}', contentType: 'application/json' },
+          { path: 'data/items/b.json', content: '{}', contentType: 'application/json' },
+        ],
+        indexUpdater: () => null,
+        onItemComplete,
+      });
+
+      expect(onItemComplete).toHaveBeenCalledTimes(2);
+      expect(onItemComplete).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'data/items/a.json', success: true }),
+        expect.objectContaining({ path: 'data/items/a.json' })
+      );
     });
   });
 

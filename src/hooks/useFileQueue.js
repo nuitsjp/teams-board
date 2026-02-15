@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useEffect, useMemo } from 'react';
+import { useReducer, useCallback, useEffect, useMemo, useRef } from 'react';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -176,6 +176,9 @@ export function useFileQueue(csvTransformer) {
     existingSessionIds: new Set(),
   });
 
+  const existingSessionIdsRef = useRef(state.existingSessionIds);
+  existingSessionIdsRef.current = state.existingSessionIds;
+
   const parsePendingItem = useCallback(
     async (item) => {
       const error = validateFile(item.file);
@@ -199,13 +202,13 @@ export function useFileQueue(csvTransformer) {
       }
 
       const sessionId = result.sessionRecord.id;
-      if (state.existingSessionIds.has(sessionId)) {
+      if (existingSessionIdsRef.current.has(sessionId)) {
         dispatch({ type: 'DUPLICATE_DETECTED', payload: { id: item.id, result } });
       } else {
         dispatch({ type: 'VALIDATE_SUCCESS', payload: { id: item.id, result } });
       }
     },
-    [csvTransformer, state.existingSessionIds]
+    [csvTransformer]
   );
 
   // pending状態のアイテムを自動パース
