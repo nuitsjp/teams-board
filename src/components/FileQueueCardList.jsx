@@ -10,7 +10,7 @@ export function FileQueueCardList({ queue, groups = [], onRemove, onApproveDupli
   if (queue.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {queue.map((item) => (
         <FileQueueCard
           key={item.id}

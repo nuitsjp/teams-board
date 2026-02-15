@@ -91,7 +91,7 @@ export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], on
 
   return (
     <div
-      className={`bg-surface border border-border-light rounded-lg overflow-hidden border-l-4 ${getBorderColorClass(item.status)} animate-[fadeIn_0.3s_ease]`}
+      className={`card-base overflow-hidden border-l-4 ${getBorderColorClass(item.status)} animate-scale-in`}
       data-file-id={item.id}
     >
       {/* ファイルメタ行 */}
@@ -208,9 +208,9 @@ export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], on
                 </thead>
                 <tbody className="divide-y divide-border-light">
                   {mergeInput.attendances.map((a, i) => (
-                    <tr key={i}>
+                    <tr key={i} className="hover:bg-surface-muted transition-colors">
                       <td className="py-2 px-3 text-text-primary">{a.memberName}</td>
-                      <td className="py-2 px-3 text-text-secondary">
+                      <td className="py-2 px-3 text-text-secondary tabular-nums">
                         {formatDuration(a.durationSeconds)}
                       </td>
                     </tr>

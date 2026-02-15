@@ -77,14 +77,14 @@ export function GroupNameEditor({ groupId, initialName, onSave, disabled = false
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 px-3 py-2 border border-border-light rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="flex-1 px-3 py-2 border border-border-light rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-500"
           placeholder="グループ名を入力"
           autoFocus
         />
         <button
           onClick={handleSave}
           disabled={disabled}
-          className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="保存"
         >
           <Save className="w-4 h-4" />
@@ -92,7 +92,7 @@ export function GroupNameEditor({ groupId, initialName, onSave, disabled = false
         <button
           onClick={handleCancel}
           disabled={disabled}
-          className="p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="キャンセル"
         >
           <X className="w-4 h-4" />

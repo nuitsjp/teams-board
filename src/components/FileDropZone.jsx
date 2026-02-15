@@ -20,7 +20,7 @@ export function FileDropZone({ onFilesAdded, disabled, hasFiles }) {
     if (dragoverRef.current) return;
     // disabledの最新値を参照
     if (disabledRef.current) return;
-    
+
     dragoverRef.current = true;
     setDragover(true);
   }, []);
@@ -61,10 +61,10 @@ export function FileDropZone({ onFilesAdded, disabled, hasFiles }) {
   return (
     <div
       className={[
-        'border-2 border-dashed rounded-lg text-center transition-all',
+        'border-2 border-dashed rounded-2xl text-center transition-all',
         hasFiles ? 'py-3 px-4 text-sm' : 'py-8 px-6',
         dragover
-          ? 'border-primary-500 text-primary-600 bg-primary-50'
+          ? 'border-primary-500 text-primary-600 bg-primary-50 scale-[1.01]'
           : 'border-border text-text-muted hover:border-primary-300',
       ].join(' ')}
       onDragOver={handleDragOver}
@@ -82,7 +82,7 @@ export function FileDropZone({ onFilesAdded, disabled, hasFiles }) {
         multiple
         disabled={disabled}
         onChange={handleFileChange}
-        className="mt-2 text-sm file:mr-3 file:py-1.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 file:cursor-pointer"
+        className="mt-2 text-sm file:mr-3 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 file:cursor-pointer file:transition-colors"
       />
     </div>
   );

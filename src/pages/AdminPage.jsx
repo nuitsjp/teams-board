@@ -295,14 +295,14 @@ export function AdminPage() {
       {/* 戻るボタン */}
       <button
         onClick={() => navigate('/')}
-        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         ダッシュボードへ戻る
       </button>
 
       <div>
-        <h2 className="text-xl font-bold text-text-primary">管理者パネル</h2>
+        <h2 className="text-xl font-bold text-text-primary tracking-tight">管理者パネル</h2>
         <p className="text-sm text-text-muted mt-1">CSVインポート・プレビュー・一括保存</p>
       </div>
 
@@ -327,7 +327,7 @@ export function AdminPage() {
         <div className="flex items-center gap-3">
           {readyItems.length > 0 && (
             <button
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl shadow-sm hover:bg-primary-700 transition-colors text-sm font-medium"
               onClick={handleBulkSave}
             >
               <Upload className="w-4 h-4" />
@@ -337,7 +337,7 @@ export function AdminPage() {
 
           {failedItems.length > 0 && (
             <button
-              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-100 text-accent-600 border border-accent-300 rounded-lg hover:bg-accent-200 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-100 text-accent-600 border border-accent-300 rounded-xl hover:bg-accent-200 transition-colors text-sm font-medium"
               onClick={handleRetry}
             >
               <RotateCcw className="w-4 h-4" />
@@ -350,7 +350,7 @@ export function AdminPage() {
       {/* グループ管理セクション */}
       <div className="mt-8 pt-8 border-t border-border-light">
         <div className="mb-4">
-          <h3 className="text-lg font-bold text-text-primary">グループ管理</h3>
+          <h3 className="text-lg font-bold text-text-primary tracking-tight">グループ管理</h3>
           <p className="text-sm text-text-muted mt-1">
             グループ名を編集できます（グループIDは変更されません）
           </p>
@@ -358,7 +358,7 @@ export function AdminPage() {
 
         {groupMessage.text && (
           <div
-            className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+            className={`mb-4 p-3 rounded-xl flex items-center gap-2 animate-scale-in ${
               groupMessage.type === 'success'
                 ? 'bg-green-50 text-green-800'
                 : 'bg-red-50 text-red-800'
@@ -376,9 +376,9 @@ export function AdminPage() {
         {groups.length === 0 ? (
           <p className="text-sm text-text-muted">グループがありません</p>
         ) : (
-          <div className="bg-surface rounded-xl border border-border-light overflow-hidden">
+          <div className="card-base overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-surface-muted">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                     グループID
@@ -396,7 +396,7 @@ export function AdminPage() {
               </thead>
               <tbody className="divide-y divide-border-light">
                 {groups.map((group) => (
-                  <tr key={group.id}>
+                  <tr key={group.id} className="hover:bg-surface-muted transition-colors">
                     <td className="px-4 py-3 text-sm text-text-muted font-mono">{group.id}</td>
                     <td className="px-4 py-3">
                       <GroupNameEditor
@@ -406,11 +406,11 @@ export function AdminPage() {
                         disabled={savingGroupId !== null}
                       />
                     </td>
-                    <td className="px-4 py-3 text-sm text-text-primary text-right">
+                    <td className="px-4 py-3 text-sm text-text-primary text-right tabular-nums">
                       {Math.floor(group.totalDurationSeconds / 3600)}時間
                       {Math.floor((group.totalDurationSeconds % 3600) / 60)}分
                     </td>
-                    <td className="px-4 py-3 text-sm text-text-primary text-right">
+                    <td className="px-4 py-3 text-sm text-text-primary text-right tabular-nums">
                       {group.sessionIds.length}件
                     </td>
                   </tr>

@@ -3,12 +3,13 @@ import { formatDuration } from '../utils/format-duration';
 import { Users, Clock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const GroupRow = memo(function GroupRow({ group, onNavigate }) {
+const GroupRow = memo(function GroupRow({ group, onNavigate, index }) {
     return (
         <div
             data-testid="group-row"
             onClick={() => onNavigate(`/groups/${group.id}`)}
-            className="p-5 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group"
+            className="p-5 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group animate-fade-in-up"
+            style={{ animationDelay: `${index * 60}ms` }}
         >
             <div>
                 <h3 className="font-semibold text-text-primary mb-2">{group.name}</h3>
@@ -25,7 +26,7 @@ const GroupRow = memo(function GroupRow({ group, onNavigate }) {
                     </span>
                 </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-primary-600 transition-colors" />
+            <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-primary-600 group-hover:translate-x-0.5 transition-all" />
         </div>
     );
 });
@@ -34,16 +35,16 @@ export function GroupList({ groups }) {
     const navigate = useNavigate();
 
     return (
-        <div className="bg-surface rounded-xl border border-border-light overflow-hidden">
-            <div className="p-6 border-b border-border-light bg-surface-muted">
+        <div className="card-base overflow-hidden">
+            <div className="p-6 border-b border-border-light">
                 <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
                     <Users className="w-5 h-5 text-primary-600" />
                     グループ
                 </h2>
             </div>
             <div className="divide-y divide-border-light">
-                {groups.map((group) => (
-                    <GroupRow key={group.id} group={group} onNavigate={navigate} />
+                {groups.map((group, index) => (
+                    <GroupRow key={group.id} group={group} onNavigate={navigate} index={index} />
                 ))}
             </div>
         </div>

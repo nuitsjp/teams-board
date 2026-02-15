@@ -11,9 +11,9 @@ export const ProgressBar = memo(function ProgressBar({ current, total, visible, 
 
   return (
     <div className="my-4 space-y-2">
-      <div className="w-full h-3 bg-surface-muted rounded-full overflow-hidden border border-border-light">
+      <div className="w-full h-2 bg-surface-muted rounded-full overflow-hidden shadow-inner border border-border-light">
         <div
-          className="h-full bg-primary-500 rounded-full transition-all duration-300"
+          className="h-full bg-gradient-to-r from-primary-400 to-primary-500 rounded-full transition-all duration-500 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
