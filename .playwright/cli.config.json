@@ -1,0 +1,11 @@
+{
+  "browser": {
+    "browserName": "chromium",
+    "launchOptions": {
+      "headless": true,
+      "ignoreDefaultArgs": [
+        "--disable-extensions"
+      ]
+    }
+  }
+}

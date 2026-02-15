@@ -17,8 +17,27 @@ function runUvSync(repositoryRootPath) {
   execSync('uv sync', { cwd: repositoryRootPath, stdio: 'inherit' });
 }
 
+function isGlobalPackageInstalled(packageName) {
+  try {
+    execSync(`npm list -g ${packageName}`, { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ensureGlobalPackage(packageName) {
+  if (isGlobalPackageInstalled(packageName)) {
+    return;
+  }
+  execSync(`npm install -g ${packageName}`, { stdio: 'inherit' });
+}
+
 function runRulesyncGenerate(repositoryRootPath) {
-  execSync('pnpm run rulesync:generate', { cwd: repositoryRootPath, stdio: 'inherit' });
+  execSync('rulesync generate --targets claudecode,agentsskills,copilot --features rules,skills', {
+    cwd: repositoryRootPath,
+    stdio: 'inherit',
+  });
 }
 
 const scriptFilePath = fileURLToPath(import.meta.url);
@@ -27,4 +46,6 @@ const repositoryRootPath = path.resolve(scriptDirectoryPath, '..');
 
 await ensureOpenspecJunction(repositoryRootPath);
 runUvSync(repositoryRootPath);
+ensureGlobalPackage('rulesync');
+ensureGlobalPackage('@playwright/cli');
 runRulesyncGenerate(repositoryRootPath);
