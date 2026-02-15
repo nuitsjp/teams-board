@@ -5,8 +5,7 @@
   "type": "module",
   "description": "Teams Board — Teamsレポート集計ダッシュボード",
   "scripts": {
-    "postinstall": "node scripts/postinstall-setup.mjs --init",
-    "install:clean": "node scripts/postinstall-setup.mjs --init --clean",
+    "postinstall": "node scripts/postinstall-setup.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -51,7 +50,8 @@
     "textlint-rule-preset-japanese": "^10.0.3",
     "textlint-rule-preset-jtf-style": "^2.3.14",
     "textlint-rule-prh": "^6.0.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "rulesync": "^7.2.0"
   },
   "dependencies": {
     "lucide-react": "^0.563.0",

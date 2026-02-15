@@ -19,6 +19,7 @@
     "tailwindcss",
     "textlint",
     "textlintrc",
+    "venv",
     "vitest",
     "weasyprint"
   ],
