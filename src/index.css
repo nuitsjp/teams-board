@@ -49,3 +49,10 @@
     @apply bg-page-bg text-text-primary font-sans antialiased;
   }
 }
+
+@layer utilities {
+  .member-row-content-visibility {
+    content-visibility: auto;
+    contain-intrinsic-size: 80px;
+  }
+}
