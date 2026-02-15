@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 import { getIndexFixture, registerIndexRoute } from './helpers/route-fixtures.js';
+import { navigateTo } from './helpers/navigation.js';
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -21,9 +22,9 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('ダッシュボード画面', () => {
   test('グループ一覧が表示されること', async ({ page }) => {
-    await page.goto('/');
+    await navigateTo(page, '/');
 
-    // ヘッダーが表示されること
+    // ヘッダーが表示されること（画面準備完了を確認）
     await expect(page.locator('header')).toContainText('Teams Board');
 
     // グループセクションが表示されること
@@ -38,7 +39,10 @@ test.describe('ダッシュボード画面', () => {
   });
 
   test('メンバー一覧が表示されること', async ({ page }) => {
-    await page.goto('/');
+    await navigateTo(page, '/');
+
+    // ヘッダー表示で画面準備完了を確認
+    await expect(page.locator('header')).toContainText('Teams Board');
 
     // メンバーセクションが表示されること
     await expect(page.getByRole('heading', { name: 'メンバー' })).toBeVisible();
@@ -52,7 +56,10 @@ test.describe('ダッシュボード画面', () => {
 
 test.describe('画面遷移', () => {
   test('メンバーをクリックして詳細画面に遷移できること', async ({ page }) => {
-    await page.goto('/');
+    await navigateTo(page, '/');
+
+    // ヘッダー表示で画面準備完了を確認
+    await expect(page.locator('header')).toContainText('Teams Board');
 
     // メンバー行が表示されるまで待つ
     const memberRow = page.getByTestId('member-row').first();
@@ -72,7 +79,10 @@ test.describe('画面遷移', () => {
   });
 
   test('「一覧へ戻る」ボタンでダッシュボードに戻れること', async ({ page }) => {
-    await page.goto('/');
+    await navigateTo(page, '/');
+
+    // ヘッダー表示で画面準備完了を確認
+    await expect(page.locator('header')).toContainText('Teams Board');
 
     // メンバー行をクリック
     const memberRow = page.getByTestId('member-row').first();
@@ -92,7 +102,7 @@ test.describe('画面遷移', () => {
   test('存在しないルートにアクセスするとダッシュボードにリダイレクトされること', async ({
     page,
   }) => {
-    await page.goto('/#/nonexistent-route');
+    await navigateTo(page, '/#/nonexistent-route');
 
     // ダッシュボードが表示されること
     await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
@@ -101,7 +111,10 @@ test.describe('画面遷移', () => {
 
 test.describe('グループ詳細画面', () => {
   test('トップページからグループをクリックして詳細画面に遷移できること', async ({ page }) => {
-    await page.goto('/');
+    await navigateTo(page, '/');
+
+    // ヘッダー表示で画面準備完了を確認
+    await expect(page.locator('header')).toContainText('Teams Board');
 
     // グループ行が表示されるまで待つ
     const groupRow = page.getByTestId('group-row').first();
@@ -126,9 +139,9 @@ test.describe('グループ詳細画面', () => {
     if (!group) {
       throw new Error('グループデータが存在しないためテストできません');
     }
-    await page.goto(`/#/groups/${group.id}`);
+    await navigateTo(page, `/#/groups/${group.id}`);
 
-    // グループ名が表示される
+    // グループ名が表示される（画面準備完了を確認）
     await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
     // 開催回数が表示される
@@ -144,9 +157,9 @@ test.describe('グループ詳細画面', () => {
     if (!group) {
       throw new Error('グループデータが存在しないためテストできません');
     }
-    await page.goto(`/#/groups/${group.id}`);
+    await navigateTo(page, `/#/groups/${group.id}`);
 
-    // セッション日付が表示されるまで待つ
+    // セッション日付が表示されるまで待つ（画面準備完了を確認）
     await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
     // セッションをクリックして展開
@@ -169,10 +182,10 @@ test.describe('グループ詳細画面', () => {
     if (!group) {
       throw new Error('グループデータが存在しないためテストできません');
     }
-    await page.goto(`/#/groups/${group.id}`);
+    await navigateTo(page, `/#/groups/${group.id}`);
 
-    // 詳細画面が表示されるまで待つ
-    await expect(page.getByText('一覧へ戻る')).toBeVisible();
+    // 詳細画面が表示されるまで待つ（画面準備完了を確認）
+    await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
     // 「一覧へ戻る」をクリック
     await page.getByText('一覧へ戻る').click();
@@ -192,9 +205,9 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     if (!member || memberGroups.length < 2) {
       throw new Error('複数グループのメンバーが必要です');
     }
-    await page.goto(`/#/members/${member.id}`);
+    await navigateTo(page, `/#/members/${member.id}`);
 
-    // メンバー名が表示される
+    // メンバー名が表示される（画面準備完了を確認）
     await expect(
       page.getByRole('heading', { name: new RegExp(escapeRegExp(member.name)) })
     ).toBeVisible();
@@ -212,7 +225,12 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     if (!member || memberGroups.length < 2) {
       throw new Error('複数グループのメンバーが必要です');
     }
-    await page.goto(`/#/members/${member.id}`);
+    await navigateTo(page, `/#/members/${member.id}`);
+
+    // メンバー名が表示される（画面準備完了を確認）
+    await expect(
+      page.getByRole('heading', { name: new RegExp(escapeRegExp(member.name)) })
+    ).toBeVisible();
 
     // 初期状態では出席履歴テーブルが表示されていない（複数グループなので折りたたみ）
     await expect(page.getByRole('heading', { name: memberGroups[0].name })).toBeVisible();
@@ -241,7 +259,10 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
       throw new Error('単一グループのメンバーが必要です');
     }
     const memberGroups = getMemberGroups(index, member);
-    await page.goto(`/#/members/${member.id}`);
+    await navigateTo(page, `/#/members/${member.id}`);
+
+    // グループ名が表示される（画面準備完了を確認）
+    await expect(page.getByRole('heading', { name: memberGroups[0].name })).toBeVisible();
 
     // 単一グループのメンバーでは初期状態でテーブルが表示されている
     await expect(page.getByRole('heading', { name: memberGroups[0].name })).toBeVisible();
@@ -255,7 +276,12 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     if (!member || memberGroups.length < 2) {
       throw new Error('複数グループのメンバーが必要です');
     }
-    await page.goto(`/#/members/${member.id}`);
+    await navigateTo(page, `/#/members/${member.id}`);
+
+    // メンバー名が表示される（画面準備完了を確認）
+    await expect(
+      page.getByRole('heading', { name: new RegExp(escapeRegExp(member.name)) })
+    ).toBeVisible();
 
     // 2つのグループを展開
     await page.getByRole('heading', { name: memberGroups[0].name }).click();
