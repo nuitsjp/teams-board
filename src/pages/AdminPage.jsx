@@ -92,12 +92,9 @@ export function AdminPage() {
 
     setSaving(true);
     setSaveProgress({ current: 0, total: itemsToSave.length });
+    setSaveStatusText(`保存中... 0/${itemsToSave.length} 件`);
 
-    let completed = 0;
-    for (const item of itemsToSave) {
-      updateStatus(item.id, 'saving');
-      setSaveStatusText(`保存中... ${item.file.name}`);
-
+    const preparedItems = itemsToSave.map((item) => {
       let { sessionRecord, mergeInput } = item.parseResult;
 
       // グループ上書きがある場合、mergeInput / sessionRecord を上書き
@@ -108,34 +105,93 @@ export function AdminPage() {
         sessionRecord = { ...sessionRecord, groupId, id: newSessionId };
       }
 
-      const result = await blobWriter.executeWriteSequence({
-        rawCsv: {
-          path: `data/sources/${sessionRecord.id}.csv`,
-          content: item.file,
+      return {
+        itemId: item.id,
+        sourcePath: `data/sources/${sessionRecord.id}.csv`,
+        sessionPath: `data/sessions/${sessionRecord.id}.json`,
+        sourceFile: item.file,
+        sessionRecord,
+        mergeInput,
+      };
+    });
+
+    for (const prepared of preparedItems) {
+      updateStatus(prepared.itemId, 'saving');
+    }
+
+    const sessionPathSet = new Set(preparedItems.map((prepared) => prepared.sessionPath));
+    let completedSessions = 0;
+
+    const result = await blobWriter.executeWriteSequence({
+      newItems: preparedItems.flatMap((prepared) => [
+        {
+          path: prepared.sourcePath,
+          content: prepared.sourceFile,
           contentType: 'text/csv',
         },
-        newItems: [
-          {
-            path: `data/sessions/${sessionRecord.id}.json`,
-            content: JSON.stringify(sessionRecord, null, 2),
-            contentType: 'application/json',
-          },
-        ],
-        indexUpdater: (currentIndex) => indexMerger.merge(currentIndex, mergeInput).index,
-      });
+        {
+          path: prepared.sessionPath,
+          content: JSON.stringify(prepared.sessionRecord, null, 2),
+          contentType: 'application/json',
+        },
+      ]),
+      indexUpdater: (currentIndex, writeResults) => {
+        const resultByPath = new Map(writeResults.map((writeResult) => [writeResult.path, writeResult]));
+        const successfulMergeInputs = preparedItems
+          .filter(
+            (prepared) =>
+              (resultByPath.get(prepared.sourcePath)?.success ?? false) &&
+              (resultByPath.get(prepared.sessionPath)?.success ?? false)
+          )
+          .map((prepared) => prepared.mergeInput);
 
-      completed++;
-      setSaveProgress({ current: completed, total: itemsToSave.length });
+        if (successfulMergeInputs.length === 0) {
+          return null;
+        }
 
-      if (result.allSucceeded) {
-        updateStatus(item.id, 'saved');
+        return successfulMergeInputs.reduce(
+          (index, mergeInput) => indexMerger.merge(index, mergeInput).index,
+          currentIndex
+        );
+      },
+      onItemComplete: (writeResult) => {
+        if (!sessionPathSet.has(writeResult.path)) {
+          return;
+        }
+        completedSessions += 1;
+        setSaveProgress({ current: completedSessions, total: itemsToSave.length });
+        setSaveStatusText(`保存中... ${completedSessions}/${itemsToSave.length} 件`);
+      },
+    });
+
+    const resultByPath = new Map(result.results.map((writeResult) => [writeResult.path, writeResult]));
+    const indexWriteResult = resultByPath.get('data/index.json');
+
+    for (const prepared of preparedItems) {
+      const sourceWriteResult = resultByPath.get(prepared.sourcePath);
+      const sessionWriteResult = resultByPath.get(prepared.sessionPath);
+      const sourceSucceeded = sourceWriteResult?.success ?? result.allSucceeded;
+      const sessionSucceeded = sessionWriteResult?.success ?? result.allSucceeded;
+      const errors = [];
+
+      if (!sourceSucceeded) {
+        errors.push(sourceWriteResult?.error || 'CSVソース保存に失敗しました');
+      }
+      if (!sessionSucceeded) {
+        errors.push(sessionWriteResult?.error || 'セッションJSON保存に失敗しました');
+      }
+      if (errors.length === 0 && indexWriteResult && !indexWriteResult.success) {
+        errors.push(indexWriteResult.error || 'index.json の保存に失敗しました');
+      }
+
+      if (errors.length === 0) {
+        updateStatus(prepared.itemId, 'saved');
       } else {
-        updateStatus(item.id, 'save_failed', {
-          errors: result.results.filter((r) => !r.success).map((r) => r.error),
-        });
+        updateStatus(prepared.itemId, 'save_failed', { errors });
       }
     }
 
+    setSaveProgress({ current: itemsToSave.length, total: itemsToSave.length });
     setSaving(false);
     setSaveStatusText('');
   }, [queue, updateStatus, blobWriter, indexMerger]);
@@ -367,3 +423,5 @@ export function AdminPage() {
     </div>
   );
 }
+
+export default AdminPage;
