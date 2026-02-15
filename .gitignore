@@ -1,6 +1,7 @@
 # User-specific files
 **/writing-documents/
 docs/openspec
+.serena/
 
 # Git Worktree
 .worktree/
