@@ -109,3 +109,16 @@
     @apply rounded-lg;
   }
 }
+
+/* アニメーション軽減設定への対応 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-scale-in {
+    animation: none !important;
+  }
+
+  .skeleton {
+    animation: none !important;
+  }
+}

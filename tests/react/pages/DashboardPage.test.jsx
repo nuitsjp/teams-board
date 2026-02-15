@@ -29,7 +29,7 @@ describe('DashboardPage', () => {
     vi.clearAllMocks();
   });
 
-  it('ローディング中に「読み込み中...」と表示すること', () => {
+  it('ローディング中に「読み込み中…」と表示すること', () => {
     mockFetchIndex.mockReturnValue(new Promise(() => {}));
 
     render(
@@ -38,7 +38,7 @@ describe('DashboardPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('読み込み中...')).toBeInTheDocument();
+    expect(screen.getByText('読み込み中…')).toBeInTheDocument();
   });
 
   it('データ取得成功時にグループ・メンバー一覧を表示すること', async () => {
