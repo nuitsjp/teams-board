@@ -11,7 +11,7 @@ import { ProductionIndexFetcher, DevIndexFetcher } from '../services/index-fetch
 import { AzureBlobStorage, DevBlobStorage } from '../services/blob-storage.js';
 import { IndexMerger } from '../services/index-merger.js';
 import { IndexEditor } from '../services/index-editor.js';
-import { DataFetcher } from '../services/data-fetcher.js';
+import { sharedDataFetcher } from '../services/shared-data-fetcher.js';
 import { APP_CONFIG } from '../config/app-config.js';
 import { ArrowLeft, Upload, RotateCcw, AlertCircle, CheckCircle } from 'lucide-react';
 import { GroupNameEditor } from '../components/GroupNameEditor.jsx';
@@ -47,7 +47,7 @@ export function AdminPage() {
 
   const indexMerger = useMemo(() => new IndexMerger(), []);
   const indexEditor = useMemo(() => new IndexEditor(), []);
-  const dataFetcher = useMemo(() => new DataFetcher(), []);
+  const dataFetcher = sharedDataFetcher;
 
   const {
     queue,
@@ -165,6 +165,9 @@ export function AdminPage() {
 
     const resultByPath = new Map(result.results.map((writeResult) => [writeResult.path, writeResult]));
     const indexWriteResult = resultByPath.get('data/index.json');
+    if (indexWriteResult?.success) {
+      dataFetcher.invalidateIndexCache();
+    }
 
     for (const prepared of preparedItems) {
       const sourceWriteResult = resultByPath.get(prepared.sourcePath);
@@ -193,7 +196,7 @@ export function AdminPage() {
     setSaveProgress({ current: itemsToSave.length, total: itemsToSave.length });
     setSaving(false);
     setSaveStatusText('');
-  }, [queue, updateStatus, blobWriter, indexMerger]);
+  }, [queue, updateStatus, blobWriter, indexMerger, dataFetcher]);
 
   // リトライ処理
   const handleRetry = useCallback(async () => {
@@ -265,6 +268,7 @@ export function AdminPage() {
         }
 
         // 保存成功後、最新index.jsonを再取得
+        dataFetcher.invalidateIndexCache();
         const refreshedIndexResult = await dataFetcher.fetchIndex();
         if (refreshedIndexResult.ok) {
           setGroups(refreshedIndexResult.data.groups);

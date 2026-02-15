@@ -189,6 +189,27 @@ describe('DataFetcher', () => {
             expect(result2.ok).toBe(true);
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
+
+        it('明示的無効化後は TTL 内でもネットワークから再取得すること', async () => {
+            const indexData1 = { groups: [], members: [], updatedAt: 'v1' };
+            const indexData2 = { groups: [], members: [], updatedAt: 'v2' };
+            mockFetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve(indexData1),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve(indexData2),
+                });
+
+            await fetcher.fetchIndex();
+            fetcher.invalidateIndexCache();
+            const result2 = await fetcher.fetchIndex();
+
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+            expect(result2).toEqual({ ok: true, data: indexData2 });
+        });
     });
 
     describe('セッション JSON キャッシュ', () => {

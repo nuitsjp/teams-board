@@ -1,5 +1,5 @@
 // AdminPage — ソースファイル保存パスの検証テスト
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminPage } from '../../../src/pages/AdminPage.jsx';
@@ -47,13 +47,13 @@ vi.mock('../../../src/services/index-editor.js', () => ({
 }));
 
 // DataFetcher のモック
-vi.mock('../../../src/services/data-fetcher.js', () => ({
-  DataFetcher: vi.fn().mockImplementation(() => ({
-    fetchIndex: vi.fn().mockResolvedValue({
-      ok: true,
-      data: { groups: [], members: [], updatedAt: '' },
-    }),
-  })),
+const mockFetchIndex = vi.fn();
+const mockInvalidateIndexCache = vi.fn();
+vi.mock('../../../src/services/shared-data-fetcher.js', () => ({
+  sharedDataFetcher: {
+    fetchIndex: (...args) => mockFetchIndex(...args),
+    invalidateIndexCache: (...args) => mockInvalidateIndexCache(...args),
+  },
 }));
 
 // useAuth のモック — 管理者として認証済み
@@ -68,6 +68,11 @@ vi.mock('../../../src/hooks/useAuth.jsx', () => ({
 describe('AdminPage — ソースファイル保存パス', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockExecuteWriteSequence.mockResolvedValue({ results: [], allSucceeded: true });
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: { groups: [], members: [], updatedAt: '' },
+    });
     mockParse.mockResolvedValue({
       ok: true,
       sessionRecord: {
@@ -126,32 +131,52 @@ describe('AdminPage — ソースファイル保存パス', () => {
     // raw/ ディレクトリへのパスでないことを検証
     expect(sourceItem.path).not.toMatch(/^raw\//);
   });
+
+  it('一括保存成功時に index キャッシュを無効化すること', async () => {
+    const user = userEvent.setup();
+    mockExecuteWriteSequence.mockResolvedValueOnce({
+      allSucceeded: true,
+      results: [{ path: 'data/index.json', success: true }],
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    const csvContent = new Blob(['dummy csv'], { type: 'text/csv' });
+    const file = new File([csvContent], 'test-report.csv', { type: 'text/csv' });
+    const fileInput = document.querySelector('input[type="file"]');
+    await user.upload(fileInput, file);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /一括保存/ })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: /一括保存/ }));
+
+    await waitFor(() => {
+      expect(mockInvalidateIndexCache).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
 describe('AdminPage — グループ選択による mergeInput 上書き', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('グループ選択後の一括保存で groupOverride が mergeInput/sessionRecord に反映される', async () => {
-    const user = userEvent.setup();
-
-    // DataFetcher: 既存グループを返す
-    const mockFetchIndex = vi.fn().mockResolvedValue({
+    mockExecuteWriteSequence.mockResolvedValue({ results: [], allSucceeded: true });
+    mockFetchIndex.mockResolvedValue({
       ok: true,
       data: {
-        groups: [
-          { id: 'existgrp1', name: '既存グループ', totalDurationSeconds: 3600, sessionIds: [] },
-        ],
+        groups: [{ id: 'existgrp1', name: '既存グループ', totalDurationSeconds: 3600, sessionIds: [] }],
         members: [],
         updatedAt: '2026-02-08T00:00:00.000Z',
       },
     });
-    vi.mocked(await import('../../../src/services/data-fetcher.js')).DataFetcher.mockImplementation(
-      () => ({
-        fetchIndex: mockFetchIndex,
-      })
-    );
+  });
+
+  it('グループ選択後の一括保存で groupOverride が mergeInput/sessionRecord に反映される', async () => {
+    const user = userEvent.setup();
 
     // CsvTransformer: 新規グループの CSV パース結果
     mockParse.mockResolvedValue({
@@ -229,10 +254,15 @@ describe('AdminPage — グループ選択による mergeInput 上書き', () =>
 describe('AdminPage — グループ管理セクション', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockExecuteWriteSequence.mockResolvedValue({ results: [], allSucceeded: true });
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: { groups: [], members: [], updatedAt: '2026-02-08T00:00:00.000Z' },
+    });
   });
 
   it('グループ一覧が表示される', async () => {
-    const mockFetchIndex = vi.fn().mockResolvedValue({
+    mockFetchIndex.mockResolvedValue({
       ok: true,
       data: {
         groups: [
@@ -254,12 +284,6 @@ describe('AdminPage — グループ管理セクション', () => {
       },
     });
 
-    vi.mocked(await import('../../../src/services/data-fetcher.js')).DataFetcher.mockImplementation(
-      () => ({
-        fetchIndex: mockFetchIndex,
-      })
-    );
-
     render(
       <MemoryRouter>
         <AdminPage />
@@ -276,7 +300,7 @@ describe('AdminPage — グループ管理セクション', () => {
   });
 
   it('グループがない場合は「グループがありません」と表示される', async () => {
-    const mockFetchIndex = vi.fn().mockResolvedValue({
+    mockFetchIndex.mockResolvedValue({
       ok: true,
       data: {
         groups: [],
@@ -284,12 +308,6 @@ describe('AdminPage — グループ管理セクション', () => {
         updatedAt: '2026-02-08T00:00:00.000Z',
       },
     });
-
-    vi.mocked(await import('../../../src/services/data-fetcher.js')).DataFetcher.mockImplementation(
-      () => ({
-        fetchIndex: mockFetchIndex,
-      })
-    );
 
     render(
       <MemoryRouter>
