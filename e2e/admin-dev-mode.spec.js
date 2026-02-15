@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 import { restoreIndexJson } from './helpers/fixture-lifecycle.js';
+import { navigateTo } from './helpers/navigation.js';
 
 test.describe('開発モード — ダミートークンでの管理者機能', () => {
   // データ変更テストは並列実行から分離してシーケンシャルに実行
@@ -15,16 +16,19 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
   });
 
   test('token=devで管理者リンクが表示されること', async ({ page }) => {
-    await page.goto('/?token=dev');
+    await navigateTo(page, '/?token=dev');
+
+    // ヘッダー表示を待機
+    await expect(page.locator('header')).toContainText('Teams Board');
 
     // 「管理」リンクが表示されること
     await expect(page.getByRole('link', { name: '管理' })).toBeVisible();
   });
 
   test('token=devで管理者パネルにアクセスできること', async ({ page }) => {
-    await page.goto('/?token=dev#/admin');
+    await navigateTo(page, '/?token=dev#/admin');
 
-    // 管理者パネルの見出しが表示されること
+    // 管理者パネルの見出しが表示されること（画面準備完了を確認）
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // ドロップゾーンが表示されること
@@ -35,7 +39,10 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
   });
 
   test('token=devでグループ一覧が表示されること', async ({ page }) => {
-    await page.goto('/?token=dev#/admin');
+    await navigateTo(page, '/?token=dev#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションまでスクロール
     await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
@@ -50,7 +57,10 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
   });
 
   test('token=devでグループ名の編集ができること', async ({ page }) => {
-    await page.goto('/?token=dev#/admin');
+    await navigateTo(page, '/?token=dev#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // グループ管理セクションまでスクロール
     await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
@@ -73,14 +83,17 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
     await page.getByTitle('保存').first().click();
 
     // 新しいグループ名が表示されること
-    await expect(page.getByText(newGroupName)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(newGroupName)).toBeVisible();
 
     // コンソールに開発モードのログが出力されることを確認
     // 注: この検証は、開発サーバーのログで確認する必要があります
   });
 
   test('token=devでCSVファイルをアップロードできること', async ({ page }) => {
-    await page.goto('/?token=dev#/admin');
+    await navigateTo(page, '/?token=dev#/admin');
+
+    // 管理者パネル見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // ファイル入力を取得
     const fileInput = page.locator('input[type="file"]');
@@ -105,10 +118,10 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
       });
     });
 
-    await page.goto('/?token=dev');
+    await navigateTo(page, '/?token=dev');
 
-    // ダッシュボードが読み込まれるまで待機
-    await page.waitForLoadState('networkidle');
+    // ダッシュボード見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
 
     // 開発モードのログメッセージが出力されていることを確認
     const devModeMessage = consoleMessages.find(
@@ -120,10 +133,10 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
   });
 
   test('URLからtoken=devが削除されること', async ({ page }) => {
-    await page.goto('/?token=dev');
+    await navigateTo(page, '/?token=dev');
 
-    // ページが読み込まれるまで待機
-    await page.waitForLoadState('networkidle');
+    // ダッシュボード見出しで画面準備完了を確認
+    await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
 
     // URLにtokenパラメータが含まれていないことを確認
     const url = new URL(page.url());

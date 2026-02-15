@@ -1,6 +1,7 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
 import { registerIndexRoute } from './helpers/route-fixtures.js';
+import { navigateTo } from './helpers/navigation.js';
 
 test.beforeEach(async ({ page }) => {
   await registerIndexRoute(page);
@@ -8,23 +9,29 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('管理者パネル', () => {
   test('トークンなしでアクセスした場合に管理者リンクが非表示であること', async ({ page }) => {
-    await page.goto('/');
+    await navigateTo(page, '/');
+
+    // ヘッダー表示で画面準備完了を確認
+    await expect(page.locator('header')).toContainText('Teams Board');
 
     // ヘッダーに「管理」リンクが存在しないことを確認
     await expect(page.getByRole('link', { name: '管理' })).not.toBeVisible();
   });
 
   test('SASトークン付きURLで管理者リンクが表示されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token');
+    await navigateTo(page, '/?token=test-sas-token');
+
+    // ヘッダー表示で画面準備完了を確認
+    await expect(page.locator('header')).toContainText('Teams Board');
 
     // 「管理」リンクが表示されること
     await expect(page.getByRole('link', { name: '管理' })).toBeVisible();
   });
 
   test('管理者パネル画面にCSVドロップゾーンが表示されること', async ({ page }) => {
-    await page.goto('/?token=test-sas-token#/admin');
+    await navigateTo(page, '/?token=test-sas-token#/admin');
 
-    // 管理者パネルの見出しが表示されること
+    // 管理者パネルの見出しが表示されること（画面準備完了を確認）
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
     // ドロップゾーンが表示されること
