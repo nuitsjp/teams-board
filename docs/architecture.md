@@ -246,6 +246,26 @@ sequenceDiagram
 
 E2E は `global-setup` / `global-teardown` で `dev-fixtures/data/index.json` を退避・復元し、データ変更テストの再現性を担保する。
 
+### 11.3 E2E テストの待機・タイムアウト方針
+
+E2E テストでは、以下の方針で画面遷移とアサーションの安定性を確保する：
+
+| 項目 | 設定値 | 理由 |
+| --- | --- | --- |
+| `timeout` | 30 秒 | テスト全体のタイムアウト（Playwright デフォルトを明示） |
+| `expect.timeout` | 5 秒 | アサーション待機の上限（UI 要素表示を確認） |
+| `navigationTimeout` | 10 秒 | `goto` / `reload` など画面遷移操作の上限 |
+| `waitUntil` | `'domcontentloaded'` | ナビゲーション完了条件を DOM 構築完了に統一 |
+| 画面準備確認 | 主要 UI 要素の `toBeVisible()` | 遷移後は必ず見出しやヘッダーなど主要要素を明示的に待機 |
+
+**ナビゲーション戦略**：  
+`page.goto()` は共通ヘルパー `navigateTo()` 経由で `waitUntil: 'domcontentloaded'` に統一し、画像やスタイルシートの完全読み込みを待たない。その後、各テストで必要な UI 要素の表示を `expect(...).toBeVisible()` で明示的に待機する。これにより、ネットワーク待機の不確実性を減らし、テストの安定性を向上させる。
+
+**並列実行とワーカー方針**：  
+- CI 環境では `workers: 1` で並列実行を避け、安定性を優先する。
+- ローカル開発では `workers: undefined`（CPU コア数に応じた並列化）で高速実行する。
+- データ変更テスト（`admin-dev-mode.spec.js`）は読み取り専用テスト完了後にシーケンシャル実行し、フィクスチャ競合を回避する。
+
 ## 12. デプロイ・運用アーキテクチャ
 
 ### 12.1 CI/CD

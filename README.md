@@ -85,8 +85,16 @@ nr preview                # ビルド後のプレビュー
 nr test                   # 全ユニットテスト実行
 nr test:watch             # ウォッチモード
 nr test:coverage          # カバレッジ付き実行
-nr test:e2e               # E2E テスト実行
+nr test:e2e               # E2E テスト実行（ヘッドレスモード）
+nr test:e2e:headed        # E2E テスト実行（ブラウザ表示モード）
 ```
+
+**E2E テスト実行方針**：
+
+- E2E テストは開発サーバー（`http://localhost:5173`）を自動起動してブラウザ操作を検証します
+- `waitUntil: 'domcontentloaded'` に統一し、画面遷移後は主要 UI 要素の表示を明示的に待機することで安定性を確保しています
+- CI 環境ではワーカー数 1 でシーケンシャル実行、ローカルでは並列実行で高速化します
+- テスト失敗時はスクリーンショットとトレースが自動保存されます（`playwright-report/` 配下）
 
 ### コード品質
 
