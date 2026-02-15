@@ -3,6 +3,9 @@
 docs/openspec
 .serena/
 
+# Playwright-CLI
+.playwright-cli/
+
 # Git Worktree
 .worktree/
 
