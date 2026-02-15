@@ -163,22 +163,25 @@ export function GroupDetailPage() {
         一覧へ戻る
       </Link>
 
-      {/* グループヘッダーカード */}
-      <div className="card-base p-8 flex items-center gap-6 animate-fade-in-up">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700">
-          <Users className="w-8 h-8" aria-hidden="true" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-text-primary">{group.name}</h2>
-          <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-text-muted" aria-hidden="true" />
-              {group.sessionIds.length}回開催
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-text-muted" aria-hidden="true" />
-              合計 {formatDuration(group.totalDurationSeconds)}
-            </span>
+      {/* グループヘッダーカード — アクセント帯付き */}
+      <div className="card-base overflow-hidden animate-fade-in-up">
+        <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-accent-400" />
+        <div className="p-8 flex items-center gap-6">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700">
+            <Users className="w-8 h-8" aria-hidden="true" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-text-primary">{group.name}</h2>
+            <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-text-muted" aria-hidden="true" />
+                <span className="font-display font-semibold text-text-primary">{group.sessionIds.length}</span>回開催
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-text-muted" aria-hidden="true" />
+                合計 <span className="font-display font-semibold text-text-primary">{formatDuration(group.totalDurationSeconds)}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -210,42 +213,48 @@ export function GroupDetailPage() {
                     <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                       <span className="flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
-                        {session.attendeeCount}名参加
+                        <span className="font-display font-semibold text-text-primary">{session.attendeeCount}</span>名参加
                       </span>
                       <span className="flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
-                        {formatDuration(session.totalDurationSeconds)}
+                        <span className="font-display">{formatDuration(session.totalDurationSeconds)}</span>
                       </span>
                     </div>
                   </div>
                 </div>
               </button>
 
-              {/* 参加者テーブル（アコーディオン展開） */}
-              {isExpanded && (
-                <div className="border-t border-border-light">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border-light bg-surface-muted text-left text-xs text-text-muted uppercase tracking-wider">
-                          <th className="px-6 py-3 font-medium">名前</th>
-                          <th className="px-6 py-3 font-medium text-right">参加時間</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border-light">
-                        {session.attendees.map((attendee) => (
-                          <tr key={attendee.memberId} className="text-sm hover:bg-surface-muted transition-colors">
-                            <td className="px-6 py-3 text-text-primary">{attendee.name}</td>
-                            <td className="px-6 py-3 text-text-primary text-right font-medium tabular-nums">
-                              {formatDuration(attendee.durationSeconds)}
-                            </td>
+              {/* 参加者テーブル（スムーズアコーディオン展開） */}
+              <div
+                className="accordion-panel"
+                data-expanded={isExpanded}
+                aria-hidden={!isExpanded}
+              >
+                <div className="accordion-panel-inner">
+                  <div className="border-t border-border-light">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border-light bg-surface-muted text-left text-xs text-text-muted uppercase tracking-wider">
+                            <th className="px-6 py-3 font-medium">名前</th>
+                            <th className="px-6 py-3 font-medium text-right">参加時間</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-border-light">
+                          {session.attendees.map((attendee) => (
+                            <tr key={attendee.memberId} className="text-sm hover:bg-surface-muted transition-colors">
+                              <td className="px-6 py-3 text-text-primary">{attendee.name}</td>
+                              <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
+                                {formatDuration(attendee.durationSeconds)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })}

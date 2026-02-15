@@ -9,18 +9,22 @@ export const SummaryCard = memo(function SummaryCard({
 }) {
     return (
         <div
-            className={`card-base p-6 flex items-center space-x-5 animate-fade-in-up ${className}`}
+            className={`card-base p-6 flex flex-col animate-fade-in-up ${className}`}
             style={style}
         >
-            {Icon && (
-                <div className="p-3 bg-primary-50 rounded-xl text-primary-600">
-                    <Icon size={28} strokeWidth={1.5} />
-                </div>
-            )}
-            <div>
-                <p className="text-sm font-medium text-text-muted mb-1 tracking-wide">{title}</p>
-                <p className="text-2xl font-bold text-text-primary tracking-tight">{value}</p>
+            <div className="flex items-center justify-between mb-4">
+                <p className="text-xs font-medium text-text-muted uppercase tracking-widest">
+                    {title}
+                </p>
+                {Icon && (
+                    <div className="p-2 bg-primary-50 rounded-lg text-primary-500">
+                        <Icon size={18} strokeWidth={1.5} />
+                    </div>
+                )}
             </div>
+            <p className="text-4xl font-bold font-display tracking-tighter text-text-primary tabular-nums">
+                {value}
+            </p>
         </div>
     );
 });

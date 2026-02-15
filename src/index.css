@@ -50,6 +50,7 @@
 
   /* フォント */
   --font-sans: 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Noto Sans JP', system-ui, sans-serif;
 }
 
 /* キーフレーム定義 */
@@ -77,6 +78,8 @@
 @layer base {
   body {
     @apply bg-page-bg text-text-primary font-sans antialiased;
+    background-image: radial-gradient(circle, #d8dfdd 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
   }
 }
 
@@ -102,6 +105,56 @@
     @apply bg-surface rounded-2xl shadow-sm;
   }
 
+  /* カードのインタラクティブ・エレベーション */
+  .card-interactive {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* リストアイテム左ボーダーアクセント（プライマリ） */
+  .list-accent-primary {
+    border-left: 3px solid transparent;
+    transition: border-color 0.2s ease, background-color 0.15s ease;
+  }
+
+  .list-accent-primary:hover {
+    border-left-color: var(--color-primary-500);
+  }
+
+  /* リストアイテム左ボーダーアクセント（アクセント） */
+  .list-accent-warm {
+    border-left: 3px solid transparent;
+    transition: border-color 0.2s ease, background-color 0.15s ease;
+  }
+
+  .list-accent-warm:hover {
+    border-left-color: var(--color-accent-500);
+  }
+
+  /* アコーディオンのスムーズ展開 */
+  .accordion-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease;
+  }
+
+  .accordion-panel[data-expanded="true"] {
+    grid-template-rows: 1fr;
+  }
+
+  .accordion-panel-inner {
+    overflow: hidden;
+  }
+
+  /* 数値表示用フォント */
+  .font-display {
+    font-family: var(--font-display);
+  }
+
   .skeleton {
     background: linear-gradient(90deg, #edf2f0 25%, #e2e8e6 50%, #edf2f0 75%);
     background-size: 200% 100%;
@@ -120,5 +173,13 @@
 
   .skeleton {
     animation: none !important;
+  }
+
+  .card-interactive:hover {
+    transform: none !important;
+  }
+
+  .accordion-panel {
+    transition: none !important;
   }
 }
