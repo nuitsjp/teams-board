@@ -65,7 +65,7 @@ export function DashboardPage() {
             </div>
           </div>
         </div>
-        <span className="sr-only">読み込み中...</span>
+        <span className="sr-only">読み込み中…</span>
       </div>
     );
   }

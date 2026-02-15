@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
@@ -11,7 +11,6 @@ const fetcher = new DataFetcher();
  */
 export function MemberDetailPage() {
   const { memberId } = useParams();
-  const navigate = useNavigate();
   const [member, setMember] = useState(null);
   const [groupAttendances, setGroupAttendances] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
@@ -129,7 +128,7 @@ export function MemberDetailPage() {
             <div className="h-4 w-36 skeleton" />
           </div>
         ))}
-        <span className="sr-only">読み込み中...</span>
+        <span className="sr-only">読み込み中…</span>
       </div>
     );
   }
@@ -140,13 +139,13 @@ export function MemberDetailPage() {
         <div className="mx-auto max-w-xl mt-8 card-base border-l-4 border-l-error p-4 text-red-700">
           {error}
         </div>
-        <button
-          onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors"
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-lg"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           一覧へ戻る
-        </button>
+        </Link>
       </div>
     );
   }
@@ -154,13 +153,13 @@ export function MemberDetailPage() {
   return (
     <div className="space-y-6">
       {/* 戻るボタン */}
-      <button
-        onClick={() => navigate('/')}
-        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors"
+      <Link
+        to="/"
+        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="w-4 h-4" aria-hidden="true" />
         一覧へ戻る
-      </button>
+      </Link>
 
       {/* メンバーヘッダーカード */}
       <div className="card-base p-8 flex items-center gap-6 animate-fade-in-up">
@@ -171,11 +170,11 @@ export function MemberDetailPage() {
           <h2 className="text-xl font-bold text-text-primary">{member.name}</h2>
           <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
             <span className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-text-muted" />
+              <Clock className="w-4 h-4 text-text-muted" aria-hidden="true" />
               合計 {formatDuration(member.totalDurationSeconds)}
             </span>
             <span className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-text-muted" />
+              <Calendar className="w-4 h-4 text-text-muted" aria-hidden="true" />
               {member.sessionIds.length}回参加
             </span>
           </div>
@@ -195,23 +194,24 @@ export function MemberDetailPage() {
               {/* サマリーカード */}
               <button
                 onClick={() => toggleGroup(group.groupId)}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-surface-muted transition-colors"
+                aria-expanded={isExpanded}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
               >
                 <div className="flex items-center gap-4">
                   {isExpanded ? (
-                    <ChevronDown className="w-5 h-5 text-text-muted" />
+                    <ChevronDown className="w-5 h-5 text-text-muted" aria-hidden="true" />
                   ) : (
-                    <ChevronRight className="w-5 h-5 text-text-muted" />
+                    <ChevronRight className="w-5 h-5 text-text-muted" aria-hidden="true" />
                   )}
                   <div>
                     <h3 className="text-base font-bold text-text-primary">{group.groupName}</h3>
                     <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                       <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-text-muted" />
+                        <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                         {group.sessionCount}回参加
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-text-muted" />
+                        <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                         {formatDuration(group.totalDurationSeconds)}
                       </span>
                     </div>

@@ -52,11 +52,11 @@ describe('MemberDetailPage', () => {
     vi.clearAllMocks();
   });
 
-  it('ローディング中に「読み込み中...」と表示すること', () => {
+  it('ローディング中に「読み込み中…」と表示すること', () => {
     mockFetchIndex.mockReturnValue(new Promise(() => {}));
 
     renderWithRouter('m1');
-    expect(screen.getByText('読み込み中...')).toBeInTheDocument();
+    expect(screen.getByText('読み込み中…')).toBeInTheDocument();
   });
 
   it('メンバー情報とセッション出席履歴を表示すること', async () => {

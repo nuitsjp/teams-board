@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useAuth, createAuthAdapter } from '../hooks/useAuth.jsx';
 import { useFileQueue } from '../hooks/useFileQueue.js';
 import { FileDropZone } from '../components/FileDropZone.jsx';
@@ -21,7 +21,6 @@ import { GroupNameEditor } from '../components/GroupNameEditor.jsx';
  */
 export function AdminPage() {
   const auth = useAuth();
-  const navigate = useNavigate();
   const authAdapter = useMemo(() => createAuthAdapter(auth), [auth]);
 
   const csvTransformer = useMemo(() => new CsvTransformer(), []);
@@ -92,7 +91,7 @@ export function AdminPage() {
 
     setSaving(true);
     setSaveProgress({ current: 0, total: itemsToSave.length });
-    setSaveStatusText(`保存中... 0/${itemsToSave.length} 件`);
+    setSaveStatusText(`保存中\u2026 0/${itemsToSave.length} 件`);
 
     const preparedItems = itemsToSave.map((item) => {
       let { sessionRecord, mergeInput } = item.parseResult;
@@ -160,7 +159,7 @@ export function AdminPage() {
         }
         completedSessions += 1;
         setSaveProgress({ current: completedSessions, total: itemsToSave.length });
-        setSaveStatusText(`保存中... ${completedSessions}/${itemsToSave.length} 件`);
+        setSaveStatusText(`保存中\u2026 ${completedSessions}/${itemsToSave.length} 件`);
       },
     });
 
@@ -293,13 +292,13 @@ export function AdminPage() {
   return (
     <div className="space-y-6">
       {/* 戻るボタン */}
-      <button
-        onClick={() => navigate('/')}
-        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors"
+      <Link
+        to="/"
+        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="w-4 h-4" aria-hidden="true" />
         ダッシュボードへ戻る
-      </button>
+      </Link>
 
       <div>
         <h2 className="text-xl font-bold text-text-primary tracking-tight">管理者パネル</h2>
@@ -327,20 +326,20 @@ export function AdminPage() {
         <div className="flex items-center gap-3">
           {readyItems.length > 0 && (
             <button
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl shadow-sm hover:bg-primary-700 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl shadow-sm hover:bg-primary-700 transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
               onClick={handleBulkSave}
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="w-4 h-4" aria-hidden="true" />
               一括保存 ({readyItems.length}件)
             </button>
           )}
 
           {failedItems.length > 0 && (
             <button
-              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-100 text-accent-600 border border-accent-300 rounded-xl hover:bg-accent-200 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-accent-100 text-accent-600 border border-accent-300 rounded-xl hover:bg-accent-200 transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
               onClick={handleRetry}
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-4 h-4" aria-hidden="true" />
               失敗した操作をリトライ ({failedItems.length}件)
             </button>
           )}
@@ -356,22 +355,24 @@ export function AdminPage() {
           </p>
         </div>
 
-        {groupMessage.text && (
-          <div
-            className={`mb-4 p-3 rounded-xl flex items-center gap-2 animate-scale-in ${
-              groupMessage.type === 'success'
-                ? 'bg-green-50 text-green-800'
-                : 'bg-red-50 text-red-800'
-            }`}
-          >
-            {groupMessage.type === 'success' ? (
-              <CheckCircle className="w-5 h-5" />
-            ) : (
-              <AlertCircle className="w-5 h-5" />
-            )}
-            <span className="text-sm">{groupMessage.text}</span>
-          </div>
-        )}
+        <div aria-live="polite">
+          {groupMessage.text && (
+            <div
+              className={`mb-4 p-3 rounded-xl flex items-center gap-2 animate-scale-in ${
+                groupMessage.type === 'success'
+                  ? 'bg-green-50 text-green-800'
+                  : 'bg-red-50 text-red-800'
+              }`}
+            >
+              {groupMessage.type === 'success' ? (
+                <CheckCircle className="w-5 h-5" aria-hidden="true" />
+              ) : (
+                <AlertCircle className="w-5 h-5" aria-hidden="true" />
+              )}
+              <span className="text-sm">{groupMessage.text}</span>
+            </div>
+          )}
+        </div>
 
         {groups.length === 0 ? (
           <p className="text-sm text-text-muted">グループがありません</p>
