@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(openspec new:*)"
+      "Bash(openspec new:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }
