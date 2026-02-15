@@ -1,0 +1,3 @@
+title: ADR (Architecture Decision Records)
+nav:
+  - ADR-0001-server-side-performance-not-applicable.md
