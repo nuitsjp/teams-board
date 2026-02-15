@@ -24,6 +24,32 @@ describe('FileDropZone', () => {
     expect(dropZone.className).toContain('border-primary-500');
   });
 
+  it('重複したdragOverイベントで不要な再レンダリングが防止されること', () => {
+    const onFilesAdded = vi.fn();
+    const { container } = render(
+      <FileDropZone onFilesAdded={onFilesAdded} disabled={false} hasFiles={false} />
+    );
+
+    const dropZone = container.querySelector('.border-dashed');
+
+    // 最初のdragOverイベント - dragover状態をtrueにする
+    fireEvent.dragOver(dropZone);
+    expect(dropZone.className).toContain('border-primary-500');
+
+    // classNameを確認（変更されていることを確認）
+    const classNameAfterFirstDrag = dropZone.className;
+
+    // 2回目以降のdragOverイベント（ドラッグ継続中）
+    // 内部のdragoverRef.currentがtrueなので早期returnされる
+    fireEvent.dragOver(dropZone);
+    fireEvent.dragOver(dropZone);
+    fireEvent.dragOver(dropZone);
+
+    // classNameが変わっていないことを確認（再レンダリングされていない）
+    expect(dropZone.className).toBe(classNameAfterFirstDrag);
+    expect(dropZone.className).toContain('border-primary-500');
+  });
+
   it('ファイル選択時にonFilesAddedが呼ばれること', async () => {
     const onFilesAdded = vi.fn();
     const { container } = render(

@@ -8,28 +8,38 @@ import { Upload } from 'lucide-react';
 export function FileDropZone({ onFilesAdded, disabled, hasFiles }) {
   const [dragover, setDragover] = useState(false);
   const fileInputRef = useRef(null);
+  const dragoverRef = useRef(false);
+  const disabledRef = useRef(disabled);
 
-  const handleDragOver = useCallback(
-    (e) => {
-      e.preventDefault();
-      if (!disabled) setDragover(true);
-    },
-    [disabled]
-  );
+  // disabledの最新値をrefに同期
+  disabledRef.current = disabled;
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    // 既にドラッグオーバー状態なら早期return（不要な再レンダリング防止）
+    if (dragoverRef.current) return;
+    // disabledの最新値を参照
+    if (disabledRef.current) return;
+    
+    dragoverRef.current = true;
+    setDragover(true);
+  }, []);
 
   const handleDragLeave = useCallback(() => {
+    dragoverRef.current = false;
     setDragover(false);
   }, []);
 
   const handleDrop = useCallback(
     (e) => {
       e.preventDefault();
+      dragoverRef.current = false;
       setDragover(false);
-      if (!disabled && e.dataTransfer.files.length > 0) {
+      if (!disabledRef.current && e.dataTransfer.files.length > 0) {
         onFilesAdded(e.dataTransfer.files);
       }
     },
-    [disabled, onFilesAdded]
+    [onFilesAdded]
   );
 
   const handleFileChange = useCallback(
