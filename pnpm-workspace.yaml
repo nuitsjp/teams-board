@@ -1,5 +1,6 @@
-onlyBuiltDependencies:
-  - esbuild
-
 ignoredBuiltDependencies:
   - puppeteer
+
+onlyBuiltDependencies:
+  - esbuild
+  - tldjs
