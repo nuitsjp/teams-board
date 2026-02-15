@@ -8,7 +8,7 @@ const MemberRow = memo(function MemberRow({ member, onNavigate }) {
         <div
             data-testid="member-row"
             onClick={() => onNavigate(`/members/${member.id}`)}
-            className="p-4 px-6 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group"
+            className="member-row-content-visibility p-4 px-6 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group"
         >
             <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-700 font-bold text-sm">
