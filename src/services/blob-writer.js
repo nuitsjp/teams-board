@@ -17,10 +17,11 @@ export class BlobWriter {
    * @param {object} params
    * @param {object} [params.rawCsv] - 元CSV書き込み情報
    * @param {Array} params.newItems - 新規items書き込み情報
-   * @param {function} params.indexUpdater - 最新indexを受け取り更新後indexを返す関数
+   * @param {function} params.indexUpdater - 最新indexとnewItems結果を受け取り更新後indexを返す関数
+   * @param {function} [params.onItemComplete] - newItemsの各書き込み完了時に呼ばれるコールバック
    * @returns {Promise<{results: Array, allSucceeded: boolean}>}
    */
-  async executeWriteSequence({ rawCsv, newItems, indexUpdater }) {
+  async executeWriteSequence({ rawCsv, newItems, indexUpdater, onItemComplete }) {
     const results = [];
 
     // 1. raw CSV の書き込み
@@ -32,13 +33,23 @@ export class BlobWriter {
       }
     }
 
-    // 2. items の書き込み
-    for (const item of newItems) {
-      const result = await this.#putBlob(item);
-      results.push(result);
-      if (!result.success) {
-        return { results, allSucceeded: false };
-      }
+    // 2. items の書き込み（並列）
+    const itemResults = await Promise.all(
+      newItems.map(async (item) => {
+        const result = await this.#putBlob(item);
+        if (onItemComplete) {
+          onItemComplete(result, item);
+        }
+        return result;
+      })
+    );
+    results.push(...itemResults);
+
+    if (typeof indexUpdater !== 'function') {
+      return {
+        results,
+        allSucceeded: results.every((r) => r.success),
+      };
     }
 
     // 3. 最新 index.json を取得
@@ -48,8 +59,15 @@ export class BlobWriter {
       return { results, allSucceeded: false };
     }
 
-    // 4. indexUpdater で更新してPUT
-    const updatedIndex = indexUpdater(currentIndex.data);
+    // 4. indexUpdater で更新してPUT（null/undefinedの場合はindex更新をスキップ）
+    const updatedIndex = indexUpdater(currentIndex.data, itemResults);
+    if (updatedIndex == null) {
+      return {
+        results,
+        allSucceeded: results.every((r) => r.success),
+      };
+    }
+
     const indexResult = await this.#putBlob({
       path: 'data/index.json',
       content: JSON.stringify(updatedIndex, null, 2),

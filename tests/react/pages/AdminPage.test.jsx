@@ -87,7 +87,7 @@ describe('AdminPage — ソースファイル保存パス', () => {
     });
   });
 
-  it('一括保存時にrawCsv.pathが data/sources/{sessionId}.csv 形式であること', async () => {
+  it('一括保存時に data/sources/{sessionId}.csv が保存対象に含まれること', async () => {
     const user = userEvent.setup();
 
     render(
@@ -115,12 +115,16 @@ describe('AdminPage — ソースファイル保存パス', () => {
       expect(mockExecuteWriteSequence).toHaveBeenCalled();
     });
 
-    // rawCsv.path が data/sources/{sessionId}.csv 形式であることを検証
+    // data/sources/{sessionId}.csv 形式で保存対象に含まれることを検証
     const callArgs = mockExecuteWriteSequence.mock.calls[0][0];
-    expect(callArgs.rawCsv.path).toBe('data/sources/abc12345-2026-02-08.csv');
+    const sourceItem = callArgs.newItems.find((item) =>
+      item.path.startsWith('data/sources/abc12345-2026-02-08')
+    );
+    expect(sourceItem).toBeDefined();
+    expect(sourceItem.path).toBe('data/sources/abc12345-2026-02-08.csv');
 
     // raw/ ディレクトリへのパスでないことを検証
-    expect(callArgs.rawCsv.path).not.toMatch(/^raw\//);
+    expect(sourceItem.path).not.toMatch(/^raw\//);
   });
 });
 
@@ -207,12 +211,16 @@ describe('AdminPage — グループ選択による mergeInput 上書き', () =>
 
     // 上書きされたパスを検証
     const callArgs = mockExecuteWriteSequence.mock.calls[0][0];
+    const sourceItem = callArgs.newItems.find((item) => item.path.startsWith('data/sources/'));
+    const sessionItem = callArgs.newItems.find((item) => item.path.startsWith('data/sessions/'));
+    expect(sourceItem).toBeDefined();
+    expect(sessionItem).toBeDefined();
     // groupOverride により sessionId が existgrp1-2026-02-08 に変更される
-    expect(callArgs.rawCsv.path).toBe('data/sources/existgrp1-2026-02-08.csv');
-    expect(callArgs.newItems[0].path).toBe('data/sessions/existgrp1-2026-02-08.json');
+    expect(sourceItem.path).toBe('data/sources/existgrp1-2026-02-08.csv');
+    expect(sessionItem.path).toBe('data/sessions/existgrp1-2026-02-08.json');
 
     // sessionRecord の中身も上書きされていることを確認
-    const sessionRecord = JSON.parse(callArgs.newItems[0].content);
+    const sessionRecord = JSON.parse(sessionItem.content);
     expect(sessionRecord.id).toBe('existgrp1-2026-02-08');
     expect(sessionRecord.groupId).toBe('existgrp1');
   });
