@@ -148,7 +148,8 @@ test.describe('グループ詳細画面', () => {
     await expect(page.getByText(new RegExp(`${group.sessionIds.length}回開催`))).toBeVisible();
 
     // セッション日付が表示される（複数あるので折りたたみ状態）
-    await expect(page.locator('table')).toHaveCount(0);
+    const expandedTables = page.locator('.accordion-panel[data-expanded="true"] table');
+    await expect(expandedTables).toHaveCount(0);
   });
 
   test('セッションをクリックして参加者詳細を展開・折りたたみできること', async ({ page }) => {
@@ -163,17 +164,19 @@ test.describe('グループ詳細画面', () => {
     await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
     // セッションをクリックして展開
+    const expandedTables = page.locator('.accordion-panel[data-expanded="true"] table');
     const sessionHeadings = page.getByRole('heading', { level: 3 });
     await sessionHeadings.first().click();
-    await expect(page.locator('table')).toBeVisible();
+    await expect(expandedTables).toHaveCount(1);
 
     // テーブルに名前列と参加時間列がある
-    await expect(page.getByRole('columnheader', { name: '名前' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
+    const expandedPanel = page.locator('.accordion-panel[data-expanded="true"]').first();
+    await expect(expandedPanel.getByRole('columnheader', { name: '名前' })).toBeVisible();
+    await expect(expandedPanel.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
 
     // 再クリックで折りたたみ
     await sessionHeadings.first().click();
-    await expect(page.locator('table')).toHaveCount(0);
+    await expect(expandedTables).toHaveCount(0);
   });
 
   test('グループ詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
@@ -234,20 +237,21 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
 
     // 初期状態では出席履歴テーブルが表示されていない（複数グループなので折りたたみ）
     await expect(page.getByRole('heading', { name: memberGroups[0].name })).toBeVisible();
-    const tables = page.locator('table');
-    await expect(tables).toHaveCount(0);
+    const expandedTables = page.locator('.accordion-panel[data-expanded="true"] table');
+    await expect(expandedTables).toHaveCount(0);
 
     // 「フロントエンド勉強会」カードをクリックして展開
     await page.getByRole('heading', { name: memberGroups[0].name }).click();
-    await expect(page.locator('table')).toBeVisible();
+    await expect(expandedTables).toHaveCount(1);
 
     // テーブルに日付列と参加時間列がある
-    await expect(page.getByRole('columnheader', { name: '日付' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
+    const expandedPanel = page.locator('.accordion-panel[data-expanded="true"]').first();
+    await expect(expandedPanel.getByRole('columnheader', { name: '日付' })).toBeVisible();
+    await expect(expandedPanel.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
 
     // 再クリックで折りたたみ
     await page.getByRole('heading', { name: memberGroups[0].name }).click();
-    await expect(page.locator('table')).toHaveCount(0);
+    await expect(expandedTables).toHaveCount(0);
   });
 
   test('グループが1つのみのメンバーではデフォルトで展開されること', async ({ page }) => {
@@ -266,7 +270,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
 
     // 単一グループのメンバーでは初期状態でテーブルが表示されている
     await expect(page.getByRole('heading', { name: memberGroups[0].name })).toBeVisible();
-    await expect(page.locator('table')).toBeVisible();
+    await expect(page.locator('.accordion-panel[data-expanded="true"] table')).toHaveCount(1);
   });
 
   test('複数のグループカードを同時に展開できること', async ({ page }) => {
@@ -288,6 +292,6 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     await page.getByRole('heading', { name: memberGroups[1].name }).click();
 
     // 2つのテーブルが表示される
-    await expect(page.locator('table')).toHaveCount(2);
+    await expect(page.locator('.accordion-panel[data-expanded="true"] table')).toHaveCount(2);
   });
 });
