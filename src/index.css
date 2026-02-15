@@ -2,26 +2,26 @@
 
 /* デザイントークン定義 */
 @theme {
-  /* プライマリ — ティール系 */
-  --color-primary-50: #f0fdfa;
-  --color-primary-100: #ccfbf1;
-  --color-primary-200: #99f6e4;
-  --color-primary-300: #5eead4;
-  --color-primary-400: #2dd4bf;
-  --color-primary-500: #14b8a6;
-  --color-primary-600: #0d9488;
-  --color-primary-700: #0f766e;
-  --color-primary-800: #115e59;
-  --color-primary-900: #134e4a;
+  /* プライマリ — スレートティール系 */
+  --color-primary-50: #f0faf8;
+  --color-primary-100: #d4f0ea;
+  --color-primary-200: #a9e1d6;
+  --color-primary-300: #70c9b8;
+  --color-primary-400: #3fb09e;
+  --color-primary-500: #2a9d8f;
+  --color-primary-600: #207d72;
+  --color-primary-700: #1d655d;
+  --color-primary-800: #1a504b;
+  --color-primary-900: #16423e;
 
-  /* アクセント — アンバー系 */
-  --color-accent-50: #fffbeb;
-  --color-accent-100: #fef3c7;
-  --color-accent-200: #fde68a;
-  --color-accent-300: #fcd34d;
-  --color-accent-400: #fbbf24;
-  --color-accent-500: #f59e0b;
-  --color-accent-600: #d97706;
+  /* アクセント — ウォームコーラル系 */
+  --color-accent-50: #fef4f0;
+  --color-accent-100: #fde5db;
+  --color-accent-200: #fac7b3;
+  --color-accent-300: #f4a182;
+  --color-accent-400: #ed8260;
+  --color-accent-500: #e76f51;
+  --color-accent-600: #c85a3e;
 
   /* 背景 */
   --color-page-bg: #f5f7f6;
@@ -41,6 +41,36 @@
   --color-success: #16a34a;
   --color-error: #dc2626;
   --color-warning: #d97706;
+
+  /* シャドウスケール */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+
+  /* フォント */
+  --font-sans: 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+}
+
+/* キーフレーム定義 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 /* ベーススタイル */
@@ -54,5 +84,28 @@
   .member-row-content-visibility {
     content-visibility: auto;
     contain-intrinsic-size: 80px;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease both;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.4s ease both;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease both;
+  }
+
+  .card-base {
+    @apply bg-surface rounded-2xl shadow-sm;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, #edf2f0 25%, #e2e8e6 50%, #edf2f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    @apply rounded-lg;
   }
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
-import { ArrowLeft, Clock, Calendar, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -114,9 +114,22 @@ export function MemberDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-text-muted">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-        読み込み中...
+      <div className="space-y-6">
+        <div className="h-8 w-28 skeleton" />
+        <div className="card-base p-8 flex items-center gap-6">
+          <div className="w-16 h-16 skeleton rounded-2xl" />
+          <div className="space-y-2">
+            <div className="h-6 w-40 skeleton" />
+            <div className="h-4 w-56 skeleton" />
+          </div>
+        </div>
+        {[...Array(2)].map((_, i) => (
+          <div key={i} className="card-base p-6 space-y-3">
+            <div className="h-5 w-48 skeleton" />
+            <div className="h-4 w-36 skeleton" />
+          </div>
+        ))}
+        <span className="sr-only">読み込み中...</span>
       </div>
     );
   }
@@ -124,7 +137,7 @@ export function MemberDetailPage() {
   if (error) {
     return (
       <div className="space-y-4">
-        <div className="mx-auto max-w-xl mt-8 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+        <div className="mx-auto max-w-xl mt-8 card-base border-l-4 border-l-error p-4 text-red-700">
           {error}
         </div>
         <button
@@ -143,15 +156,15 @@ export function MemberDetailPage() {
       {/* 戻るボタン */}
       <button
         onClick={() => navigate('/')}
-        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         一覧へ戻る
       </button>
 
       {/* メンバーヘッダーカード */}
-      <div className="bg-surface rounded-xl border border-border-light p-6 flex items-center gap-6">
-        <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center text-primary-700 font-bold text-xl">
+      <div className="card-base p-8 flex items-center gap-6 animate-fade-in-up">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-2xl">
           {member.name.charAt(0)}
         </div>
         <div>
@@ -171,12 +184,13 @@ export function MemberDetailPage() {
 
       {/* グループ別サマリー＋アコーディオン */}
       <div className="space-y-4">
-        {groupAttendances.map((group) => {
+        {groupAttendances.map((group, index) => {
           const isExpanded = expandedGroups.has(group.groupId);
           return (
             <div
               key={group.groupId}
-              className="bg-surface rounded-xl border border-border-light overflow-hidden"
+              className="card-base overflow-hidden animate-fade-in-up"
+              style={{ animationDelay: `${index * 80}ms` }}
             >
               {/* サマリーカード */}
               <button
@@ -211,16 +225,16 @@ export function MemberDetailPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-border-light bg-surface-muted text-left text-sm text-text-secondary">
+                        <tr className="border-b border-border-light bg-surface-muted text-left text-xs text-text-muted uppercase tracking-wider">
                           <th className="px-6 py-3 font-medium">日付</th>
                           <th className="px-6 py-3 font-medium text-right">参加時間</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border-light">
                         {group.sessions.map((session) => (
-                          <tr key={session.date} className="text-sm">
+                          <tr key={session.date} className="text-sm hover:bg-surface-muted transition-colors">
                             <td className="px-6 py-3 text-text-primary">{session.date}</td>
-                            <td className="px-6 py-3 text-text-primary text-right font-medium">
+                            <td className="px-6 py-3 text-text-primary text-right font-medium tabular-nums">
                               {formatDuration(session.durationSeconds)}
                             </td>
                           </tr>

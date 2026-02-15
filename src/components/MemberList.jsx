@@ -3,15 +3,16 @@ import { formatDuration } from '../utils/format-duration';
 import { User, Clock, ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const MemberRow = memo(function MemberRow({ member, onNavigate }) {
+const MemberRow = memo(function MemberRow({ member, onNavigate, index }) {
     return (
         <div
             data-testid="member-row"
             onClick={() => onNavigate(`/members/${member.id}`)}
-            className="member-row-content-visibility p-4 px-6 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group"
+            className="member-row-content-visibility p-4 px-6 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group animate-fade-in-up"
+            style={{ animationDelay: `${index * 40}ms` }}
         >
             <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-700 font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-sm">
                     {member.name.charAt(0)}
                 </div>
                 <h3 className="font-medium text-text-primary">{member.name}</h3>
@@ -59,8 +60,8 @@ export function MemberList({ members }) {
     );
 
     return (
-        <div className="bg-surface rounded-xl border border-border-light overflow-hidden">
-            <div className="p-6 border-b border-border-light bg-surface-muted flex justify-between items-center gap-4">
+        <div className="card-base overflow-hidden">
+            <div className="p-6 border-b border-border-light flex justify-between items-center gap-4">
                 <h2 className="text-lg font-bold text-text-primary flex items-center gap-2 shrink-0">
                     <User className="w-5 h-5 text-primary-600" />
                     メンバー
@@ -72,10 +73,10 @@ export function MemberList({ members }) {
                         placeholder="名前で検索..."
                         value={inputValue}
                         onChange={handleSearchChange}
-                        className="w-full pl-8 pr-3 py-1.5 text-sm border border-border-light rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full pl-8 pr-3 py-1.5 text-sm border border-border-light rounded-xl bg-surface focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-500"
                     />
                 </div>
-                <span className="text-xs font-medium bg-primary-50 text-primary-700 px-2 py-1 rounded-full shrink-0">
+                <span className="text-xs font-medium bg-primary-50 text-primary-600 px-2.5 py-1 rounded-full shrink-0">
                     {sortedMembers.length} 名
                 </span>
             </div>
@@ -85,8 +86,13 @@ export function MemberList({ members }) {
                         該当するメンバーが見つかりません
                     </div>
                 ) : (
-                    sortedMembers.map((member) => (
-                        <MemberRow key={member.id} member={member} onNavigate={navigate} />
+                    sortedMembers.map((member, index) => (
+                        <MemberRow
+                            key={member.id}
+                            member={member}
+                            onNavigate={navigate}
+                            index={index}
+                        />
                     ))
                 )}
             </div>

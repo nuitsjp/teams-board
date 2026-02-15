@@ -4,7 +4,7 @@ import { formatDuration } from '../utils/format-duration.js';
 import { SummaryCard } from '../components/SummaryCard';
 import { GroupList } from '../components/GroupList';
 import { MemberList } from '../components/MemberList';
-import { Clock, Users, User, Loader2 } from 'lucide-react';
+import { Clock, Users, User } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -35,16 +35,44 @@ export function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-text-muted">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-        読み込み中...
+      <div className="space-y-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="card-base p-6 flex items-center space-x-5">
+              <div className="w-[52px] h-[52px] skeleton rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-20 skeleton" />
+                <div className="h-7 w-28 skeleton" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-5">
+            <div className="card-base p-6 space-y-4">
+              <div className="h-5 w-32 skeleton" />
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-16 skeleton" />
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-7">
+            <div className="card-base p-6 space-y-4">
+              <div className="h-5 w-32 skeleton" />
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 skeleton" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <span className="sr-only">読み込み中...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="mx-auto max-w-xl mt-8 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
+      <div className="mx-auto max-w-xl mt-8 card-base border-l-4 border-l-error p-4 text-red-700">
         データ取得エラー: {error}
       </div>
     );
@@ -61,22 +89,22 @@ export function DashboardPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* 統計カード */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SummaryCard title="総参加時間" value={formatDuration(totalDuration)} icon={Clock} />
-        <SummaryCard title="総開催回数" value={`${totalSessions}回`} icon={Users} />
-        <SummaryCard title="参加人数" value={`${members.length}人`} icon={User} />
+        <SummaryCard title="総参加時間" value={formatDuration(totalDuration)} icon={Clock} style={{ animationDelay: '0ms' }} />
+        <SummaryCard title="総開催回数" value={`${totalSessions}回`} icon={Users} style={{ animationDelay: '100ms' }} />
+        <SummaryCard title="参加人数" value={`${members.length}人`} icon={User} style={{ animationDelay: '200ms' }} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* 左カラム: グループ */}
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-5 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <GroupList groups={groups} />
         </div>
 
         {/* 右カラム: メンバー一覧 */}
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-7 animate-fade-in-up" style={{ animationDelay: '250ms' }}>
           <MemberList members={members} />
         </div>
       </div>
