@@ -8,21 +8,21 @@ const GroupRow = memo(function GroupRow({ group, onNavigate, index }) {
         <div
             data-testid="group-row"
             onClick={() => onNavigate(`/groups/${group.id}`)}
-            className="p-5 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group animate-fade-in-up"
+            className="list-accent-primary p-5 hover:bg-surface-muted cursor-pointer flex justify-between items-center group animate-fade-in-up"
             style={{ animationDelay: `${index * 60}ms` }}
         >
             <div>
                 <h3 className="font-semibold text-text-primary mb-2">{group.name}</h3>
                 <div className="flex items-center text-sm text-text-secondary gap-6">
                     <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
-                        <span className="font-bold text-text-primary">
+                        <span className="font-bold text-text-primary font-display">
                             {group.sessionIds.length}
                         </span>{' '}
                         回開催
                     </span>
                     <span className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4 text-text-muted" />
-                        {formatDuration(group.totalDurationSeconds)}
+                        <span className="font-display">{formatDuration(group.totalDurationSeconds)}</span>
                     </span>
                 </div>
             </div>
@@ -35,7 +35,7 @@ export function GroupList({ groups }) {
     const navigate = useNavigate();
 
     return (
-        <div className="card-base overflow-hidden">
+        <div className="card-base overflow-hidden card-interactive">
             <div className="p-6 border-b border-border-light">
                 <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
                     <Users className="w-5 h-5 text-primary-600" />

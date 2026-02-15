@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GroupDetailPage } from '../../../src/pages/GroupDetailPage.jsx';
 
@@ -107,8 +107,9 @@ describe('GroupDetailPage', () => {
       expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
     });
 
-    // ヘッダーカードの情報
-    expect(screen.getByText(/2回開催/)).toBeInTheDocument();
+    // ヘッダーカードの情報（数値とテキストが別要素に分かれている）
+    const headerCard = screen.getByText('フロントエンド勉強会').closest('div');
+    expect(headerCard.textContent).toContain('2回開催');
 
     // セッション日付が表示される（日付降順）
     const headings = screen.getAllByRole('heading', { level: 3 });
@@ -131,14 +132,15 @@ describe('GroupDetailPage', () => {
       expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
     });
 
-    // 初期状態ではテーブルが表示されない（複数セッション）
+    // 初期状態ではテーブルがaria-hiddenで非表示（queryByRoleはaria-hiddenを尊重）
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
 
     // セッションをクリックして展開
     fireEvent.click(screen.getByText('2026-01-15'));
-    expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
-    expect(screen.getByText('高橋 美咲')).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(table).toBeInTheDocument();
+    expect(within(table).getByText('佐藤 一郎')).toBeInTheDocument();
+    expect(within(table).getByText('高橋 美咲')).toBeInTheDocument();
 
     // 再クリックで折りたたみ
     fireEvent.click(screen.getByText('2026-01-15'));

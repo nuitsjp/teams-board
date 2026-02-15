@@ -8,7 +8,7 @@ const MemberRow = memo(function MemberRow({ member, onNavigate, index }) {
         <div
             data-testid="member-row"
             onClick={() => onNavigate(`/members/${member.id}`)}
-            className="member-row-content-visibility p-4 px-6 hover:bg-surface-muted transition-colors cursor-pointer flex justify-between items-center group animate-fade-in-up"
+            className="member-row-content-visibility list-accent-warm p-4 px-6 hover:bg-surface-muted cursor-pointer flex justify-between items-center group animate-fade-in-up"
             style={{ animationDelay: `${index * 40}ms` }}
         >
             <div className="flex items-center gap-4">
@@ -19,14 +19,14 @@ const MemberRow = memo(function MemberRow({ member, onNavigate, index }) {
             </div>
             <div className="flex items-center text-sm text-text-secondary gap-4">
                 <span className="flex items-center gap-1.5 bg-surface-muted px-2 py-1 rounded">
-                    <span className="font-semibold text-text-primary">
+                    <span className="font-semibold text-text-primary font-display">
                         {member.sessionIds.length}
                     </span>{' '}
                     回
                 </span>
                 <span className="flex items-center gap-1.5 w-24 justify-end">
                     <Clock className="w-4 h-4 text-text-muted" />
-                    {formatDuration(member.totalDurationSeconds)}
+                    <span className="font-display">{formatDuration(member.totalDurationSeconds)}</span>
                 </span>
                 <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-primary-600 transition-colors" />
             </div>
@@ -60,7 +60,7 @@ export function MemberList({ members }) {
     );
 
     return (
-        <div className="card-base overflow-hidden">
+        <div className="card-base overflow-hidden card-interactive">
             <div className="p-6 border-b border-border-light flex justify-between items-center gap-4">
                 <h2 className="text-lg font-bold text-text-primary flex items-center gap-2 shrink-0">
                     <User className="w-5 h-5 text-primary-600" />
