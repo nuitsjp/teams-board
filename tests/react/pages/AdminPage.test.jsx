@@ -1324,4 +1324,95 @@ describe('AdminPage — セッション名管理', () => {
     expect(savedSession.name).toBe('第3回 React入門');
     expect(mockInvalidateSessionCache).toHaveBeenCalledWith('group1-2026-02-08');
   });
+
+  it('セッション名保存失敗時にエラーメッセージが表示される', async () => {
+    const user = userEvent.setup();
+    mockExecuteWriteSequence.mockResolvedValueOnce({
+      allSucceeded: false,
+      results: [
+        { path: 'data/sessions/group1-2026-02-08.json', success: false, error: 'ストレージエラー' },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, 'テスト名');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('セッション名の保存に失敗しました。ストレージエラー')
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('セッション名保存時に例外が発生するとエラーメッセージが表示される', async () => {
+    const user = userEvent.setup();
+    mockExecuteWriteSequence.mockRejectedValueOnce(new Error('ネットワーク障害'));
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, 'テスト名');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('セッション名の保存に失敗しました。ネットワーク障害')
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('空のセッション名で保存すると name プロパティが削除される', async () => {
+    const user = userEvent.setup();
+    mockFetchSession.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'group1-2026-02-08',
+        groupId: 'group1',
+        date: '2026-02-08',
+        name: '既存の名前',
+        attendances: [],
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.clear(input);
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(mockExecuteWriteSequence).toHaveBeenCalled();
+    });
+
+    const callArgs = mockExecuteWriteSequence.mock.calls[0][0];
+    const savedSession = JSON.parse(callArgs.newItems[0].content);
+    expect(savedSession.name).toBeUndefined();
+  });
 });
