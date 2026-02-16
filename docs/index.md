@@ -6,6 +6,8 @@ Teams Board は、Microsoft Teams の参加者レポート CSV を集約・可�
 
 Teams会議の同名の会議を会議グループとしてまとめ、参加状況を管理し、メンバーの参加時間を可視化する。
 
+- [PDF版](pdf/teams-board-docs.pdf)
+
 
 ## ドメインモデル
 
