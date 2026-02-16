@@ -1,5 +1,5 @@
 // AdminPage — ソースファイル保存パスの検証テスト
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminPage } from '../../../src/pages/AdminPage.jsx';
@@ -553,13 +553,15 @@ describe('AdminPage — 非管理者リダイレクト', () => {
     mockIsAdmin = true;
   });
 
-  it('非管理者はダッシュボードにリダイレクトされる', () => {
+  it('非管理者はダッシュボードにリダイレクトされる', async () => {
     render(
       <MemoryRouter>
         <AdminPage />
       </MemoryRouter>
     );
     expect(screen.queryByText('管理者パネル')).not.toBeInTheDocument();
+    // useEffect の非同期処理（fetchIndex → セッション一覧取得）の完了を待つ
+    await act(async () => {});
   });
 });
 

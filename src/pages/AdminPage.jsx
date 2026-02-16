@@ -92,8 +92,10 @@ export function AdminPage() {
 
   // 既存セッションIDの取得とグループ一覧の取得
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       const indexResult = await dataFetcher.fetchIndex();
+      if (cancelled) return;
       if (indexResult.ok) {
         const sessionIds = new Set(indexResult.data.groups.flatMap((g) => g.sessionIds));
         setExistingSessionIds(sessionIds);
@@ -106,6 +108,7 @@ export function AdminPage() {
             result: await dataFetcher.fetchSession(sessionId),
           }))
         );
+        if (cancelled) return;
         const loadedSessions = sessionResults
           .filter(({ result }) => result.ok)
           .map(({ result }) => result.data)
@@ -116,6 +119,9 @@ export function AdminPage() {
         );
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [dataFetcher, setExistingSessionIds]);
 
   useEffect(() => {
