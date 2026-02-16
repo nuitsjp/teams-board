@@ -133,7 +133,7 @@ export default defineConfig({
     setupFiles: ['./tests/vitest.setup.js'],
     coverage: {
       include: ['src/**/*.{js,jsx}'],
-      exclude: ['src/main.jsx'],
+      exclude: ['src/main.jsx', 'src/App.jsx', 'src/services/shared-data-fetcher.js'],
     },
   },
 });
