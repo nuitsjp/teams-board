@@ -131,5 +131,9 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.test.{js,jsx}'],
     setupFiles: ['./tests/vitest.setup.js'],
+    coverage: {
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/main.jsx'],
+    },
   },
 });
