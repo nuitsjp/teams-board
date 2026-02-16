@@ -244,4 +244,62 @@ describe('BlobWriter', () => {
       expect(result.results[0].success).toBe(true);
     });
   });
+
+  describe('rawCsv書き込み失敗', () => {
+    it('rawCsvの書き込みが失敗した場合にシーケンスが中断されること', async () => {
+      mockBlobStorage.write.mockImplementation(async (path) => {
+        if (path.includes('raw/')) {
+          return { path, success: false, error: 'HTTP 403 Forbidden' };
+        }
+        return { path, success: true };
+      });
+
+      const result = await writer.executeWriteSequence({
+        rawCsv: {
+          path: 'raw/2026-02-06-test.csv',
+          content: 'csv data',
+          contentType: 'text/csv',
+        },
+        newItems: [
+          { path: 'data/items/n.json', content: '{}', contentType: 'application/json' },
+        ],
+        indexUpdater: (idx) => idx,
+      });
+
+      expect(result.allSucceeded).toBe(false);
+      // rawCsvの失敗で中断されるため、itemsの書き込みは行われない
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0].path).toContain('raw/');
+      expect(result.results[0].success).toBe(false);
+    });
+  });
+
+  describe('indexUpdater省略', () => {
+    it('indexUpdaterが関数でない場合はindex取得・更新をスキップすること', async () => {
+      const result = await writer.executeWriteSequence({
+        newItems: [
+          { path: 'data/items/a.json', content: '{}', contentType: 'application/json' },
+        ],
+      });
+
+      // IndexFetcher.fetchは呼ばれないこと
+      expect(mockIndexFetcher.fetch).not.toHaveBeenCalled();
+      expect(result.allSucceeded).toBe(true);
+      expect(result.results).toHaveLength(1);
+    });
+
+    it('indexUpdaterがundefinedの場合はindex.jsonのPUTをスキップすること', async () => {
+      const result = await writer.executeWriteSequence({
+        newItems: [
+          { path: 'data/items/a.json', content: '{}', contentType: 'application/json' },
+        ],
+        indexUpdater: undefined,
+      });
+
+      expect(mockIndexFetcher.fetch).not.toHaveBeenCalled();
+      const indexPuts = putCalls.filter((c) => c.path === 'data/index.json');
+      expect(indexPuts).toHaveLength(0);
+      expect(result.allSucceeded).toBe(true);
+    });
+  });
 });
