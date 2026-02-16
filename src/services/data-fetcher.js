@@ -23,6 +23,13 @@ export class DataFetcher {
     }
 
     /**
+     * index.json のキャッシュを明示的に無効化する
+     */
+    invalidateIndexCache() {
+        this.#indexCache = null;
+    }
+
+    /**
      * index.jsonを取得する（TTL ベースキャッシュ付き）
      * @returns {Promise<{ok: true, data: object} | {ok: false, error: string}>}
      */
