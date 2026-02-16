@@ -30,6 +30,18 @@ export class DataFetcher {
     }
 
     /**
+     * セッションJSONキャッシュを明示的に無効化する
+     * @param {string} [sessionId]
+     */
+    invalidateSessionCache(sessionId) {
+        if (typeof sessionId === 'string' && sessionId.length > 0) {
+            this.#sessionCache.delete(`data/sessions/${sessionId}.json`);
+            return;
+        }
+        this.#sessionCache.clear();
+    }
+
+    /**
      * index.jsonを取得する（TTL ベースキャッシュ付き）
      * @returns {Promise<{ok: true, data: object} | {ok: false, error: string}>}
      */

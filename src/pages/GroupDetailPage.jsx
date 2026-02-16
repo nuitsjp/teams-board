@@ -14,6 +14,10 @@ import {
 
 const fetcher = new DataFetcher();
 
+function formatSessionLabel(session) {
+  return session.name ? `${session.name} - ${session.date}` : session.date;
+}
+
 /**
  * グループ詳細画面 — 期別2カラムレイアウトでセッション一覧と参加者詳細を表示
  */
@@ -96,6 +100,7 @@ export function GroupDetailPage() {
         periodEntry.sessions.push({
           sessionId: session.id,
           date: session.date,
+          name: session.name,
           attendeeCount: attendees.length,
           totalDurationSeconds,
           attendees,
@@ -273,7 +278,9 @@ export function GroupDetailPage() {
                       <ChevronRight className="w-5 h-5 text-text-muted" aria-hidden="true" />
                     )}
                     <div>
-                      <h3 className="text-base font-bold text-text-primary">{session.date}</h3>
+                      <h3 className="text-base font-bold text-text-primary">
+                        {formatSessionLabel(session)}
+                      </h3>
                       <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                         <span className="flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />

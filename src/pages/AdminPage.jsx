@@ -13,7 +13,16 @@ import { IndexMerger } from '../services/index-merger.js';
 import { IndexEditor } from '../services/index-editor.js';
 import { sharedDataFetcher } from '../services/shared-data-fetcher.js';
 import { APP_CONFIG } from '../config/app-config.js';
-import { ArrowLeft, Upload, RotateCcw, AlertCircle, CheckCircle, GitMerge, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Upload,
+  RotateCcw,
+  AlertCircle,
+  CheckCircle,
+  GitMerge,
+  Save,
+  X,
+} from 'lucide-react';
 import { GroupNameEditor } from '../components/GroupNameEditor.jsx';
 
 /**
@@ -67,8 +76,12 @@ export function AdminPage() {
 
   // グループ管理機能用の状態
   const [groups, setGroups] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [sessionNameInputs, setSessionNameInputs] = useState({});
   const [savingGroupId, setSavingGroupId] = useState(null);
   const [groupMessage, setGroupMessage] = useState({ type: '', text: '' });
+  const [sessionMessage, setSessionMessage] = useState({ type: '', text: '' });
+  const [savingSessionId, setSavingSessionId] = useState(null);
   const [cachedIndex, setCachedIndex] = useState(null);
   const [selectedGroupIds, setSelectedGroupIds] = useState(new Set());
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
@@ -84,6 +97,23 @@ export function AdminPage() {
         setExistingSessionIds(sessionIds);
         setGroups(indexResult.data.groups);
         setCachedIndex(indexResult.data);
+
+        const sessionResults = await Promise.all(
+          [...sessionIds].map(async (sessionId) => ({
+            sessionId,
+            result: await dataFetcher.fetchSession(sessionId),
+          }))
+        );
+        const loadedSessions = sessionResults
+          .filter(({ result }) => result.ok)
+          .map(({ result }) => result.data)
+          .sort((a, b) => b.date.localeCompare(a.date));
+        setSessions(loadedSessions);
+        setSessionNameInputs(
+          Object.fromEntries(
+            loadedSessions.map((session) => [session.id, typeof session.name === 'string' ? session.name : ''])
+          )
+        );
       }
     })();
   }, [dataFetcher, setExistingSessionIds]);
@@ -308,6 +338,8 @@ export function AdminPage() {
   );
 
   const isGroupOperationDisabled = savingGroupId !== null || merging || saving;
+  const isSessionOperationDisabled = savingSessionId !== null || saving || merging;
+  const groupNameMap = useMemo(() => new Map(groups.map((group) => [group.id, group.name])), [groups]);
 
   const toggleGroupSelection = useCallback((groupId) => {
     setSelectedGroupIds((prev) => {
@@ -417,6 +449,84 @@ export function AdminPage() {
     blobWriter,
     closeMergeDialog,
   ]);
+
+  const handleSaveSessionName = useCallback(
+    async (sessionId, name) => {
+      const target = sessions.find((session) => session.id === sessionId);
+      if (!target) {
+        return;
+      }
+
+      const normalizedName = name.trim();
+      if (normalizedName.length > 256) {
+        setSessionMessage({ type: 'error', text: 'セッション名は256文字以内で入力してください' });
+        return;
+      }
+
+      const updatedSession = { ...target };
+      if (normalizedName.length === 0) {
+        delete updatedSession.name;
+      } else {
+        updatedSession.name = normalizedName;
+      }
+
+      setSavingSessionId(sessionId);
+      setSessionMessage({ type: '', text: '' });
+
+      try {
+        const result = await blobWriter.executeWriteSequence({
+          newItems: [
+            {
+              path: `data/sessions/${sessionId}.json`,
+              content: JSON.stringify(updatedSession, null, 2),
+              contentType: 'application/json',
+            },
+          ],
+        });
+
+        if (!result.allSucceeded) {
+          const errorMessages = result.results
+            .filter((writeResult) => !writeResult.success)
+            .map((writeResult) => writeResult.error)
+            .join(', ');
+          setSessionMessage({
+            type: 'error',
+            text: `セッション名の保存に失敗しました。${errorMessages}`,
+          });
+          return;
+        }
+
+        setSessions((prev) =>
+          prev.map((session) => {
+            if (session.id !== sessionId) {
+              return session;
+            }
+            const updated = { ...session };
+            if (updatedSession.name === undefined) {
+              delete updated.name;
+            } else {
+              updated.name = updatedSession.name;
+            }
+            return updated;
+          })
+        );
+        setSessionNameInputs((prev) => ({
+          ...prev,
+          [sessionId]: updatedSession.name || '',
+        }));
+        dataFetcher.invalidateSessionCache(sessionId);
+        setSessionMessage({ type: 'success', text: 'セッション名を保存しました' });
+      } catch (error) {
+        setSessionMessage({
+          type: 'error',
+          text: `セッション名の保存に失敗しました。${error.message}`,
+        });
+      } finally {
+        setSavingSessionId(null);
+      }
+    },
+    [blobWriter, dataFetcher, sessions]
+  );
 
   // 非管理者はダッシュボードにリダイレクト
   if (!auth.isAdmin) return <Navigate to="/" replace />;
@@ -576,6 +686,98 @@ export function AdminPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-text-primary text-right tabular-nums">
                       {group.sessionIds.length}件
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* セッション名管理セクション */}
+      <div className="mt-8 pt-8 border-t border-border-light">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-text-primary tracking-tight">セッション名管理</h3>
+          <p className="text-sm text-text-muted mt-1">
+            セッション名を設定すると、明細画面で「セッション名 - 日付」で表示されます
+          </p>
+        </div>
+
+        <div aria-live="polite">
+          {sessionMessage.text && (
+            <div
+              className={`mb-4 p-3 rounded-xl flex items-center gap-2 animate-scale-in ${
+                sessionMessage.type === 'success'
+                  ? 'bg-green-50 text-green-800'
+                  : 'bg-red-50 text-red-800'
+              }`}
+            >
+              {sessionMessage.type === 'success' ? (
+                <CheckCircle className="w-5 h-5" aria-hidden="true" />
+              ) : (
+                <AlertCircle className="w-5 h-5" aria-hidden="true" />
+              )}
+              <span className="text-sm">{sessionMessage.text}</span>
+            </div>
+          )}
+        </div>
+
+        {sessions.length === 0 ? (
+          <p className="text-sm text-text-muted">セッションがありません</p>
+        ) : (
+          <div className="card-base overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-surface-muted">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                    日付
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                    グループ
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                    セッション名
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-light">
+                {sessions.map((session) => (
+                  <tr key={session.id} className="hover:bg-surface-muted transition-colors">
+                    <td className="px-4 py-3 text-sm text-text-primary tabular-nums">{session.date}</td>
+                    <td className="px-4 py-3 text-sm text-text-primary">
+                      {groupNameMap.get(session.groupId) || session.groupId}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <input
+                        type="text"
+                        value={sessionNameInputs[session.id] || ''}
+                        onChange={(event) =>
+                          setSessionNameInputs((prev) => ({
+                            ...prev,
+                            [session.id]: event.target.value,
+                          }))
+                        }
+                        maxLength={256}
+                        className="w-full px-3 py-2 border border-border-light rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-500"
+                        placeholder="未設定（空欄で日付のみ表示）"
+                        aria-label={`${session.date} のセッション名`}
+                        disabled={isSessionOperationDisabled}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
+                        onClick={() => handleSaveSessionName(session.id, sessionNameInputs[session.id] || '')}
+                        disabled={isSessionOperationDisabled}
+                      >
+                        <Save className="w-4 h-4" aria-hidden="true" />
+                        保存
+                      </button>
                     </td>
                   </tr>
                 ))}
