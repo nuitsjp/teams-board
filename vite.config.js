@@ -106,8 +106,22 @@ function serveDevFixtures() {
   };
 }
 
+/**
+ * index.html の <title> タグを VITE_APP_TITLE 環境変数の値で置換するプラグイン。
+ * 未設定時はデフォルト値「Teams Board」を使用する。
+ */
+function htmlTitlePlugin() {
+  return {
+    name: 'html-title',
+    transformIndexHtml(html) {
+      const title = process.env.VITE_APP_TITLE || 'Teams Board';
+      return html.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [serveDevFixtures(), react()],
+  plugins: [serveDevFixtures(), htmlTitlePlugin(), react()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
