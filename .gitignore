@@ -247,3 +247,6 @@ __pycache__/
 .rulesync/rules/*.local.md
 rulesync.local.jsonc
 !.rulesync/.aiignore
+
+# User-specific files
+!/.github/copilot-instructions.md
