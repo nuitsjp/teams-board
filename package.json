@@ -14,6 +14,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
+    "test:full": "pnpm run lint && pnpm run lint:text && pnpm run test:coverage && pnpm run test:e2e",
     "lint": "eslint .",
     "lint:text": "textlint \"**/*.md\"",
     "lint:text:fix": "textlint --fix \"**/*.md\"",
