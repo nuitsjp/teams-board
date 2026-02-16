@@ -41,6 +41,12 @@ export function MemberDetailPage() {
       setMember(found);
 
       const groupNameMap = new Map(groups.map((g) => [g.id, g.name]));
+      const sessionGroupMap = new Map();
+      for (const group of groups) {
+        for (const sessionId of group.sessionIds) {
+          sessionGroupMap.set(sessionId, { groupId: group.id, groupName: group.name });
+        }
+      }
 
       const sessionResults = await Promise.all(
         found.sessionIds.map((sid) => fetcher.fetchSession(sid))
@@ -77,9 +83,10 @@ export function MemberDetailPage() {
         const periodEntry = periodMap.get(period.label);
         periodEntry.totalSessions += 1;
         periodEntry.totalDurationSeconds += attendance.durationSeconds;
+        const resolvedGroup = sessionGroupMap.get(session.id);
         periodEntry.sessions.push({
-          groupId: session.groupId,
-          groupName: groupNameMap.get(session.groupId) || '不明',
+          groupId: resolvedGroup?.groupId || session.groupId,
+          groupName: resolvedGroup?.groupName || groupNameMap.get(session.groupId) || '不明',
           date: session.date,
           durationSeconds: attendance.durationSeconds,
         });
@@ -242,14 +249,14 @@ export function MemberDetailPage() {
                     : 'hover:bg-surface-muted border-l-4 border-l-transparent'
                 }`}
               >
-                <div className="text-sm font-bold text-text-primary">{period.label}</div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-text-secondary">
+                <div className="text-base font-bold text-text-primary">{period.label}</div>
+                <div className="flex items-center gap-3 mt-1 text-sm text-text-secondary">
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-text-muted" aria-hidden="true" />
+                    <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                     <span className="font-display font-semibold">{period.totalSessions}</span>回
                   </span>
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-text-muted" aria-hidden="true" />
+                    <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                     <span className="font-display">{formatDuration(period.totalDurationSeconds)}</span>
                   </span>
                 </div>

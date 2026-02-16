@@ -148,4 +148,87 @@ describe('IndexEditor', () => {
       expect(editor.validateGroupName(null)).toBe('グループ名は文字列である必要があります');
     });
   });
+
+  describe('mergeGroups', () => {
+    it('正常系: 複数グループを統合し、統合元を削除する', () => {
+      const editor = new IndexEditor();
+      const result = editor.mergeGroups(sampleIndex, 'group1', ['group1', 'group2']);
+
+      expect(result.error).toBeUndefined();
+      expect(result.index.groups).toHaveLength(1);
+      expect(result.index.groups[0].id).toBe('group1');
+      expect(result.index.groups[0].name).toBe('旧グループ名');
+      expect(result.index.groups[0].sessionIds).toEqual(['session1', 'session2', 'session3']);
+      expect(result.index.groups[0].totalDurationSeconds).toBe(5400);
+      expect(result.index.updatedAt).not.toBe(sampleIndex.updatedAt);
+    });
+
+    it('正常系: 重複sessionIdは除外して統合を継続する', () => {
+      const editor = new IndexEditor();
+      const duplicatedIndex = {
+        ...sampleIndex,
+        groups: [
+          {
+            id: 'group1',
+            name: '旧グループ名',
+            totalDurationSeconds: 3600,
+            sessionIds: ['session1', 'session2'],
+          },
+          {
+            id: 'group2',
+            name: '別のグループ',
+            totalDurationSeconds: 1800,
+            sessionIds: ['session2', 'session3'],
+          },
+        ],
+      };
+      const result = editor.mergeGroups(duplicatedIndex, 'group1', ['group1', 'group2']);
+
+      expect(result.error).toBeUndefined();
+      expect(result.index.groups).toHaveLength(1);
+      expect(result.index.groups[0].sessionIds).toEqual(['session1', 'session2', 'session3']);
+      expect(result.index.groups[0].totalDurationSeconds).toBe(4500);
+    });
+
+    it('正常系: メンバー情報は変更されない', () => {
+      const editor = new IndexEditor();
+      const result = editor.mergeGroups(sampleIndex, 'group1', ['group1', 'group2']);
+
+      expect(result.index.members).toHaveLength(1);
+      expect(result.index.members[0].id).toBe('member1');
+      expect(result.index.members[0].sessionIds).toEqual(['session1']);
+    });
+
+    it('正常系: 入力オブジェクトは破壊されない', () => {
+      const editor = new IndexEditor();
+      const before = JSON.parse(JSON.stringify(sampleIndex));
+      editor.mergeGroups(sampleIndex, 'group1', ['group1', 'group2']);
+
+      expect(sampleIndex).toEqual(before);
+    });
+
+    it('異常系: 選択数が1件の場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.mergeGroups(sampleIndex, 'group1', ['group1']);
+
+      expect(result.error).toBe('グループ統合には2つ以上のグループ選択が必要です');
+      expect(result.index).toBe(sampleIndex);
+    });
+
+    it('異常系: 統合先が選択グループに含まれない場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.mergeGroups(sampleIndex, 'group1', ['group2', 'group3']);
+
+      expect(result.error).toBe('統合先グループは選択されたグループに含まれている必要があります');
+      expect(result.index).toBe(sampleIndex);
+    });
+
+    it('異常系: 存在しないグループIDを指定した場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.mergeGroups(sampleIndex, 'group1', ['group1', 'missing']);
+
+      expect(result.error).toBe('グループID missing が見つかりません');
+      expect(result.index).toBe(sampleIndex);
+    });
+  });
 });
