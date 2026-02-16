@@ -1,15 +1,18 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DashboardPage } from '../../../src/pages/DashboardPage.jsx';
+import { sharedDataFetcher } from '../../../src/services/shared-data-fetcher.js';
 
 // モック用の関数参照を保持する
 const mockFetchIndex = vi.fn();
+const mockInvalidateIndexCache = vi.fn();
 
-vi.mock('../../../src/services/data-fetcher.js', () => {
+vi.mock('../../../src/services/shared-data-fetcher.js', () => {
   return {
-    DataFetcher: vi.fn().mockImplementation(() => ({
+    sharedDataFetcher: {
       fetchIndex: (...args) => mockFetchIndex(...args),
-    })),
+      invalidateIndexCache: (...args) => mockInvalidateIndexCache(...args),
+    },
   };
 });
 
@@ -88,6 +91,49 @@ describe('DashboardPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/データ取得エラー/)).toBeInTheDocument();
+    });
+  });
+
+  it('管理画面保存後の再表示で最新データを表示すること', async () => {
+    const staleData = {
+      ...mockIndexData,
+      groups: [{ id: 'g-old', name: '旧グループ', totalDurationSeconds: 600, sessionIds: ['s-old'] }],
+      members: [{ id: 'm-old', name: '旧メンバー', totalDurationSeconds: 600, sessionIds: ['s-old'] }],
+    };
+    const freshData = {
+      ...mockIndexData,
+      groups: [{ id: 'g-new', name: '新グループ', totalDurationSeconds: 1200, sessionIds: ['s-new'] }],
+      members: [{ id: 'm-new', name: '新メンバー', totalDurationSeconds: 1200, sessionIds: ['s-new'] }],
+    };
+
+    mockFetchIndex
+      .mockResolvedValueOnce({ ok: true, data: staleData })
+      .mockResolvedValueOnce({ ok: true, data: freshData });
+
+    const { unmount } = render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('旧グループ')).toBeInTheDocument();
+    });
+
+    // 管理画面での保存成功後にキャッシュ無効化された状況を再現
+    sharedDataFetcher.invalidateIndexCache();
+    expect(mockInvalidateIndexCache).toHaveBeenCalledTimes(1);
+
+    unmount();
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('新グループ')).toBeInTheDocument();
     });
   });
 });

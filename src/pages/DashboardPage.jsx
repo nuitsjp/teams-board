@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { DataFetcher } from '../services/data-fetcher.js';
+import { sharedDataFetcher } from '../services/shared-data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { SummaryCard } from '../components/SummaryCard';
 import { GroupList } from '../components/GroupList';
 import { MemberList } from '../components/MemberList';
 import { Clock, Users, User } from 'lucide-react';
 
-const fetcher = new DataFetcher();
+const fetcher = sharedDataFetcher;
 
 /**
  * ダッシュボード画面 — グループ一覧とメンバー一覧を表示
