@@ -52,8 +52,8 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
     await expect(page.getByRole('columnheader', { name: 'グループ名' })).toBeVisible();
 
     // グループが表示されること（dev-fixturesのデータを想定）
-    await expect(page.getByText('フロントエンド勉強会')).toBeVisible();
-    await expect(page.getByText('TypeScript読書会')).toBeVisible();
+    await expect(page.getByText('フロントエンド勉強会').first()).toBeVisible();
+    await expect(page.getByText('TypeScript読書会').first()).toBeVisible();
   });
 
   test('token=devでグループ名の編集ができること', async ({ page }) => {
