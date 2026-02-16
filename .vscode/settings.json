@@ -2,6 +2,7 @@
   "cSpell.words": [
     "agentsskills",
     "claudecode",
+    "codexcli",
     "dearu",
     "desumasu",
     "icsmedia",
@@ -25,5 +26,8 @@
   ],
   "textlint.configPath": ".textlintrc.json",
   "textlint.autoFixOnSave": false,
-  "textlint.run": "onType"
+  "textlint.run": "onType",
+  "files.associations": {
+    "**/.rulesync/skills/*/SKILL.md": "markdown"
+  }
 }

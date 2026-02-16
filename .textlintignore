@@ -4,3 +4,6 @@ AGENTS.md
 
 # OpenSpec ワークフロー文書
 openspec/**
+
+# rulesync 生成ファイル
+.rulesync/**
