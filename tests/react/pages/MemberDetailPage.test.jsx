@@ -214,6 +214,193 @@ describe('MemberDetailPage', () => {
     });
   });
 
+  it('fetchIndexがエラーを返した場合にエラーメッセージを表示すること', async () => {
+    mockFetchIndex.mockResolvedValue({ ok: false, error: 'ネットワークエラー' });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('データ取得エラー: ネットワークエラー')).toBeInTheDocument();
+    });
+  });
+
+  it('全セッション取得が失敗した場合にエラーを表示すること', async () => {
+    mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+    mockFetchSession.mockResolvedValue({ ok: false, error: 'セッションエラー' });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('セッションデータの取得に失敗しました')).toBeInTheDocument();
+    });
+  });
+
+  describe('グループアコーディオン', () => {
+    it('グループをクリックすると展開・折りたたみができること', async () => {
+      const user = userEvent.setup();
+      mockFetchIndex.mockResolvedValue({ ok: true, data: mockMultiPeriodIndexData });
+      mockFetchSession.mockImplementation((id) =>
+        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[id] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+      });
+
+      // 上期に切り替え（複数グループがある期）
+      const buttons = screen.getAllByRole('button', { pressed: undefined });
+      const upperHalfButton = buttons.find(
+        (btn) => btn.getAttribute('aria-pressed') === 'false'
+      );
+      if (upperHalfButton) {
+        await user.click(upperHalfButton);
+      }
+
+      // グループのアコーディオンボタンをクリックして展開
+      const groupButtons = screen.getAllByRole('button', { expanded: false });
+      if (groupButtons.length > 0) {
+        await user.click(groupButtons[0]);
+        expect(groupButtons[0]).toHaveAttribute('aria-expanded', 'true');
+
+        // 再クリックで折りたたみ
+        await user.click(groupButtons[0]);
+        expect(groupButtons[0]).toHaveAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+
+  it('一部のセッション取得が失敗しても成功分は表示されること', async () => {
+    const indexData = {
+      groups: [
+        {
+          id: 'g1',
+          name: 'テストグループ',
+          totalDurationSeconds: 3600,
+          sessionIds: ['s-ok', 's-fail'],
+        },
+      ],
+      members: [
+        { id: 'm1', name: '田中', totalDurationSeconds: 1800, sessionIds: ['s-ok', 's-fail'] },
+      ],
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    mockFetchIndex.mockResolvedValue({ ok: true, data: indexData });
+    mockFetchSession.mockImplementation((id) => {
+      if (id === 's-ok') {
+        return Promise.resolve({
+          ok: true,
+          data: {
+            id: 's-ok',
+            groupId: 'g1',
+            date: '2026-01-10',
+            attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+          },
+        });
+      }
+      return Promise.resolve({ ok: false, error: '取得失敗' });
+    });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('田中')).toBeInTheDocument();
+    });
+
+    // 成功したセッションのデータが表示される
+    expect(screen.getByText(/テストグループ/)).toBeInTheDocument();
+  });
+
+  it('セッションにメンバーの出席データがない場合スキップされること', async () => {
+    const indexData = {
+      groups: [
+        {
+          id: 'g1',
+          name: 'グループA',
+          totalDurationSeconds: 3600,
+          sessionIds: ['s-with', 's-without'],
+        },
+      ],
+      members: [
+        { id: 'm1', name: '鈴木', totalDurationSeconds: 900, sessionIds: ['s-with', 's-without'] },
+      ],
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    mockFetchIndex.mockResolvedValue({ ok: true, data: indexData });
+    mockFetchSession.mockImplementation((id) => {
+      if (id === 's-with') {
+        return Promise.resolve({
+          ok: true,
+          data: {
+            id: 's-with',
+            groupId: 'g1',
+            date: '2026-01-20',
+            attendances: [{ memberId: 'm1', durationSeconds: 900 }],
+          },
+        });
+      }
+      // このセッションにはm1の出席記録がない
+      return Promise.resolve({
+        ok: true,
+        data: {
+          id: 's-without',
+          groupId: 'g1',
+          date: '2026-01-25',
+          attendances: [{ memberId: 'm-other', durationSeconds: 1200 }],
+        },
+      });
+    });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('鈴木')).toBeInTheDocument();
+    });
+
+    // 出席データのあるセッション日付のみ表示される
+    expect(screen.getByText('2026-01-20')).toBeInTheDocument();
+    // 出席データのないセッション日付は表示されない
+    expect(screen.queryByText('2026-01-25')).not.toBeInTheDocument();
+  });
+
+  it('sessionGroupMapに該当がないセッションでもフォールバックで表示されること', async () => {
+    // グループのsessionIdsに含まれないセッションIDのケース
+    const indexData = {
+      groups: [
+        {
+          id: 'g1',
+          name: '元グループ',
+          totalDurationSeconds: 3600,
+          sessionIds: [], // セッションIDを含めない
+        },
+      ],
+      members: [
+        { id: 'm1', name: '山田', totalDurationSeconds: 1800, sessionIds: ['orphan-session'] },
+      ],
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    mockFetchIndex.mockResolvedValue({ ok: true, data: indexData });
+    mockFetchSession.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'orphan-session',
+        groupId: 'g1',
+        date: '2026-01-15',
+        attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+      },
+    });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('山田')).toBeInTheDocument();
+    });
+
+    // groupNameMapからフォールバックで「元グループ」が取得される
+    expect(screen.getByText(/元グループ/)).toBeInTheDocument();
+  });
+
   it('統合後でも sessionId 逆引きで統合先グループ名を表示すること', async () => {
     mockFetchIndex.mockResolvedValue({
       ok: true,

@@ -1,6 +1,15 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { MemberList } from '../../../src/components/MemberList.jsx';
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: vi.fn(),
+  };
+});
 
 // テスト用メンバーデータ（意図的にソート順をバラバラにする）
 const mockMembers = [
@@ -19,6 +28,24 @@ const renderMemberList = (members = mockMembers) => {
 };
 
 describe('MemberList', () => {
+  const mockNavigate = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useNavigate.mockReturnValue(mockNavigate);
+  });
+
+  describe('メンバー行クリック', () => {
+    it('メンバー行をクリックすると詳細ページに遷移すること', () => {
+      renderMemberList();
+
+      const rows = screen.getAllByTestId('member-row');
+      fireEvent.click(rows[0]);
+
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/members\//));
+    });
+  });
+
   describe('名称昇順ソート', () => {
     it('メンバーが名称の昇順で表示されること', () => {
       renderMemberList();

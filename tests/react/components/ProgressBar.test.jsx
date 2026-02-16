@@ -19,4 +19,9 @@ describe('ProgressBar', () => {
     // divベースのプログレスバー: width: 40%
     expect(screen.getByText(/40%/)).toBeInTheDocument();
   });
+
+  it('totalが0の場合にpercentageが0%となること', () => {
+    render(<ProgressBar current={0} total={0} visible={true} statusText="準備中..." />);
+    expect(screen.getByText(/0%/)).toBeInTheDocument();
+  });
 });
