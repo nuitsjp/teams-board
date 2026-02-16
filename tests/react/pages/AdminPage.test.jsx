@@ -6,6 +6,8 @@ import { AdminPage } from '../../../src/pages/AdminPage.jsx';
 
 // BlobWriter のモック — executeWriteSequence の引数をキャプチャ
 const mockExecuteWriteSequence = vi.fn().mockResolvedValue({ results: [], allSucceeded: true });
+const mockUpdateGroupName = vi.fn();
+const mockMergeGroups = vi.fn();
 
 vi.mock('../../../src/services/blob-writer.js', () => ({
   BlobWriter: vi.fn().mockImplementation(() => ({
@@ -34,15 +36,8 @@ vi.mock('../../../src/services/index-merger.js', () => ({
 // IndexEditor のモック
 vi.mock('../../../src/services/index-editor.js', () => ({
   IndexEditor: vi.fn().mockImplementation(() => ({
-    updateGroupName: vi.fn().mockReturnValue({
-      index: {
-        groups: [
-          { id: 'group1', name: '新しいグループ名', totalDurationSeconds: 3600, sessionIds: [] },
-        ],
-        members: [],
-        updatedAt: new Date().toISOString(),
-      },
-    }),
+    updateGroupName: (...args) => mockUpdateGroupName(...args),
+    mergeGroups: (...args) => mockMergeGroups(...args),
   })),
 }));
 
@@ -69,6 +64,22 @@ describe('AdminPage — ソースファイル保存パス', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockExecuteWriteSequence.mockResolvedValue({ results: [], allSucceeded: true });
+    mockUpdateGroupName.mockReturnValue({
+      index: {
+        groups: [
+          { id: 'group1', name: '新しいグループ名', totalDurationSeconds: 3600, sessionIds: [] },
+        ],
+        members: [],
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    mockMergeGroups.mockReturnValue({
+      index: {
+        groups: [{ id: 'group1', name: '統合後グループ', totalDurationSeconds: 3600, sessionIds: [] }],
+        members: [],
+        updatedAt: new Date().toISOString(),
+      },
+    });
     mockFetchIndex.mockResolvedValue({
       ok: true,
       data: { groups: [], members: [], updatedAt: '' },
@@ -165,6 +176,20 @@ describe('AdminPage — グループ選択による mergeInput 上書き', () =>
   beforeEach(() => {
     vi.clearAllMocks();
     mockExecuteWriteSequence.mockResolvedValue({ results: [], allSucceeded: true });
+    mockUpdateGroupName.mockReturnValue({
+      index: {
+        groups: [{ id: 'existgrp1', name: '既存グループ', totalDurationSeconds: 3600, sessionIds: [] }],
+        members: [],
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    mockMergeGroups.mockReturnValue({
+      index: {
+        groups: [{ id: 'existgrp1', name: '既存グループ', totalDurationSeconds: 3600, sessionIds: [] }],
+        members: [],
+        updatedAt: new Date().toISOString(),
+      },
+    });
     mockFetchIndex.mockResolvedValue({
       ok: true,
       data: {
@@ -255,6 +280,20 @@ describe('AdminPage — グループ管理セクション', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockExecuteWriteSequence.mockResolvedValue({ results: [], allSucceeded: true });
+    mockUpdateGroupName.mockReturnValue({
+      index: {
+        groups: [{ id: 'group1', name: '新しいグループ名', totalDurationSeconds: 3600, sessionIds: [] }],
+        members: [],
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    mockMergeGroups.mockReturnValue({
+      index: {
+        groups: [{ id: 'group1', name: '統合後グループ', totalDurationSeconds: 3600, sessionIds: [] }],
+        members: [],
+        updatedAt: new Date().toISOString(),
+      },
+    });
     mockFetchIndex.mockResolvedValue({
       ok: true,
       data: { groups: [], members: [], updatedAt: '2026-02-08T00:00:00.000Z' },
@@ -318,6 +357,159 @@ describe('AdminPage — グループ管理セクション', () => {
     await waitFor(() => {
       expect(screen.getByText('グループ管理')).toBeInTheDocument();
       expect(screen.getByText('グループがありません')).toBeInTheDocument();
+    });
+  });
+
+  it('グループを2件選択すると統合ボタンが有効になる', async () => {
+    const user = userEvent.setup();
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: {
+        groups: [
+          {
+            id: 'group1',
+            name: 'テストグループ1',
+            totalDurationSeconds: 3600,
+            sessionIds: ['session1'],
+          },
+          {
+            id: 'group2',
+            name: 'テストグループ2',
+            totalDurationSeconds: 7200,
+            sessionIds: ['session2'],
+          },
+        ],
+        members: [],
+        updatedAt: '2026-02-08T00:00:00.000Z',
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    const mergeButton = await screen.findByRole('button', { name: '統合' });
+    expect(mergeButton).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox', { name: 'テストグループ1 を選択' }));
+    expect(mergeButton).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox', { name: 'テストグループ2 を選択' }));
+    expect(mergeButton).toBeEnabled();
+  });
+
+  it('統合ダイアログで統合先未選択時は統合実行ボタンが無効になる', async () => {
+    const user = userEvent.setup();
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: {
+        groups: [
+          {
+            id: 'group1',
+            name: 'テストグループ1',
+            totalDurationSeconds: 3600,
+            sessionIds: ['session1'],
+          },
+          {
+            id: 'group2',
+            name: 'テストグループ2',
+            totalDurationSeconds: 7200,
+            sessionIds: ['session2'],
+          },
+        ],
+        members: [],
+        updatedAt: '2026-02-08T00:00:00.000Z',
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await user.click(await screen.findByRole('checkbox', { name: 'テストグループ1 を選択' }));
+    await user.click(screen.getByRole('checkbox', { name: 'テストグループ2 を選択' }));
+    await user.click(screen.getByRole('button', { name: '統合' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    const executeButton = screen.getByRole('button', { name: '統合実行' });
+    expect(executeButton).toBeDisabled();
+
+    await user.click(screen.getByRole('radio', { name: /テストグループ1/ }));
+    expect(executeButton).toBeEnabled();
+  });
+
+  it('統合実行で mergeGroups と保存処理が呼ばれ、成功メッセージを表示する', async () => {
+    const user = userEvent.setup();
+    const initialIndex = {
+      groups: [
+        {
+          id: 'group1',
+          name: 'テストグループ1',
+          totalDurationSeconds: 3600,
+          sessionIds: ['session1'],
+        },
+        {
+          id: 'group2',
+          name: 'テストグループ2',
+          totalDurationSeconds: 7200,
+          sessionIds: ['session2'],
+        },
+      ],
+      members: [],
+      updatedAt: '2026-02-08T00:00:00.000Z',
+    };
+    const mergedIndex = {
+      groups: [
+        {
+          id: 'group1',
+          name: 'テストグループ1',
+          totalDurationSeconds: 10800,
+          sessionIds: ['session1', 'session2'],
+        },
+      ],
+      members: [],
+      updatedAt: '2026-02-09T00:00:00.000Z',
+    };
+
+    mockFetchIndex
+      .mockResolvedValueOnce({ ok: true, data: initialIndex })
+      .mockResolvedValueOnce({ ok: true, data: initialIndex })
+      .mockResolvedValueOnce({ ok: true, data: mergedIndex });
+
+    mockMergeGroups.mockReturnValue({ index: mergedIndex });
+
+    mockExecuteWriteSequence.mockResolvedValueOnce({
+      allSucceeded: true,
+      results: [{ path: 'data/index.json', success: true }],
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await user.click(await screen.findByRole('checkbox', { name: 'テストグループ1 を選択' }));
+    await user.click(screen.getByRole('checkbox', { name: 'テストグループ2 を選択' }));
+    await user.click(screen.getByRole('button', { name: '統合' }));
+    await user.click(screen.getByRole('radio', { name: /テストグループ1/ }));
+    await user.click(screen.getByRole('button', { name: '統合実行' }));
+
+    await waitFor(() => {
+      expect(mockMergeGroups).toHaveBeenCalledWith(initialIndex, 'group1', ['group1', 'group2']);
+      expect(mockExecuteWriteSequence).toHaveBeenCalledWith({
+        rawCsv: null,
+        newItems: [],
+        indexUpdater: expect.any(Function),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('グループを統合しました')).toBeInTheDocument();
     });
   });
 });

@@ -41,6 +41,12 @@ export function MemberDetailPage() {
       setMember(found);
 
       const groupNameMap = new Map(groups.map((g) => [g.id, g.name]));
+      const sessionGroupMap = new Map();
+      for (const group of groups) {
+        for (const sessionId of group.sessionIds) {
+          sessionGroupMap.set(sessionId, { groupId: group.id, groupName: group.name });
+        }
+      }
 
       const sessionResults = await Promise.all(
         found.sessionIds.map((sid) => fetcher.fetchSession(sid))
@@ -77,9 +83,10 @@ export function MemberDetailPage() {
         const periodEntry = periodMap.get(period.label);
         periodEntry.totalSessions += 1;
         periodEntry.totalDurationSeconds += attendance.durationSeconds;
+        const resolvedGroup = sessionGroupMap.get(session.id);
         periodEntry.sessions.push({
-          groupId: session.groupId,
-          groupName: groupNameMap.get(session.groupId) || '不明',
+          groupId: resolvedGroup?.groupId || session.groupId,
+          groupName: resolvedGroup?.groupName || groupNameMap.get(session.groupId) || '不明',
           date: session.date,
           durationSeconds: attendance.durationSeconds,
         });

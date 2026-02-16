@@ -213,4 +213,47 @@ describe('MemberDetailPage', () => {
       expect(screen.getByText(/TypeScript読書会/)).toBeInTheDocument();
     });
   });
+
+  it('統合後でも sessionId 逆引きで統合先グループ名を表示すること', async () => {
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: {
+        groups: [
+          {
+            id: 'g-target',
+            name: '統合先グループ',
+            totalDurationSeconds: 3600,
+            sessionIds: ['g-old-2026-01-15'],
+          },
+        ],
+        members: [
+          {
+            id: 'm1',
+            name: '佐藤 一郎',
+            totalDurationSeconds: 1800,
+            sessionIds: ['g-old-2026-01-15'],
+          },
+        ],
+        updatedAt: '2026-02-10T00:00:00Z',
+      },
+    });
+    mockFetchSession.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'g-old-2026-01-15',
+        groupId: 'g-old',
+        date: '2026-01-15',
+        attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+      },
+    });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('統合先グループ')).toBeInTheDocument();
+    expect(screen.queryByText('不明')).not.toBeInTheDocument();
+  });
 });
