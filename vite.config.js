@@ -134,6 +134,13 @@ export default defineConfig({
     coverage: {
       include: ['src/**/*.{js,jsx}'],
       exclude: ['src/main.jsx', 'src/App.jsx', 'src/services/shared-data-fetcher.js'],
+      thresholds: {
+        perFile: true,
+        statements: 90,
+        branches: 90,
+        functions: 90,
+        lines: 90,
+      },
     },
   },
 });
