@@ -269,6 +269,26 @@ describe('DataFetcher', () => {
             expect(result2.ok).toBe(true);
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
+
+        it('明示的無効化後は同一 sessionId でも再取得すること', async () => {
+            mockFetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ id: 'abc12345', name: 'v1' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ id: 'abc12345', name: 'v2' }),
+                });
+
+            const result1 = await fetcher.fetchSession('abc12345');
+            fetcher.invalidateSessionCache('abc12345');
+            const result2 = await fetcher.fetchSession('abc12345');
+
+            expect(result1).toEqual({ ok: true, data: { id: 'abc12345', name: 'v1' } });
+            expect(result2).toEqual({ ok: true, data: { id: 'abc12345', name: 'v2' } });
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+        });
     });
 
     describe('重複排除', () => {

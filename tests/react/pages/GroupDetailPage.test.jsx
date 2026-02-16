@@ -62,6 +62,7 @@ const mockSessionData2 = {
   id: 'g1-2026-01-20',
   groupId: 'g1',
   date: '2026-01-20',
+  name: '第3回 React入門',
   attendances: [{ memberId: 'm2', durationSeconds: 2400 }],
 };
 
@@ -169,10 +170,10 @@ describe('GroupDetailPage', () => {
     // 期サマリーが表示される（2025年度 下期 = 2026年1月）
     expect(screen.getByText('2025年度 下期')).toBeInTheDocument();
 
-    // セッション日付が表示される（日付降順）
+    // セッション見出しが表示される（日付降順）
     const headings = screen.getAllByRole('heading', { level: 3 });
     const dates = headings.map((h) => h.textContent);
-    expect(dates[0]).toBe('2026-01-20');
+    expect(dates[0]).toBe('第3回 React入門 - 2026-01-20');
     expect(dates[1]).toBe('2026-01-15');
   });
 

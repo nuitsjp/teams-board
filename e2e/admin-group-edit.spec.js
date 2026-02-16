@@ -43,7 +43,7 @@ test.describe('管理者パネル — グループ名編集', () => {
     const index = await fetchIndex();
     const groupNames = index.groups.map((group) => group.name).slice(0, 2);
     for (const name of groupNames) {
-      await expect(page.getByText(name)).toBeVisible();
+      await expect(page.getByText(name).first()).toBeVisible();
     }
   });
 
@@ -75,7 +75,7 @@ test.describe('管理者パネル — グループ名編集', () => {
     await editButtons.first().click();
 
     // 入力フィールドが表示されること
-    const input = page.locator('input[type="text"]').first();
+    const input = page.getByPlaceholder('グループ名を入力');
     await expect(input).toBeVisible();
     await expect(input).toBeFocused();
 
@@ -98,7 +98,7 @@ test.describe('管理者パネル — グループ名編集', () => {
     await editButtons.first().click();
 
     // 入力フィールドが表示されることを確認
-    const input = page.locator('input[type="text"]').first();
+    const input = page.getByPlaceholder('グループ名を入力');
     await expect(input).toBeVisible();
 
     // キャンセルボタンをクリック
@@ -122,7 +122,7 @@ test.describe('管理者パネル — グループ名編集', () => {
     await editButtons.first().click();
 
     // 入力フィールドが表示されることを確認
-    const input = page.locator('input[type="text"]').first();
+    const input = page.getByPlaceholder('グループ名を入力');
     await expect(input).toBeVisible();
 
     // Escapeキーを押す
@@ -146,7 +146,7 @@ test.describe('管理者パネル — グループ名編集', () => {
     await editButtons.first().click();
 
     // 入力フィールドをクリアして空にする
-    const input = page.locator('input[type="text"]').first();
+    const input = page.getByPlaceholder('グループ名を入力');
     await input.clear();
 
     // 保存ボタンをクリック

@@ -43,11 +43,15 @@ vi.mock('../../../src/services/index-editor.js', () => ({
 
 // DataFetcher のモック
 const mockFetchIndex = vi.fn();
+const mockFetchSession = vi.fn();
 const mockInvalidateIndexCache = vi.fn();
+const mockInvalidateSessionCache = vi.fn();
 vi.mock('../../../src/services/shared-data-fetcher.js', () => ({
   sharedDataFetcher: {
     fetchIndex: (...args) => mockFetchIndex(...args),
+    fetchSession: (...args) => mockFetchSession(...args),
     invalidateIndexCache: (...args) => mockInvalidateIndexCache(...args),
+    invalidateSessionCache: (...args) => mockInvalidateSessionCache(...args),
   },
 }));
 
@@ -87,6 +91,10 @@ describe('AdminPage — ソースファイル保存パス', () => {
     mockFetchIndex.mockResolvedValue({
       ok: true,
       data: { groups: [], members: [], updatedAt: '' },
+    });
+    mockFetchSession.mockResolvedValue({
+      ok: false,
+      error: 'not found',
     });
     mockParse.mockResolvedValue({
       ok: true,
@@ -204,6 +212,10 @@ describe('AdminPage — グループ選択による mergeInput 上書き', () =>
         updatedAt: '2026-02-08T00:00:00.000Z',
       },
     });
+    mockFetchSession.mockResolvedValue({
+      ok: false,
+      error: 'not found',
+    });
   });
 
   it('グループ選択後の一括保存で groupOverride が mergeInput/sessionRecord に反映される', async () => {
@@ -305,6 +317,10 @@ describe('AdminPage — グループ管理セクション', () => {
     mockFetchIndex.mockResolvedValue({
       ok: true,
       data: { groups: [], members: [], updatedAt: '2026-02-08T00:00:00.000Z' },
+    });
+    mockFetchSession.mockResolvedValue({
+      ok: false,
+      error: 'not found',
     });
   });
 
@@ -1242,5 +1258,161 @@ describe('AdminPage — グループ統合エラー処理', () => {
     // 1件選択解除して統合ボタンが無効になることを確認
     await user.click(checkbox1);
     expect(screen.getByRole('button', { name: '統合' })).toBeDisabled();
+  });
+});
+
+describe('AdminPage — セッション名管理', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsAdmin = true;
+    mockSasToken = 'test-sas-token';
+    mockExecuteWriteSequence.mockResolvedValue({ results: [], allSucceeded: true });
+    mockUpdateGroupName.mockReturnValue({ index: { groups: [], members: [], updatedAt: '' } });
+    mockMergeGroups.mockReturnValue({ index: { groups: [], members: [], updatedAt: '' } });
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: {
+        groups: [
+          {
+            id: 'group1',
+            name: 'テストグループ1',
+            totalDurationSeconds: 3600,
+            sessionIds: ['group1-2026-02-08'],
+          },
+        ],
+        members: [],
+        updatedAt: '2026-02-08T00:00:00.000Z',
+      },
+    });
+    mockFetchSession.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'group1-2026-02-08',
+        groupId: 'group1',
+        date: '2026-02-08',
+        attendances: [],
+      },
+    });
+  });
+
+  it('セッション名保存時に data/sessions/{sessionId}.json を上書きする', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, '第3回 React入門');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(mockExecuteWriteSequence).toHaveBeenCalled();
+    });
+
+    const callArgs = mockExecuteWriteSequence.mock.calls[0][0];
+    expect(callArgs.newItems).toHaveLength(1);
+    expect(callArgs.newItems[0].path).toBe('data/sessions/group1-2026-02-08.json');
+
+    const savedSession = JSON.parse(callArgs.newItems[0].content);
+    expect(savedSession.name).toBe('第3回 React入門');
+    expect(mockInvalidateSessionCache).toHaveBeenCalledWith('group1-2026-02-08');
+  });
+
+  it('セッション名保存失敗時にエラーメッセージが表示される', async () => {
+    const user = userEvent.setup();
+    mockExecuteWriteSequence.mockResolvedValueOnce({
+      allSucceeded: false,
+      results: [
+        { path: 'data/sessions/group1-2026-02-08.json', success: false, error: 'ストレージエラー' },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, 'テスト名');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('セッション名の保存に失敗しました。ストレージエラー')
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('セッション名保存時に例外が発生するとエラーメッセージが表示される', async () => {
+    const user = userEvent.setup();
+    mockExecuteWriteSequence.mockRejectedValueOnce(new Error('ネットワーク障害'));
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, 'テスト名');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('セッション名の保存に失敗しました。ネットワーク障害')
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('空のセッション名で保存すると name プロパティが削除される', async () => {
+    const user = userEvent.setup();
+    mockFetchSession.mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'group1-2026-02-08',
+        groupId: 'group1',
+        date: '2026-02-08',
+        name: '既存の名前',
+        attendances: [],
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.clear(input);
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(mockExecuteWriteSequence).toHaveBeenCalled();
+    });
+
+    const callArgs = mockExecuteWriteSequence.mock.calls[0][0];
+    const savedSession = JSON.parse(callArgs.newItems[0].content);
+    expect(savedSession.name).toBeUndefined();
   });
 });

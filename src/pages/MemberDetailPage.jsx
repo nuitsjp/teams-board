@@ -7,6 +7,10 @@ import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight } from 'lucide-re
 
 const fetcher = new DataFetcher();
 
+function formatSessionLabel(session) {
+  return session.name ? `${session.name} - ${session.date}` : session.date;
+}
+
 /**
  * メンバー詳細画面 — 期別2カラムレイアウトでグループ別サマリーと出席履歴を表示
  */
@@ -85,9 +89,11 @@ export function MemberDetailPage() {
         periodEntry.totalDurationSeconds += attendance.durationSeconds;
         const resolvedGroup = sessionGroupMap.get(session.id);
         periodEntry.sessions.push({
+          sessionId: session.id,
           groupId: resolvedGroup?.groupId || session.groupId,
           groupName: resolvedGroup?.groupName || groupNameMap.get(session.groupId) || '不明',
           date: session.date,
+          name: session.name,
           durationSeconds: attendance.durationSeconds,
         });
       }
@@ -108,7 +114,9 @@ export function MemberDetailPage() {
           const group = groupMap.get(session.groupId);
           group.totalDurationSeconds += session.durationSeconds;
           group.sessions.push({
+            sessionId: session.sessionId,
             date: session.date,
+            name: session.name,
             durationSeconds: session.durationSeconds,
           });
         }
@@ -321,8 +329,13 @@ export function MemberDetailPage() {
                           </thead>
                           <tbody className="divide-y divide-border-light">
                             {group.sessions.map((session) => (
-                              <tr key={session.date} className="text-sm hover:bg-surface-muted transition-colors">
-                                <td className="px-6 py-3 text-text-primary">{session.date}</td>
+                              <tr
+                                key={session.sessionId}
+                                className="text-sm hover:bg-surface-muted transition-colors"
+                              >
+                                <td className="px-6 py-3 text-text-primary">
+                                  {formatSessionLabel(session)}
+                                </td>
                                 <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
                                   {formatDuration(session.durationSeconds)}
                                 </td>

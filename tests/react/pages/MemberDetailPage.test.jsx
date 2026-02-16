@@ -35,6 +35,7 @@ const mockSessionData = {
   id: 'g1-2026-01-15',
   groupId: 'g1',
   date: '2026-01-15',
+  name: '振り返り会',
   attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
 };
 
@@ -120,8 +121,8 @@ describe('MemberDetailPage', () => {
 
     // 期サマリーが表示される（2025年度 下期 = 2026年1月）
     expect(screen.getByText('2025年度 下期')).toBeInTheDocument();
-    // グループが1つのみなのでデフォルト展開され、セッション日付が表示される
-    expect(screen.getByText(/2026-01-15/)).toBeInTheDocument();
+    // グループが1つのみなのでデフォルト展開され、セッション名付きで表示される
+    expect(screen.getByText('振り返り会 - 2026-01-15')).toBeInTheDocument();
     // グループ名がサマリーカードに表示される
     expect(screen.getByText(/フロントエンド勉強会/)).toBeInTheDocument();
   });
