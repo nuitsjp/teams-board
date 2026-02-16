@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { GroupNameEditor } from '../components/GroupNameEditor.jsx';
 
+const MAX_SESSION_NAME_LENGTH = 256;
+
 /**
  * 管理者パネル — CSVインポート・プレビュー・一括保存機能
  */
@@ -110,9 +112,7 @@ export function AdminPage() {
           .sort((a, b) => b.date.localeCompare(a.date));
         setSessions(loadedSessions);
         setSessionNameInputs(
-          Object.fromEntries(
-            loadedSessions.map((session) => [session.id, typeof session.name === 'string' ? session.name : ''])
-          )
+          Object.fromEntries(loadedSessions.map((session) => [session.id, session.name || '']))
         );
       }
     })();
@@ -458,7 +458,7 @@ export function AdminPage() {
       }
 
       const normalizedName = name.trim();
-      if (normalizedName.length > 256) {
+      if (normalizedName.length > MAX_SESSION_NAME_LENGTH) {
         setSessionMessage({ type: 'error', text: 'セッション名は256文字以内で入力してください' });
         return;
       }
@@ -761,7 +761,7 @@ export function AdminPage() {
                             [session.id]: event.target.value,
                           }))
                         }
-                        maxLength={256}
+                        maxLength={MAX_SESSION_NAME_LENGTH}
                         className="w-full px-3 py-2 border border-border-light rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-500"
                         placeholder="未設定（空欄で日付のみ表示）"
                         aria-label={`${session.date} のセッション名`}
