@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { AuthProvider, useAuth } from '../../../src/hooks/useAuth.jsx';
+import { AuthProvider, useAuth, createAuthAdapter } from '../../../src/hooks/useAuth.jsx';
 
 // テスト用コンポーネント
 function AuthDisplay() {
@@ -140,5 +140,42 @@ describe('useAuth', () => {
       expect(screen.getByTestId('token').textContent).toBe('real-sas-token');
       expect(screen.getByTestId('admin').textContent).toBe('true');
     });
+  });
+
+  it('tokenパラメータ以外のクエリパラメータが保持されること', () => {
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: new URL('http://localhost/?token=sas123&other=value#/admin'),
+    });
+
+    render(
+      <AuthProvider>
+        <AuthDisplay />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('token').textContent).toBe('sas123');
+    // replaceState が呼ばれ、他のパラメータが保持されていること
+    expect(window.history.replaceState).toHaveBeenCalledWith(
+      null,
+      '',
+      expect.stringContaining('other=value')
+    );
+  });
+});
+
+describe('createAuthAdapter', () => {
+  it('SASトークンがある場合、getSasTokenがトークンを返しisAdminModeがtrueを返す', () => {
+    const adapter = createAuthAdapter({ sasToken: 'test-token' });
+
+    expect(adapter.getSasToken()).toBe('test-token');
+    expect(adapter.isAdminMode()).toBe(true);
+  });
+
+  it('SASトークンがnullの場合、getSasTokenがnullを返しisAdminModeがfalseを返す', () => {
+    const adapter = createAuthAdapter({ sasToken: null });
+
+    expect(adapter.getSasToken()).toBeNull();
+    expect(adapter.isAdminMode()).toBe(false);
   });
 });
