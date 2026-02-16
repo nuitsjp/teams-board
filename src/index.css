@@ -84,11 +84,6 @@
 }
 
 @layer utilities {
-  .member-row-content-visibility {
-    content-visibility: auto;
-    contain-intrinsic-size: 80px;
-  }
-
   .animate-fade-in {
     animation: fadeIn 0.4s ease both;
   }

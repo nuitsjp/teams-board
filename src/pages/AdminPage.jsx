@@ -13,7 +13,7 @@ import { IndexMerger } from '../services/index-merger.js';
 import { IndexEditor } from '../services/index-editor.js';
 import { sharedDataFetcher } from '../services/shared-data-fetcher.js';
 import { APP_CONFIG } from '../config/app-config.js';
-import { ArrowLeft, Upload, RotateCcw, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Upload, RotateCcw, AlertCircle, CheckCircle, GitMerge, X } from 'lucide-react';
 import { GroupNameEditor } from '../components/GroupNameEditor.jsx';
 
 /**
@@ -70,6 +70,10 @@ export function AdminPage() {
   const [savingGroupId, setSavingGroupId] = useState(null);
   const [groupMessage, setGroupMessage] = useState({ type: '', text: '' });
   const [cachedIndex, setCachedIndex] = useState(null);
+  const [selectedGroupIds, setSelectedGroupIds] = useState(new Set());
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
+  const [mergeTargetGroupId, setMergeTargetGroupId] = useState(null);
+  const [merging, setMerging] = useState(false);
 
   // 既存セッションIDの取得とグループ一覧の取得
   useEffect(() => {
@@ -83,6 +87,14 @@ export function AdminPage() {
       }
     })();
   }, [dataFetcher, setExistingSessionIds]);
+
+  useEffect(() => {
+    setSelectedGroupIds((prev) => {
+      const existingIdSet = new Set(groups.map((group) => group.id));
+      const next = new Set([...prev].filter((id) => existingIdSet.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [groups]);
 
   // 一括保存処理
   const handleBulkSave = useCallback(async () => {
@@ -290,6 +302,122 @@ export function AdminPage() {
     [dataFetcher, indexEditor, blobWriter, cachedIndex]
   );
 
+  const selectedGroups = useMemo(
+    () => groups.filter((group) => selectedGroupIds.has(group.id)),
+    [groups, selectedGroupIds]
+  );
+
+  const isGroupOperationDisabled = savingGroupId !== null || merging || saving;
+
+  const toggleGroupSelection = useCallback((groupId) => {
+    setSelectedGroupIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  }, []);
+
+  const openMergeDialog = useCallback(() => {
+    if (selectedGroupIds.size < 2 || isGroupOperationDisabled) {
+      return;
+    }
+    setGroupMessage({ type: '', text: '' });
+    setMergeTargetGroupId(null);
+    setIsMergeDialogOpen(true);
+  }, [selectedGroupIds, isGroupOperationDisabled]);
+
+  const closeMergeDialog = useCallback(() => {
+    setIsMergeDialogOpen(false);
+    setMergeTargetGroupId(null);
+  }, []);
+
+  const handleMergeGroups = useCallback(async () => {
+    if (!mergeTargetGroupId || selectedGroupIds.size < 2) {
+      return;
+    }
+
+    setMerging(true);
+    setGroupMessage({ type: '', text: '' });
+
+    try {
+      const latestIndexResult = await dataFetcher.fetchIndex();
+      if (!latestIndexResult.ok) {
+        setGroupMessage({
+          type: 'error',
+          text: '最新データの取得に失敗しました。ネットワーク接続を確認してください',
+        });
+        return;
+      }
+
+      if (cachedIndex && latestIndexResult.data.updatedAt !== cachedIndex.updatedAt) {
+        setGroupMessage({
+          type: 'error',
+          text: '他のユーザーが同時に編集しています。最新データを再読み込みしてください',
+        });
+        return;
+      }
+
+      const { index: updatedIndex, error } = indexEditor.mergeGroups(
+        latestIndexResult.data,
+        mergeTargetGroupId,
+        [...selectedGroupIds]
+      );
+
+      if (error) {
+        setGroupMessage({ type: 'error', text: error });
+        return;
+      }
+
+      const result = await blobWriter.executeWriteSequence({
+        rawCsv: null,
+        newItems: [],
+        indexUpdater: () => updatedIndex,
+      });
+
+      if (!result.allSucceeded) {
+        const errorMessages = result.results
+          .filter((r) => !r.success)
+          .map((r) => r.error)
+          .join(', ');
+        setGroupMessage({
+          type: 'error',
+          text: `統合の保存に失敗しました。${errorMessages}`,
+        });
+        return;
+      }
+
+      dataFetcher.invalidateIndexCache();
+      const refreshedIndexResult = await dataFetcher.fetchIndex();
+      if (refreshedIndexResult.ok) {
+        setGroups(refreshedIndexResult.data.groups);
+        setCachedIndex(refreshedIndexResult.data);
+      }
+
+      setSelectedGroupIds(new Set());
+      closeMergeDialog();
+      setGroupMessage({ type: 'success', text: 'グループを統合しました' });
+    } catch (err) {
+      setGroupMessage({
+        type: 'error',
+        text: `統合の保存に失敗しました。${err.message}`,
+      });
+    } finally {
+      setMerging(false);
+    }
+  }, [
+    mergeTargetGroupId,
+    selectedGroupIds,
+    dataFetcher,
+    cachedIndex,
+    indexEditor,
+    blobWriter,
+    closeMergeDialog,
+  ]);
+
   // 非管理者はダッシュボードにリダイレクト
   if (!auth.isAdmin) return <Navigate to="/" replace />;
 
@@ -352,11 +480,22 @@ export function AdminPage() {
 
       {/* グループ管理セクション */}
       <div className="mt-8 pt-8 border-t border-border-light">
-        <div className="mb-4">
-          <h3 className="text-lg font-bold text-text-primary tracking-tight">グループ管理</h3>
-          <p className="text-sm text-text-muted mt-1">
-            グループ名を編集できます（グループIDは変更されません）
-          </p>
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-text-primary tracking-tight">グループ管理</h3>
+            <p className="text-sm text-text-muted mt-1">
+              グループ名編集と複数グループ統合ができます（グループIDは変更されません）
+            </p>
+          </div>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl shadow-sm hover:bg-primary-700 disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            onClick={openMergeDialog}
+            disabled={selectedGroupIds.size < 2 || isGroupOperationDisabled}
+          >
+            <GitMerge className="w-4 h-4" aria-hidden="true" />
+            統合
+          </button>
         </div>
 
         <div aria-live="polite">
@@ -386,6 +525,9 @@ export function AdminPage() {
               <thead className="bg-surface-muted">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                    選択
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                     グループID
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
@@ -401,14 +543,31 @@ export function AdminPage() {
               </thead>
               <tbody className="divide-y divide-border-light">
                 {groups.map((group) => (
-                  <tr key={group.id} className="hover:bg-surface-muted transition-colors">
+                  <tr
+                    key={group.id}
+                    className={`transition-colors ${
+                      selectedGroupIds.has(group.id)
+                        ? 'bg-primary-50 hover:bg-primary-100'
+                        : 'hover:bg-surface-muted'
+                    }`}
+                  >
+                    <td className="px-4 py-3 text-sm">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-border-light text-primary-600 focus:ring-primary-500"
+                        checked={selectedGroupIds.has(group.id)}
+                        onChange={() => toggleGroupSelection(group.id)}
+                        disabled={isGroupOperationDisabled}
+                        aria-label={`${group.name} を選択`}
+                      />
+                    </td>
                     <td className="px-4 py-3 text-sm text-text-muted font-mono">{group.id}</td>
                     <td className="px-4 py-3">
                       <GroupNameEditor
                         groupId={group.id}
                         initialName={group.name}
                         onSave={handleSaveGroupName}
-                        disabled={savingGroupId !== null}
+                        disabled={isGroupOperationDisabled}
                       />
                     </td>
                     <td className="px-4 py-3 text-sm text-text-primary text-right tabular-nums">
@@ -425,6 +584,82 @@ export function AdminPage() {
           </div>
         )}
       </div>
+
+      {isMergeDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" aria-hidden="true" onClick={closeMergeDialog} />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="merge-dialog-title"
+            className="relative w-full max-w-xl card-base p-6 animate-scale-in"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h4 id="merge-dialog-title" className="text-lg font-bold text-text-primary">
+                統合先グループを選択
+              </h4>
+              <button
+                type="button"
+                className="p-2 rounded-lg hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                onClick={closeMergeDialog}
+                aria-label="ダイアログを閉じる"
+                disabled={merging}
+              >
+                <X className="w-4 h-4 text-text-muted" aria-hidden="true" />
+              </button>
+            </div>
+
+            <p className="text-sm text-text-muted mt-2">残すグループを1つ選択してください。</p>
+
+            <div className="mt-4 space-y-2 max-h-72 overflow-y-auto">
+              {selectedGroups.map((group) => (
+                <label
+                  key={group.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border-light hover:bg-surface-muted cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="merge-target-group"
+                      value={group.id}
+                      checked={mergeTargetGroupId === group.id}
+                      onChange={(event) => setMergeTargetGroupId(event.target.value)}
+                      disabled={merging}
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-text-primary">{group.name}</div>
+                      <div className="text-xs text-text-muted font-mono">{group.id}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-text-muted tabular-nums">
+                    {group.sessionIds.length}件 / {Math.floor(group.totalDurationSeconds / 3600)}時間
+                    {Math.floor((group.totalDurationSeconds % 3600) / 60)}分
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg border border-border-light text-sm text-text-primary hover:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={closeMergeDialog}
+                disabled={merging}
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
+                onClick={handleMergeGroups}
+                disabled={!mergeTargetGroupId || merging}
+              >
+                {merging ? '統合中...' : '統合実行'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

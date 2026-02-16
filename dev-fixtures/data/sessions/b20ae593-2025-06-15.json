@@ -1,0 +1,19 @@
+{
+  "id": "b20ae593-2025-06-15",
+  "groupId": "b20ae593",
+  "date": "2025-06-15",
+  "attendances": [
+    {
+      "memberId": "d2ede157",
+      "durationSeconds": 3600
+    },
+    {
+      "memberId": "7c35db6e",
+      "durationSeconds": 2700
+    },
+    {
+      "memberId": "70c5a8d7",
+      "durationSeconds": 3300
+    }
+  ]
+}

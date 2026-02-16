@@ -22,14 +22,14 @@ export default defineConfig({
     expect: {
       timeout: 5000,
     },
-    // ナビゲーション（goto, reload など）のタイムアウト: 10 秒
-    navigationTimeout: 10000,
+    // ナビゲーション（goto, reload など）のタイムアウト: 30 秒
+    navigationTimeout: 30000,
   },
   webServer: {
     command: 'pnpm run dev -- --host',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
-    timeout: 30000,
+    timeout: 120000,
   },
   projects: [
     {

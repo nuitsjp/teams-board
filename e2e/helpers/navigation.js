@@ -14,5 +14,13 @@
  * @returns {Promise<import('@playwright/test').Response|null>} - ナビゲーション結果
  */
 export async function navigateTo(page, path) {
-    return await page.goto(path, { waitUntil: 'domcontentloaded' });
+    try {
+        return await page.goto(path, { waitUntil: 'domcontentloaded' });
+    } catch (error) {
+        if (!String(error?.message ?? '').includes('page.goto: Timeout')) {
+            throw error;
+        }
+        // 起動直後のViteコンパイル遅延に備えて1回だけリトライする
+        return await page.goto(path, { waitUntil: 'domcontentloaded' });
+    }
 }

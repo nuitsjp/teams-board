@@ -92,14 +92,14 @@ export function DashboardPage() {
     <div className="space-y-10">
       {/* 統計カード */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SummaryCard title="総参加時間" value={formatDuration(totalDuration)} icon={Clock} style={{ animationDelay: '0ms' }} />
-        <SummaryCard title="総開催回数" value={`${totalSessions}回`} icon={Users} style={{ animationDelay: '100ms' }} />
-        <SummaryCard title="参加人数" value={`${members.length}人`} icon={User} style={{ animationDelay: '200ms' }} />
+        <SummaryCard title="総開催回数" value={`${totalSessions}回`} icon={Users} style={{ animationDelay: '0ms' }} />
+        <SummaryCard title="参加人数" value={`${members.length}人`} icon={User} style={{ animationDelay: '100ms' }} />
+        <SummaryCard title="総参加時間" value={formatDuration(totalDuration)} icon={Clock} style={{ animationDelay: '200ms' }} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* 左カラム: グループ */}
-        <div className="lg:col-span-5 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        {/* 左カラム: グループ — メンバー一覧スクロール時もビューポートに追従 */}
+        <div className="lg:col-span-5 lg:sticky lg:top-20 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <GroupList groups={groups} />
         </div>
 

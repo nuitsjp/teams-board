@@ -21,7 +21,7 @@ test.describe('管理者パネル — グループ名編集', () => {
 
     // 説明文が表示されること
     await expect(
-      page.getByText('グループ名を編集できます（グループIDは変更されません）')
+      page.getByText('グループ名編集と複数グループ統合ができます（グループIDは変更されません）')
     ).toBeVisible();
   });
 
