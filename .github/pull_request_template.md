@@ -18,7 +18,7 @@
 ## 動作確認・テスト（How verified）
 <!-- 実施したものにチェック。必要なら手順も書く。 -->
 - [ ] ビルド確認済み
-- [ ] nr test:full を実行済み
+- [ ] pnpm run preflight を実行済み
 
 ## スクリーンショット / 画面差分（UI変更がある場合）
 <!-- Before/After 画像 or GIF を貼る -->
