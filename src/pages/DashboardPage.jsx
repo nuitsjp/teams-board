@@ -98,8 +98,8 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* 左カラム: グループ */}
-        <div className="lg:col-span-5 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        {/* 左カラム: グループ — メンバー一覧スクロール時もビューポートに追従 */}
+        <div className="lg:col-span-5 lg:sticky lg:top-20 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <GroupList groups={groups} />
         </div>
 
