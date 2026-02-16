@@ -1,6 +1,10 @@
-# AGENTS.md
+# Additional Conventions Beyond the Built-in Functions
 
-This file provides guidance when working with code in this repository.
+As this project's AI coding tool, you must follow the additional conventions below, in addition to the built-in functions.
+
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 You are running on Windows. Bash isn't available directly, so please use Bash (via pwsh:\*).
 
@@ -58,8 +62,10 @@ pnpm run mkdocs:pdf       # PDF ドキュメントを生成
 
 - **React 19** + **Vite** — JSX (no TypeScript)
 - **react-router-dom** (HashRouter) — `#/` based routing
-- **Tailwind CSS 4** — Utility-first CSS
+- **Tailwind CSS 4** — Utility-first CSS, カスタムデザイントークンは `src/index.css` の `@theme` で定義（プライマリ: ティール系、アクセント: アンバー系）
 - **PapaParse** — Teams attendance report CSV (UTF-16LE) parser
+- **recharts** — データ可視化（グラフ・チャート）
+- **lucide-react** — アイコンライブラリ
 - **Vitest** + **React Testing Library** — Unit tests in jsdom environment
 - **Playwright** — E2E tests (Chromium only)
 - **pnpm** — Package manager (`packageManager: pnpm@10.27.0`)
@@ -83,8 +89,19 @@ A dashboard SPA that aggregates and visualizes Microsoft Teams attendance report
 
 - **CsvTransformer** — Parses Teams attendance report CSV (UTF-16LE/TSV), producing session records and index merge inputs. Uses first 8 hex digits of SHA-256 for ID generation
 - **IndexMerger** — Immutably updates groups/members in `index.json` (duplicate sessionIds are skipped with warnings)
+- **IndexEditor** — `index.json` のインプレース編集ロジック（グループ名変更など）
 - **DataFetcher** — Fetches `data/index.json` and `data/sessions/*.json` from the static site
 - **BlobWriter** — PUTs to Azure Blob Storage with SAS token
+- **BlobStorage** / **IndexFetcher** — Dev/Production 切替可能な I/O 抽象化（下記参照）
+
+### Dev/Production 抽象化パターン
+
+`blob-storage.js` と `index-fetcher.js` は同一インターフェースで本番/開発を切り替える戦略パターンを採用:
+
+- **`AzureBlobStorage`** / **`DevBlobStorage`** — 本番は SAS トークン付き PUT、開発は `/dev-fixtures-write` に POST
+- **`ProductionIndexFetcher`** / **`DevIndexFetcher`** — 本番は Blob Storage から SAS 付き取得、開発は Vite ミドルウェア経由
+
+開発環境では `?token=dev` でアクセスすると `Dev*` 系クラスが使用される。
 
 ### Routing
 
@@ -122,7 +139,9 @@ The SAS token is extracted from the URL query parameter (`token`) on first load,
 - `tests/react/` — React component, page, and hook tests
 - `tests/fixtures/` — Test CSV fixtures
 - `tests/vitest.setup.js` — webcrypto polyfill + jest-dom setup
-- `e2e/` — Playwright E2E tests (dashboard, admin)
+- `e2e/` — Playwright E2E tests、2プロジェクトに分離:
+  - **`readonly-tests`** — 読み取り専用テスト（並列実行可）
+  - **`data-mutation-tests`** — `admin-dev-mode.spec.js`（データ変更あり、readonly-tests 完了後に実行）
 
 ### CI/CD
 
@@ -131,7 +150,14 @@ GitHub Actions (`.github/workflows/deploy.yml`) runs lint and tests in parallel,
 ### Environment Variables (Build Time)
 
 - `VITE_APP_TITLE` — App title (default: 'Teams Board')
+- `VITE_APP_DESCRIPTION` — ヘッダーに表示するサイト説明文（任意）
 - `VITE_BLOB_BASE_URL` — Blob Service Endpoint URL
+
+## Code Style Conventions
+
+- **Prettier**: `singleQuote: true`, `semi: true`, `trailingComma: "es5"`, `printWidth: 100`
+- **EditorConfig**: インデント 4 スペース（JSON/YAML は 2 スペース）、改行 LF、UTF-8
+- **ESLint**: `eslint:recommended` + `react` + `react-hooks` + `prettier`
 
 ## Development Setup
 

@@ -22,9 +22,9 @@
     "mkdocs:build": "uv run mkdocs build",
     "mkdocs:build:svg": "node scripts/mkdocs-svg.mjs",
     "mkdocs:pdf": "node scripts/mkdocs-pdf.mjs",
-    "rulesync:generate": "rulesync generate --targets claudecode,agentsskills,copilot --features rules,skills",
+    "rulesync:generate": "rulesync generate --targets claudecode,codexcli,copilot --features rules,commands,skills",
     "rulesync:ignore": "rulesync gitignore",
-    "rulesync:import": "rulesync import --targets claudecode --features rules,skills"
+    "rulesync:import": "rulesync import --targets claudecode --features rules,commands,skills"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
