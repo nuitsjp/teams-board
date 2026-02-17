@@ -1,4 +1,6 @@
-// DataFetcher — 静的サイトからのJSONデータ取得（キャッシュ・重複排除付き）
+// DataFetcher — 静的サイトからのJSONデータ取得（V2: sessionRef ベース）
+import { sessionRefToPath } from './session-ref.js';
+
 const DEFAULT_INDEX_TTL = 30_000;
 const DEFAULT_SESSION_TTL = 30_000;
 
@@ -37,12 +39,12 @@ export class DataFetcher {
 
     /**
      * セッションJSONキャッシュを明示的に無効化する
-     * @param {string} [sessionId] 指定時は対象セッションのみ無効化。
+     * @param {string} [sessionRef] 指定時は対象セッションのみ無効化。
      *   省略時はセッションキャッシュを全消去する。
      */
-    invalidateSessionCache(sessionId) {
-        if (typeof sessionId === 'string' && sessionId.length > 0) {
-            this.#sessionCache.delete(`data/sessions/${sessionId}.json`);
+    invalidateSessionCache(sessionRef) {
+        if (typeof sessionRef === 'string' && sessionRef.length > 0) {
+            this.#sessionCache.delete(sessionRefToPath(sessionRef));
             return;
         }
         this.#sessionCache.clear();
@@ -70,13 +72,13 @@ export class DataFetcher {
     }
 
     /**
-     * セッション詳細JSONを取得する（TTL ベースキャッシュ付き）
-     * 常にキャッシュバスター付き URL で取得し、ブラウザの HTTP キャッシュをバイパスする。
-     * @param {string} sessionId
+     * セッション詳細JSONを取得する（V2: sessionRef ベース）
+     * V2 ではセッションファイルは不変（追記のみ）なのでキャッシュバスター不要。
+     * @param {string} sessionRef - "sessionId/revision" 形式
      * @returns {Promise<{ok: true, data: object} | {ok: false, error: string}>}
      */
-    async fetchSession(sessionId) {
-        const cacheKey = `data/sessions/${sessionId}.json`;
+    async fetchSession(sessionRef) {
+        const cacheKey = sessionRefToPath(sessionRef);
 
         // TTL ベースキャッシュヒット
         const cached = this.#sessionCache.get(cacheKey);
@@ -84,12 +86,10 @@ export class DataFetcher {
             return cached.data;
         }
 
-        // 常にキャッシュバスターを付与（ブラウザ HTTP キャッシュをバイパス）
-        const url = `${cacheKey}?v=${Date.now()}`;
+        // V2 セッションは不変のためキャッシュバスター不要
+        const result = await this.#fetchJsonWithDedup(cacheKey);
 
-        const result = await this.#fetchJsonWithDedup(url);
-
-        // 成功時のみキャッシュに保存（キャッシュキーはキャッシュバスターなしの固定パス）
+        // 成功時のみキャッシュに保存
         if (result.ok) {
             this.#sessionCache.set(cacheKey, { data: result, timestamp: Date.now() });
         }

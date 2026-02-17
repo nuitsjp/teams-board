@@ -1,0 +1,18 @@
+{
+  "sessionId": "01KHNHF98N4RG28VBZ3MK03ZJG",
+  "revision": 0,
+  "title": "",
+  "startedAt": "2026-01-20T09:00:00.000Z",
+  "endedAt": null,
+  "attendances": [
+    {
+      "memberId": "01KHNHF98NYNJPQV869R3WT90Y",
+      "durationSeconds": 5400
+    },
+    {
+      "memberId": "01KHNHF98NZGBYKJESBD8TPJZ5",
+      "durationSeconds": 4800
+    }
+  ],
+  "createdAt": "2026-02-17T10:13:57.654Z"
+}

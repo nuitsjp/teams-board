@@ -18,11 +18,11 @@ vi.mock('../../../src/services/shared-data-fetcher.js', () => {
 
 const mockIndexData = {
   groups: [
-    { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['s1'] },
+    { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionRevisions: ['s1'] },
   ],
   members: [
-    { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 1800, sessionIds: ['s1'] },
-    { id: 'm2', name: '高橋 美咲', totalDurationSeconds: 3600, sessionIds: ['s1'] },
+    { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 1800, sessionRevisions: ['s1'] },
+    { id: 'm2', name: '高橋 美咲', totalDurationSeconds: 3600, sessionRevisions: ['s1'] },
   ],
   updatedAt: '2026-01-01T00:00:00Z',
 };
@@ -97,13 +97,13 @@ describe('DashboardPage', () => {
   it('管理画面保存後の再表示で最新データを表示すること', async () => {
     const staleData = {
       ...mockIndexData,
-      groups: [{ id: 'g-old', name: '旧グループ', totalDurationSeconds: 600, sessionIds: ['s-old'] }],
-      members: [{ id: 'm-old', name: '旧メンバー', totalDurationSeconds: 600, sessionIds: ['s-old'] }],
+      groups: [{ id: 'g-old', name: '旧グループ', totalDurationSeconds: 600, sessionRevisions: ['s-old'] }],
+      members: [{ id: 'm-old', name: '旧メンバー', totalDurationSeconds: 600, sessionRevisions: ['s-old'] }],
     };
     const freshData = {
       ...mockIndexData,
-      groups: [{ id: 'g-new', name: '新グループ', totalDurationSeconds: 1200, sessionIds: ['s-new'] }],
-      members: [{ id: 'm-new', name: '新メンバー', totalDurationSeconds: 1200, sessionIds: ['s-new'] }],
+      groups: [{ id: 'g-new', name: '新グループ', totalDurationSeconds: 1200, sessionRevisions: ['s-new'] }],
+      members: [{ id: 'm-new', name: '新メンバー', totalDurationSeconds: 1200, sessionRevisions: ['s-new'] }],
     };
 
     mockFetchIndex

@@ -1,133 +1,137 @@
 {
+  "schemaVersion": 2,
+  "version": 1,
+  "updatedAt": "2026-02-17T10:13:57.654Z",
   "groups": [
     {
-      "id": "b20ae593",
+      "id": "01KHNHF98M86MWSATH6W4TR205",
       "name": "フロントエンド勉強会",
       "totalDurationSeconds": 64805,
-      "sessionIds": [
-        "b20ae593-2025-06-15",
-        "b20ae593-2025-08-20",
-        "b20ae593-2026-01-15",
-        "b20ae593-2026-01-21",
-        "b20ae593-2026-01-26",
-        "b20ae593-2026-01-27",
-        "b20ae593-2026-01-28",
-        "b20ae593-2026-01-29",
-        "b20ae593-2026-02-02",
-        "b20ae593-2026-02-03",
-        "b20ae593-2026-02-04",
-        "b20ae593-2026-02-06"
+      "sessionRevisions": [
+        "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
+        "01KHNHF98N0P2H1KMQ89Q3YBM7/0",
+        "01KHNHF98N550RZ2Q24ZECZ5TC/0",
+        "01KHNHF98NZMT5XXHKFQYJFEPS/0",
+        "01KHNHF98NSSVE0EKQA3FYRMTZ/0",
+        "01KHNHF98NVKDYNDKG0RGY1PRD/0",
+        "01KHNHF98NAEVHV70NCEC268T1/0",
+        "01KHNHF98NCCXC2ZYMW1PZJQX7/0",
+        "01KHNHF98NAT7TTMWWHHMQ2Y4H/0",
+        "01KHNHF98NZHHTNYQ5NJDKGW97/0",
+        "01KHNHF98NRTV77XEGE50QRP06/0",
+        "01KHNHF98NKQF1F0VAG4Y7KTGT/0"
       ]
     },
     {
-      "id": "75aa4f8f",
+      "id": "01KHNHF98N1V9F6KS4EF77WWG9",
       "name": "TypeScript読書会",
       "totalDurationSeconds": 54900,
-      "sessionIds": [
-        "75aa4f8f-2025-05-12",
-        "75aa4f8f-2025-09-08",
-        "75aa4f8f-2026-01-20",
-        "75aa4f8f-2026-02-03",
-        "75aa4f8f-2026-02-07"
+      "sessionRevisions": [
+        "01KHNHF98NHCE84RXN9CPPZJ96/0",
+        "01KHNHF98N78W27JMQGTQV0PGB/0",
+        "01KHNHF98N4RG28VBZ3MK03ZJG/0",
+        "01KHNHF98NHW9HDY9C4TF4QTK9/0",
+        "01KHNHF98PFRJQJZ92JBYB6930/0"
       ]
     },
     {
-      "id": "078075da",
+      "id": "01KHNHF98NFYN6BJSEKEHG92KP",
       "name": "ソフトウェア設計勉強会",
       "totalDurationSeconds": 30000,
-      "sessionIds": [
-        "078075da-2026-01-22",
-        "078075da-2026-02-05"
+      "sessionRevisions": [
+        "01KHNHF98PW37VS33RZ04CMD3W/0",
+        "01KHNHF98P9ZV8M5S595AMZPP4/0"
       ]
     },
     {
-      "id": "b630e3f1",
+      "id": "01KHNHF98NDA6XJD3WBTR60XQ9",
       "name": "インフラ技術研究会",
       "totalDurationSeconds": 18600,
-      "sessionIds": [
-        "b630e3f1-2026-01-25",
-        "b630e3f1-2026-02-01"
+      "sessionRevisions": [
+        "01KHNHF98PT0FNSFP4J0CJAMNQ/0",
+        "01KHNHF98P949B6SE4NQ0T95J7/0"
       ]
     }
   ],
   "members": [
     {
-      "id": "d2ede157",
+      "id": "01KHNHF98NYNJPQV869R3WT90Y",
       "name": "Suzuki Taro A (鈴木 太郎)",
       "totalDurationSeconds": 74983,
-      "sessionIds": [
-        "b20ae593-2025-06-15",
-        "b20ae593-2025-08-20",
-        "75aa4f8f-2025-05-12",
-        "75aa4f8f-2025-09-08",
-        "b20ae593-2026-01-15",
-        "b20ae593-2026-01-21",
-        "b20ae593-2026-01-26",
-        "b20ae593-2026-01-27",
-        "b20ae593-2026-01-28",
-        "b20ae593-2026-01-29",
-        "b20ae593-2026-02-02",
-        "b20ae593-2026-02-03",
-        "b20ae593-2026-02-04",
-        "b20ae593-2026-02-06",
-        "75aa4f8f-2026-01-20",
-        "75aa4f8f-2026-02-03",
-        "75aa4f8f-2026-02-07",
-        "078075da-2026-01-22",
-        "078075da-2026-02-05"
+      "sessionRevisions": [
+        "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
+        "01KHNHF98N0P2H1KMQ89Q3YBM7/0",
+        "01KHNHF98NHCE84RXN9CPPZJ96/0",
+        "01KHNHF98N78W27JMQGTQV0PGB/0",
+        "01KHNHF98N550RZ2Q24ZECZ5TC/0",
+        "01KHNHF98NZMT5XXHKFQYJFEPS/0",
+        "01KHNHF98NSSVE0EKQA3FYRMTZ/0",
+        "01KHNHF98NVKDYNDKG0RGY1PRD/0",
+        "01KHNHF98NAEVHV70NCEC268T1/0",
+        "01KHNHF98NCCXC2ZYMW1PZJQX7/0",
+        "01KHNHF98NAT7TTMWWHHMQ2Y4H/0",
+        "01KHNHF98NZHHTNYQ5NJDKGW97/0",
+        "01KHNHF98NRTV77XEGE50QRP06/0",
+        "01KHNHF98NKQF1F0VAG4Y7KTGT/0",
+        "01KHNHF98N4RG28VBZ3MK03ZJG/0",
+        "01KHNHF98NHW9HDY9C4TF4QTK9/0",
+        "01KHNHF98PFRJQJZ92JBYB6930/0",
+        "01KHNHF98PW37VS33RZ04CMD3W/0",
+        "01KHNHF98P9ZV8M5S595AMZPP4/0"
       ]
     },
     {
-      "id": "7c35db6e",
+      "id": "01KHNHF98NDVMV15W5VA72P6D0",
       "name": "Tanaka Koji (田中 浩二)",
       "totalDurationSeconds": 32189,
-      "sessionIds": [
-        "b20ae593-2025-06-15",
-        "75aa4f8f-2025-05-12",
-        "75aa4f8f-2025-09-08",
-        "b20ae593-2026-01-15",
-        "b20ae593-2026-02-03",
-        "75aa4f8f-2026-02-03",
-        "078075da-2026-02-05",
-        "b630e3f1-2026-01-25",
-        "b630e3f1-2026-02-01"
+      "sessionRevisions": [
+        "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
+        "01KHNHF98NHCE84RXN9CPPZJ96/0",
+        "01KHNHF98N78W27JMQGTQV0PGB/0",
+        "01KHNHF98N550RZ2Q24ZECZ5TC/0",
+        "01KHNHF98NZHHTNYQ5NJDKGW97/0",
+        "01KHNHF98NHW9HDY9C4TF4QTK9/0",
+        "01KHNHF98P9ZV8M5S595AMZPP4/0",
+        "01KHNHF98PT0FNSFP4J0CJAMNQ/0",
+        "01KHNHF98P949B6SE4NQ0T95J7/0"
       ]
     },
     {
-      "id": "70c5a8d7",
+      "id": "01KHNHF98NZGBYKJESBD8TPJZ5",
       "name": "Yamamoto Yuki A (山本 裕貴)",
       "totalDurationSeconds": 42769,
-      "sessionIds": [
-        "b20ae593-2025-06-15",
-        "b20ae593-2025-08-20",
-        "75aa4f8f-2025-09-08",
-        "b20ae593-2026-01-21",
-        "b20ae593-2026-01-29",
-        "b20ae593-2026-02-03",
-        "75aa4f8f-2026-01-20",
-        "75aa4f8f-2026-02-03",
-        "75aa4f8f-2026-02-07",
-        "b630e3f1-2026-01-25",
-        "b630e3f1-2026-02-01"
+      "sessionRevisions": [
+        "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
+        "01KHNHF98N0P2H1KMQ89Q3YBM7/0",
+        "01KHNHF98N78W27JMQGTQV0PGB/0",
+        "01KHNHF98NZMT5XXHKFQYJFEPS/0",
+        "01KHNHF98NCCXC2ZYMW1PZJQX7/0",
+        "01KHNHF98NZHHTNYQ5NJDKGW97/0",
+        "01KHNHF98N4RG28VBZ3MK03ZJG/0",
+        "01KHNHF98NHW9HDY9C4TF4QTK9/0",
+        "01KHNHF98PFRJQJZ92JBYB6930/0",
+        "01KHNHF98PT0FNSFP4J0CJAMNQ/0",
+        "01KHNHF98P949B6SE4NQ0T95J7/0"
       ]
     },
     {
-      "id": "85befc0e",
+      "id": "01KHNHF98N9R1KC0EZHM144D0C",
       "name": "Watanabe Kenji (渡辺 健二)",
       "totalDurationSeconds": 16564,
-      "sessionIds": [
-        "b20ae593-2026-01-27",
-        "078075da-2026-01-22",
-        "078075da-2026-02-05",
-        "b630e3f1-2026-01-25"
+      "sessionRevisions": [
+        "01KHNHF98NVKDYNDKG0RGY1PRD/0",
+        "01KHNHF98PW37VS33RZ04CMD3W/0",
+        "01KHNHF98P9ZV8M5S595AMZPP4/0",
+        "01KHNHF98PT0FNSFP4J0CJAMNQ/0"
       ]
     },
     {
-      "id": "c9f1e2a3",
+      "id": "01KHNHF98NVM1YNNN8ZGB4JTPS",
       "name": "Sato Ichiro (佐藤 一郎)",
       "totalDurationSeconds": 1800,
-      "sessionIds": ["b630e3f1-2026-02-01"]
+      "sessionRevisions": [
+        "01KHNHF98P949B6SE4NQ0T95J7/0"
+      ]
     }
-  ],
-  "updatedAt": "2026-02-11T00:00:00.000Z"
+  ]
 }

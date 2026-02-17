@@ -56,6 +56,8 @@ export class AzureBlobStorage {
    */
   static #resolveCacheControl(path) {
     if (path.startsWith('assets/')) return 'max-age=31536000, immutable';
+    // V2: セッションファイルは不変（revision が変わればパスも変わる）
+    if (path.startsWith('data/sessions/')) return 'max-age=31536000, immutable';
     return 'no-cache';
   }
 }

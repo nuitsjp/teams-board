@@ -3,18 +3,20 @@ import { IndexEditor } from '../../src/services/index-editor.js';
 
 describe('IndexEditor', () => {
   const sampleIndex = {
+    schemaVersion: 2,
+    version: 1,
     groups: [
       {
         id: 'group1',
         name: '旧グループ名',
         totalDurationSeconds: 3600,
-        sessionIds: ['session1', 'session2'],
+        sessionRevisions: ['session1/0', 'session2/0'],
       },
       {
         id: 'group2',
         name: '別のグループ',
         totalDurationSeconds: 1800,
-        sessionIds: ['session3'],
+        sessionRevisions: ['session3/0'],
       },
     ],
     members: [
@@ -22,14 +24,14 @@ describe('IndexEditor', () => {
         id: 'member1',
         name: 'メンバー1',
         totalDurationSeconds: 3600,
-        sessionIds: ['session1'],
+        sessionRevisions: ['session1/0'],
       },
     ],
     updatedAt: '2026-01-01T00:00:00.000Z',
   };
 
   describe('updateGroupName', () => {
-    it('正常系: グループ名を更新し、updatedAtを現在時刻に設定する', () => {
+    it('正常系: グループ名を更新し、version をインクリメントする', () => {
       const editor = new IndexEditor();
       const result = editor.updateGroupName(sampleIndex, 'group1', '新しいグループ名');
 
@@ -38,12 +40,11 @@ describe('IndexEditor', () => {
       expect(result.index.groups[0].id).toBe('group1');
       expect(result.index.groups[0].name).toBe('新しいグループ名');
       expect(result.index.groups[0].totalDurationSeconds).toBe(3600);
-      expect(result.index.groups[0].sessionIds).toEqual(['session1', 'session2']);
+      expect(result.index.groups[0].sessionRevisions).toEqual(['session1/0', 'session2/0']);
       expect(result.index.groups[1].name).toBe('別のグループ');
+      expect(result.index.version).toBe(2);
+      expect(result.index.schemaVersion).toBe(2);
       expect(result.index.updatedAt).not.toBe('2026-01-01T00:00:00.000Z');
-      expect(new Date(result.index.updatedAt).getTime()).toBeGreaterThan(
-        new Date('2026-01-01T00:00:00.000Z').getTime()
-      );
     });
 
     it('正常系: グループIDは変更されない', () => {
@@ -67,6 +68,7 @@ describe('IndexEditor', () => {
 
       expect(result.index.members).toHaveLength(1);
       expect(result.index.members[0].name).toBe('メンバー1');
+      expect(result.index.members[0].sessionRevisions).toEqual(['session1/0']);
     });
 
     it('異常系: 存在しないグループIDの場合はエラーを返す', () => {
@@ -158,12 +160,18 @@ describe('IndexEditor', () => {
       expect(result.index.groups).toHaveLength(1);
       expect(result.index.groups[0].id).toBe('group1');
       expect(result.index.groups[0].name).toBe('旧グループ名');
-      expect(result.index.groups[0].sessionIds).toEqual(['session1', 'session2', 'session3']);
+      expect(result.index.groups[0].sessionRevisions).toEqual([
+        'session1/0',
+        'session2/0',
+        'session3/0',
+      ]);
       expect(result.index.groups[0].totalDurationSeconds).toBe(5400);
+      expect(result.index.version).toBe(2);
+      expect(result.index.schemaVersion).toBe(2);
       expect(result.index.updatedAt).not.toBe(sampleIndex.updatedAt);
     });
 
-    it('正常系: 重複sessionIdは除外して統合を継続する', () => {
+    it('正常系: 重複sessionRevisionは除外して統合を継続する', () => {
       const editor = new IndexEditor();
       const duplicatedIndex = {
         ...sampleIndex,
@@ -172,13 +180,13 @@ describe('IndexEditor', () => {
             id: 'group1',
             name: '旧グループ名',
             totalDurationSeconds: 3600,
-            sessionIds: ['session1', 'session2'],
+            sessionRevisions: ['session1/0', 'session2/0'],
           },
           {
             id: 'group2',
             name: '別のグループ',
             totalDurationSeconds: 1800,
-            sessionIds: ['session2', 'session3'],
+            sessionRevisions: ['session2/0', 'session3/0'],
           },
         ],
       };
@@ -186,7 +194,11 @@ describe('IndexEditor', () => {
 
       expect(result.error).toBeUndefined();
       expect(result.index.groups).toHaveLength(1);
-      expect(result.index.groups[0].sessionIds).toEqual(['session1', 'session2', 'session3']);
+      expect(result.index.groups[0].sessionRevisions).toEqual([
+        'session1/0',
+        'session2/0',
+        'session3/0',
+      ]);
       expect(result.index.groups[0].totalDurationSeconds).toBe(4500);
     });
 
@@ -196,7 +208,7 @@ describe('IndexEditor', () => {
 
       expect(result.index.members).toHaveLength(1);
       expect(result.index.members[0].id).toBe('member1');
-      expect(result.index.members[0].sessionIds).toEqual(['session1']);
+      expect(result.index.members[0].sessionRevisions).toEqual(['session1/0']);
     });
 
     it('正常系: 入力オブジェクトは破壊されない', () => {

@@ -17,42 +17,48 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 });
 
 const mockIndexData = {
+  schemaVersion: 2,
+  version: 1,
   groups: [
     {
       id: 'g1',
       name: 'フロントエンド勉強会',
       totalDurationSeconds: 3600,
-      sessionIds: ['g1-2026-01-15'],
+      sessionRevisions: ['g1-2026-01-15/0'],
     },
   ],
   members: [
-    { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 1800, sessionIds: ['g1-2026-01-15'] },
+    { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 1800, sessionRevisions: ['g1-2026-01-15/0'] },
   ],
   updatedAt: '2026-01-01T00:00:00Z',
 };
 
 const mockSessionData = {
-  id: 'g1-2026-01-15',
-  groupId: 'g1',
-  date: '2026-01-15',
-  name: '振り返り会',
+  sessionId: 'g1-2026-01-15',
+  revision: 0,
+  title: '振り返り会',
+  startedAt: '2026-01-15T19:00:00',
+  endedAt: null,
   attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+  createdAt: '2026-01-15T00:00:00.000Z',
 };
 
 // 複数期にまたがるモックデータ
 const mockMultiPeriodIndexData = {
+  schemaVersion: 2,
+  version: 1,
   groups: [
     {
       id: 'g1',
       name: 'フロントエンド勉強会',
       totalDurationSeconds: 7200,
-      sessionIds: ['g1-2025-06-15', 'g1-2026-01-15'],
+      sessionRevisions: ['g1-2025-06-15/0', 'g1-2026-01-15/0'],
     },
     {
       id: 'g2',
       name: 'TypeScript読書会',
       totalDurationSeconds: 5400,
-      sessionIds: ['g2-2025-05-12'],
+      sessionRevisions: ['g2-2025-05-12/0'],
     },
   ],
   members: [
@@ -60,30 +66,39 @@ const mockMultiPeriodIndexData = {
       id: 'm1',
       name: '佐藤 一郎',
       totalDurationSeconds: 9000,
-      sessionIds: ['g1-2025-06-15', 'g2-2025-05-12', 'g1-2026-01-15'],
+      sessionRevisions: ['g1-2025-06-15/0', 'g2-2025-05-12/0', 'g1-2026-01-15/0'],
     },
   ],
   updatedAt: '2026-01-01T00:00:00Z',
 };
 
 const mockMultiPeriodSessions = {
-  'g1-2025-06-15': {
-    id: 'g1-2025-06-15',
-    groupId: 'g1',
-    date: '2025-06-15',
+  'g1-2025-06-15/0': {
+    sessionId: 'g1-2025-06-15',
+    revision: 0,
+    title: '',
+    startedAt: '2025-06-15T19:00:00',
+    endedAt: null,
     attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
+    createdAt: '2025-06-15T00:00:00.000Z',
   },
-  'g2-2025-05-12': {
-    id: 'g2-2025-05-12',
-    groupId: 'g2',
-    date: '2025-05-12',
+  'g2-2025-05-12/0': {
+    sessionId: 'g2-2025-05-12',
+    revision: 0,
+    title: '',
+    startedAt: '2025-05-12T19:00:00',
+    endedAt: null,
     attendances: [{ memberId: 'm1', durationSeconds: 5400 }],
+    createdAt: '2025-05-12T00:00:00.000Z',
   },
-  'g1-2026-01-15': {
-    id: 'g1-2026-01-15',
-    groupId: 'g1',
-    date: '2026-01-15',
+  'g1-2026-01-15/0': {
+    sessionId: 'g1-2026-01-15',
+    revision: 0,
+    title: '',
+    startedAt: '2026-01-15T19:00:00',
+    endedAt: null,
     attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+    createdAt: '2026-01-15T00:00:00.000Z',
   },
 };
 
@@ -151,8 +166,8 @@ describe('MemberDetailPage', () => {
   describe('期別表示', () => {
     it('複数期のサマリーが降順で表示されること', async () => {
       mockFetchIndex.mockResolvedValue({ ok: true, data: mockMultiPeriodIndexData });
-      mockFetchSession.mockImplementation((id) =>
-        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[id] })
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[ref] })
       );
 
       renderWithRouter('m1');
@@ -172,8 +187,8 @@ describe('MemberDetailPage', () => {
 
     it('最新の期がデフォルトで選択されること', async () => {
       mockFetchIndex.mockResolvedValue({ ok: true, data: mockMultiPeriodIndexData });
-      mockFetchSession.mockImplementation((id) =>
-        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[id] })
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[ref] })
       );
 
       renderWithRouter('m1');
@@ -193,8 +208,8 @@ describe('MemberDetailPage', () => {
     it('期を切り替えるとその期のセッションが表示されること', async () => {
       const user = userEvent.setup();
       mockFetchIndex.mockResolvedValue({ ok: true, data: mockMultiPeriodIndexData });
-      mockFetchSession.mockImplementation((id) =>
-        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[id] })
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[ref] })
       );
 
       renderWithRouter('m1');
@@ -240,8 +255,8 @@ describe('MemberDetailPage', () => {
     it('グループをクリックすると展開・折りたたみができること', async () => {
       const user = userEvent.setup();
       mockFetchIndex.mockResolvedValue({ ok: true, data: mockMultiPeriodIndexData });
-      mockFetchSession.mockImplementation((id) =>
-        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[id] })
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: mockMultiPeriodSessions[ref] })
       );
 
       renderWithRouter('m1');
@@ -274,29 +289,34 @@ describe('MemberDetailPage', () => {
 
   it('一部のセッション取得が失敗しても成功分は表示されること', async () => {
     const indexData = {
+      schemaVersion: 2,
+      version: 1,
       groups: [
         {
           id: 'g1',
           name: 'テストグループ',
           totalDurationSeconds: 3600,
-          sessionIds: ['s-ok', 's-fail'],
+          sessionRevisions: ['s-ok/0', 's-fail/0'],
         },
       ],
       members: [
-        { id: 'm1', name: '田中', totalDurationSeconds: 1800, sessionIds: ['s-ok', 's-fail'] },
+        { id: 'm1', name: '田中', totalDurationSeconds: 1800, sessionRevisions: ['s-ok/0', 's-fail/0'] },
       ],
       updatedAt: '2026-01-01T00:00:00Z',
     };
     mockFetchIndex.mockResolvedValue({ ok: true, data: indexData });
-    mockFetchSession.mockImplementation((id) => {
-      if (id === 's-ok') {
+    mockFetchSession.mockImplementation((ref) => {
+      if (ref === 's-ok/0') {
         return Promise.resolve({
           ok: true,
           data: {
-            id: 's-ok',
-            groupId: 'g1',
-            date: '2026-01-10',
+            sessionId: 's-ok',
+            revision: 0,
+            title: '',
+            startedAt: '2026-01-10T19:00:00',
+            endedAt: null,
             attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+            createdAt: '2026-01-10T00:00:00.000Z',
           },
         });
       }
@@ -315,29 +335,34 @@ describe('MemberDetailPage', () => {
 
   it('セッションにメンバーの出席データがない場合スキップされること', async () => {
     const indexData = {
+      schemaVersion: 2,
+      version: 1,
       groups: [
         {
           id: 'g1',
           name: 'グループA',
           totalDurationSeconds: 3600,
-          sessionIds: ['s-with', 's-without'],
+          sessionRevisions: ['s-with/0', 's-without/0'],
         },
       ],
       members: [
-        { id: 'm1', name: '鈴木', totalDurationSeconds: 900, sessionIds: ['s-with', 's-without'] },
+        { id: 'm1', name: '鈴木', totalDurationSeconds: 900, sessionRevisions: ['s-with/0', 's-without/0'] },
       ],
       updatedAt: '2026-01-01T00:00:00Z',
     };
     mockFetchIndex.mockResolvedValue({ ok: true, data: indexData });
-    mockFetchSession.mockImplementation((id) => {
-      if (id === 's-with') {
+    mockFetchSession.mockImplementation((ref) => {
+      if (ref === 's-with/0') {
         return Promise.resolve({
           ok: true,
           data: {
-            id: 's-with',
-            groupId: 'g1',
-            date: '2026-01-20',
+            sessionId: 's-with',
+            revision: 0,
+            title: '',
+            startedAt: '2026-01-20T19:00:00',
+            endedAt: null,
             attendances: [{ memberId: 'm1', durationSeconds: 900 }],
+            createdAt: '2026-01-20T00:00:00.000Z',
           },
         });
       }
@@ -345,10 +370,13 @@ describe('MemberDetailPage', () => {
       return Promise.resolve({
         ok: true,
         data: {
-          id: 's-without',
-          groupId: 'g1',
-          date: '2026-01-25',
+          sessionId: 's-without',
+          revision: 0,
+          title: '',
+          startedAt: '2026-01-25T19:00:00',
+          endedAt: null,
           attendances: [{ memberId: 'm-other', durationSeconds: 1200 }],
+          createdAt: '2026-01-25T00:00:00.000Z',
         },
       });
     });
@@ -365,19 +393,21 @@ describe('MemberDetailPage', () => {
     expect(screen.queryByText('2026-01-25')).not.toBeInTheDocument();
   });
 
-  it('sessionIdの所属グループが index.json で解決できない場合は不整合エラーを表示すること', async () => {
-    // グループのsessionIdsに含まれないセッションIDのケース
+  it('sessionRefの所属グループが index.json で解決できない場合は不整合エラーを表示すること', async () => {
+    // グループのsessionRevisionsに含まれないsessionRefのケース
     const indexData = {
+      schemaVersion: 2,
+      version: 1,
       groups: [
         {
           id: 'g1',
           name: '元グループ',
           totalDurationSeconds: 3600,
-          sessionIds: [], // セッションIDを含めない
+          sessionRevisions: [], // sessionRef を含めない
         },
       ],
       members: [
-        { id: 'm1', name: '山田', totalDurationSeconds: 1800, sessionIds: ['orphan-session'] },
+        { id: 'm1', name: '山田', totalDurationSeconds: 1800, sessionRevisions: ['orphan-session/0'] },
       ],
       updatedAt: '2026-01-01T00:00:00Z',
     };
@@ -385,10 +415,13 @@ describe('MemberDetailPage', () => {
     mockFetchSession.mockResolvedValue({
       ok: true,
       data: {
-        id: 'orphan-session',
-        groupId: 'g1',
-        date: '2026-01-15',
+        sessionId: 'orphan-session',
+        revision: 0,
+        title: '',
+        startedAt: '2026-01-15T19:00:00',
+        endedAt: null,
         attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+        createdAt: '2026-01-15T00:00:00.000Z',
       },
     });
 
@@ -403,16 +436,18 @@ describe('MemberDetailPage', () => {
     });
   });
 
-  it('統合後でも sessionId 逆引きで統合先グループ名を表示すること', async () => {
+  it('統合後でも sessionRef 逆引きで統合先グループ名を表示すること', async () => {
     mockFetchIndex.mockResolvedValue({
       ok: true,
       data: {
+        schemaVersion: 2,
+        version: 1,
         groups: [
           {
             id: 'g-target',
             name: '統合先グループ',
             totalDurationSeconds: 3600,
-            sessionIds: ['g-old-2026-01-15'],
+            sessionRevisions: ['g-old-2026-01-15/0'],
           },
         ],
         members: [
@@ -420,7 +455,7 @@ describe('MemberDetailPage', () => {
             id: 'm1',
             name: '佐藤 一郎',
             totalDurationSeconds: 1800,
-            sessionIds: ['g-old-2026-01-15'],
+            sessionRevisions: ['g-old-2026-01-15/0'],
           },
         ],
         updatedAt: '2026-02-10T00:00:00Z',
@@ -429,10 +464,13 @@ describe('MemberDetailPage', () => {
     mockFetchSession.mockResolvedValue({
       ok: true,
       data: {
-        id: 'g-old-2026-01-15',
-        groupId: 'g-old',
-        date: '2026-01-15',
+        sessionId: 'g-old-2026-01-15',
+        revision: 0,
+        title: '',
+        startedAt: '2026-01-15T19:00:00',
+        endedAt: null,
         attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+        createdAt: '2026-01-15T00:00:00.000Z',
       },
     });
 

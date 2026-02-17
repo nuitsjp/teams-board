@@ -4,8 +4,8 @@ import { FileQueueCard } from '../../../src/components/FileQueueCard.jsx';
 
 // 共通テストデータ
 const mockGroups = [
-    { id: 'grp001', name: 'フロントエンド勉強会', totalDurationSeconds: 7200, sessionIds: [] },
-    { id: 'grp002', name: 'バックエンド勉強会', totalDurationSeconds: 3600, sessionIds: [] },
+    { id: 'grp001', name: 'フロントエンド勉強会', totalDurationSeconds: 7200, sessionRevisions: [] },
+    { id: 'grp002', name: 'バックエンド勉強会', totalDurationSeconds: 3600, sessionRevisions: [] },
 ];
 
 function createReadyItem(overrides = {}) {
@@ -15,19 +15,19 @@ function createReadyItem(overrides = {}) {
         status: 'ready',
         parseResult: {
             ok: true,
-            mergeInput: {
-                sessionId: 'grp001-2026-01-15',
-                groupId: 'grp001',
+            parsedSession: {
+                sessionId: '01TESTSESSION00000000000',
                 groupName: 'フロントエンド勉強会',
                 date: '2026-01-15',
+                startedAt: '2026-01-15T19:00:00',
+                endedAt: null,
                 attendances: [
-                    { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                    { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
                 ],
             },
         },
         errors: [],
         warnings: [],
-        hasDuplicate: false,
         ...overrides,
     };
 }
@@ -40,7 +40,6 @@ describe('FileQueueCard — グループ選択プルダウン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -56,7 +55,6 @@ describe('FileQueueCard — グループ選択プルダウン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -74,7 +72,6 @@ describe('FileQueueCard — グループ選択プルダウン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -87,13 +84,14 @@ describe('FileQueueCard — グループ選択プルダウン', () => {
         const item = createReadyItem({
             parseResult: {
                 ok: true,
-                mergeInput: {
-                    sessionId: 'newgrp1-2026-01-15',
-                    groupId: 'newgrp1',
+                parsedSession: {
+                    sessionId: '01NEWSESSION0000000000000',
                     groupName: '新しい勉強会',
                     date: '2026-01-15',
+                    startedAt: '2026-01-15T19:00:00',
+                    endedAt: null,
                     attendances: [
-                        { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                        { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
                     ],
                 },
             },
@@ -104,7 +102,6 @@ describe('FileQueueCard — グループ選択プルダウン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -125,7 +122,6 @@ describe('FileQueueCard — グループ選択プルダウン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={onSelectGroup}
             />
         );
@@ -143,13 +139,14 @@ describe('FileQueueCard — missing_group ステータス', () => {
             status: 'missing_group',
             parseResult: {
                 ok: true,
-                mergeInput: {
-                    sessionId: 'e3b0c442-2026-01-15',
-                    groupId: 'e3b0c442',
+                parsedSession: {
+                    sessionId: '01EMPTYGROUPSESSION00000',
                     groupName: '',
                     date: '2026-01-15',
+                    startedAt: '2026-01-15T19:00:00',
+                    endedAt: null,
                     attendances: [
-                        { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                        { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
                     ],
                 },
             },
@@ -160,7 +157,6 @@ describe('FileQueueCard — missing_group ステータス', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -173,13 +169,14 @@ describe('FileQueueCard — missing_group ステータス', () => {
             status: 'missing_group',
             parseResult: {
                 ok: true,
-                mergeInput: {
-                    sessionId: 'e3b0c442-2026-01-15',
-                    groupId: 'e3b0c442',
+                parsedSession: {
+                    sessionId: '01EMPTYGROUPSESSION00000',
                     groupName: '',
                     date: '2026-01-15',
+                    startedAt: '2026-01-15T19:00:00',
+                    endedAt: null,
                     attendances: [
-                        { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                        { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
                     ],
                 },
             },
@@ -190,7 +187,6 @@ describe('FileQueueCard — missing_group ステータス', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -209,7 +205,6 @@ describe('FileQueueCard — プルダウンの無効化', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -226,7 +221,6 @@ describe('FileQueueCard — プルダウンの無効化', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -245,7 +239,6 @@ describe('FileQueueCard — ステータスアイコン', () => {
         ['saved', 'text-success'],
         ['error', 'text-error'],
         ['save_failed', 'text-error'],
-        ['duplicate_warning', 'text-warning'],
     ])('%s ステータスのアイコンが正しいクラスで表示される', (status, expectedClass) => {
         const item = createReadyItem({ status });
         const { container } = render(
@@ -253,7 +246,6 @@ describe('FileQueueCard — ステータスアイコン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -267,13 +259,14 @@ describe('FileQueueCard — ステータスアイコン', () => {
             status: 'missing_group',
             parseResult: {
                 ok: true,
-                mergeInput: {
-                    sessionId: 'e3b0c442-2026-01-15',
-                    groupId: 'e3b0c442',
+                parsedSession: {
+                    sessionId: '01EMPTYGROUPSESSION00000',
                     groupName: '',
                     date: '2026-01-15',
+                    startedAt: '2026-01-15T19:00:00',
+                    endedAt: null,
                     attendances: [
-                        { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                        { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
                     ],
                 },
             },
@@ -283,7 +276,6 @@ describe('FileQueueCard — ステータスアイコン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -301,7 +293,6 @@ describe('FileQueueCard — ファイルサイズ表示', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -316,7 +307,6 @@ describe('FileQueueCard — ファイルサイズ表示', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -333,7 +323,6 @@ describe('FileQueueCard — ファイルサイズ表示', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -349,7 +338,6 @@ describe('FileQueueCard — ボーダーカラー', () => {
         ['error', 'border-l-red-500'],
         ['save_failed', 'border-l-red-500'],
         ['missing_group', 'border-l-red-500'],
-        ['duplicate_warning', 'border-l-amber-500'],
         ['saving', 'border-l-primary-500'],
         ['pending', 'border-l-gray-300'],
     ])('%s ステータスで %s ボーダーが適用される', (status, expectedBorder) => {
@@ -359,15 +347,16 @@ describe('FileQueueCard — ボーダーカラー', () => {
                 ? {
                       parseResult: {
                           ok: true,
-                          mergeInput: {
-                              sessionId: 'e3b0c442-2026-01-15',
-                              groupId: 'e3b0c442',
+                          parsedSession: {
+                              sessionId: '01EMPTYGROUPSESSION00000',
                               groupName: '',
                               date: '2026-01-15',
+                              startedAt: '2026-01-15T19:00:00',
+                              endedAt: null,
                               attendances: [
                                   {
-                                      memberId: 'mem001',
                                       memberName: '佐藤 太郎',
+                                      memberEmail: 'taro@example.com',
                                       durationSeconds: 3600,
                                   },
                               ],
@@ -381,7 +370,6 @@ describe('FileQueueCard — ボーダーカラー', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -391,7 +379,7 @@ describe('FileQueueCard — ボーダーカラー', () => {
     });
 });
 
-describe('FileQueueCard — エラー・警告表示', () => {
+describe('FileQueueCard — エラー表示', () => {
     it('error ステータス時にエラーメッセージが表示される', () => {
         const item = createReadyItem({
             status: 'error',
@@ -403,47 +391,11 @@ describe('FileQueueCard — エラー・警告表示', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
 
         expect(screen.getByText('パースエラー, フォーマット不正')).toBeInTheDocument();
-    });
-
-    it('duplicate_warning ステータス時に警告メッセージと上書きボタンが表示される', () => {
-        const item = createReadyItem({ status: 'duplicate_warning' });
-        render(
-            <FileQueueCard
-                item={item}
-                groups={mockGroups}
-                onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
-                onSelectGroup={vi.fn()}
-            />
-        );
-
-        expect(screen.getByText('重複セッションが検出されました')).toBeInTheDocument();
-        expect(screen.getByText('上書き')).toBeInTheDocument();
-    });
-
-    it('上書きボタンをクリックすると onApproveDuplicate が呼ばれる', async () => {
-        const user = userEvent.setup();
-        const onApproveDuplicate = vi.fn();
-        const item = createReadyItem({ status: 'duplicate_warning' });
-
-        render(
-            <FileQueueCard
-                item={item}
-                groups={mockGroups}
-                onRemove={vi.fn()}
-                onApproveDuplicate={onApproveDuplicate}
-                onSelectGroup={vi.fn()}
-            />
-        );
-
-        await user.click(screen.getByText('上書き'));
-        expect(onApproveDuplicate).toHaveBeenCalledWith('item-1');
     });
 });
 
@@ -455,7 +407,6 @@ describe('FileQueueCard — 削除ボタン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -473,7 +424,6 @@ describe('FileQueueCard — 削除ボタン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={onRemove}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -489,7 +439,6 @@ describe('FileQueueCard — 削除ボタン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -504,7 +453,6 @@ describe('FileQueueCard — 削除ボタン', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -519,14 +467,15 @@ describe('FileQueueCard — 参加者テーブル展開', () => {
         const item = createReadyItem({
             parseResult: {
                 ok: true,
-                mergeInput: {
-                    sessionId: 'grp001-2026-01-15',
-                    groupId: 'grp001',
+                parsedSession: {
+                    sessionId: '01TESTSESSION00000000000',
                     groupName: 'フロントエンド勉強会',
                     date: '2026-01-15',
+                    startedAt: '2026-01-15T19:00:00',
+                    endedAt: null,
                     attendances: [
-                        { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
-                        { memberId: 'mem002', memberName: '鈴木 花子', durationSeconds: 1800 },
+                        { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
+                        { memberName: '鈴木 花子', memberEmail: 'hanako@example.com', durationSeconds: 1800 },
                     ],
                 },
             },
@@ -537,7 +486,6 @@ describe('FileQueueCard — 参加者テーブル展開', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -563,7 +511,6 @@ describe('FileQueueCard — 参加者テーブル展開', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );
@@ -574,23 +521,6 @@ describe('FileQueueCard — 参加者テーブル展開', () => {
     });
 });
 
-describe('FileQueueCard — 重複バッジ', () => {
-    it('hasDuplicate が true の場合に重複バッジが表示される', () => {
-        const item = createReadyItem({ hasDuplicate: true });
-        render(
-            <FileQueueCard
-                item={item}
-                groups={mockGroups}
-                onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
-                onSelectGroup={vi.fn()}
-            />
-        );
-
-        expect(screen.getByText('重複')).toBeInTheDocument();
-    });
-});
-
 describe('FileQueueCard — グループ選択の新規グループ', () => {
     it('新規グループを選択すると onSelectGroup がグループ情報付きで呼ばれる', async () => {
         const user = userEvent.setup();
@@ -598,13 +528,14 @@ describe('FileQueueCard — グループ選択の新規グループ', () => {
         const item = createReadyItem({
             parseResult: {
                 ok: true,
-                mergeInput: {
-                    sessionId: 'newgrp1-2026-01-15',
-                    groupId: 'newgrp1',
+                parsedSession: {
+                    sessionId: '01NEWSESSION0000000000000',
                     groupName: '新しい勉強会',
                     date: '2026-01-15',
+                    startedAt: '2026-01-15T19:00:00',
+                    endedAt: null,
                     attendances: [
-                        { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                        { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
                     ],
                 },
             },
@@ -615,15 +546,14 @@ describe('FileQueueCard — グループ選択の新規グループ', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={onSelectGroup}
             />
         );
 
         const select = screen.getByRole('combobox');
-        await user.selectOptions(select, 'newgrp1');
+        await user.selectOptions(select, '_new_group_');
 
-        expect(onSelectGroup).toHaveBeenCalledWith('item-1', 'newgrp1', '新しい勉強会');
+        expect(onSelectGroup).toHaveBeenCalledWith('item-1', '_new_group_', '新しい勉強会');
     });
 
     it('空の値が選択された場合 onSelectGroup は呼ばれない', async () => {
@@ -633,13 +563,14 @@ describe('FileQueueCard — グループ選択の新規グループ', () => {
             status: 'missing_group',
             parseResult: {
                 ok: true,
-                mergeInput: {
-                    sessionId: 'e3b0c442-2026-01-15',
-                    groupId: 'e3b0c442',
+                parsedSession: {
+                    sessionId: '01EMPTYGROUPSESSION00000',
                     groupName: '',
                     date: '2026-01-15',
+                    startedAt: '2026-01-15T19:00:00',
+                    endedAt: null,
                     attendances: [
-                        { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                        { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
                     ],
                 },
             },
@@ -650,7 +581,6 @@ describe('FileQueueCard — グループ選択の新規グループ', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={onSelectGroup}
             />
         );
@@ -672,7 +602,6 @@ describe('FileQueueCard — グループ選択の新規グループ', () => {
                 item={item}
                 groups={mockGroups}
                 onRemove={vi.fn()}
-                onApproveDuplicate={vi.fn()}
                 onSelectGroup={vi.fn()}
             />
         );

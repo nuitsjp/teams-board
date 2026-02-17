@@ -48,14 +48,24 @@ describe('AzureBlobStorage', () => {
         );
     });
 
-    it('data/ パスに no-cache の Cache-Control ヘッダーが設定されること', async () => {
+    it('data/index.json パスに no-cache の Cache-Control ヘッダーが設定されること', async () => {
         const mockFetch = vi.fn().mockResolvedValue({ ok: true });
         vi.stubGlobal('fetch', mockFetch);
 
-        await storage.write('data/sessions/abc.json', '{}', 'application/json');
+        await storage.write('data/index.json', '{}', 'application/json');
 
         const headers = mockFetch.mock.calls[0][1].headers;
         expect(headers['x-ms-blob-cache-control']).toBe('no-cache');
+    });
+
+    it('data/sessions/ パスに immutable の Cache-Control ヘッダーが設定されること（V2 セッションは不変）', async () => {
+        const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', mockFetch);
+
+        await storage.write('data/sessions/01ABC/0.json', '{}', 'application/json');
+
+        const headers = mockFetch.mock.calls[0][1].headers;
+        expect(headers['x-ms-blob-cache-control']).toBe('max-age=31536000, immutable');
     });
 
     it('assets/ パスに immutable の Cache-Control ヘッダーが設定されること', async () => {

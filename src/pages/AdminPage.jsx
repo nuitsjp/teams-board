@@ -13,6 +13,7 @@ import { IndexMerger } from '../services/index-merger.js';
 import { IndexEditor } from '../services/index-editor.js';
 import { sharedDataFetcher } from '../services/shared-data-fetcher.js';
 import { APP_CONFIG } from '../config/app-config.js';
+import { createSessionRef, parseSessionRef, sessionRefToPath } from '../services/session-ref.js';
 import {
   ArrowLeft,
   Upload,
@@ -66,9 +67,7 @@ export function AdminPage() {
     queue,
     addFiles,
     removeFile,
-    approveDuplicate,
     selectGroup,
-    setExistingSessionIds,
     updateStatus,
     readyItems,
     failedItems,
@@ -93,39 +92,49 @@ export function AdminPage() {
   const [merging, setMerging] = useState(false);
   const [expandedGroupIds, setExpandedGroupIds] = useState(new Set());
 
-  // 既存セッションIDの取得とグループ一覧の取得
+  // 既存セッションの取得とグループ一覧の取得（V2: sessionRevisions ベース）
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const indexResult = await dataFetcher.fetchIndex();
       if (cancelled) return;
       if (indexResult.ok) {
-        const sessionIds = new Set(indexResult.data.groups.flatMap((g) => g.sessionIds));
-        setExistingSessionIds(sessionIds);
         setGroups(indexResult.data.groups);
         setCachedIndex(indexResult.data);
 
+        const sessionRefs = indexResult.data.groups.flatMap((g) => g.sessionRevisions);
+        const uniqueRefs = [...new Set(sessionRefs)];
+
         const sessionResults = await Promise.all(
-          [...sessionIds].map(async (sessionId) => ({
-            sessionId,
-            result: await dataFetcher.fetchSession(sessionId),
+          uniqueRefs.map(async (ref) => ({
+            ref,
+            result: await dataFetcher.fetchSession(ref),
           }))
         );
         if (cancelled) return;
         const loadedSessions = sessionResults
           .filter(({ result }) => result.ok)
-          .map(({ result }) => result.data)
-          .sort((a, b) => b.date.localeCompare(a.date));
+          .map(({ ref, result }) => ({
+            ...result.data,
+            _ref: ref,
+          }))
+          .sort((a, b) => {
+            const dateA = a.startedAt?.slice(0, 10) ?? '';
+            const dateB = b.startedAt?.slice(0, 10) ?? '';
+            return dateB.localeCompare(dateA);
+          });
         setSessions(loadedSessions);
         setSessionNameInputs(
-          Object.fromEntries(loadedSessions.map((session) => [session.id, session.name || '']))
+          Object.fromEntries(
+            loadedSessions.map((session) => [session._ref, session.title || ''])
+          )
         );
 
         // 最初のグループを展開状態にする
         if (loadedSessions.length > 0) {
-          const loadedSessionIdSet = new Set(loadedSessions.map((session) => session.id));
+          const loadedRefSet = new Set(loadedSessions.map((session) => session._ref));
           const firstGroupWithSessions = indexResult.data.groups.find((group) =>
-            group.sessionIds.some((sessionId) => loadedSessionIdSet.has(sessionId))
+            group.sessionRevisions.some((ref) => loadedRefSet.has(ref))
           );
           if (firstGroupWithSessions) {
             setExpandedGroupIds(new Set([firstGroupWithSessions.id]));
@@ -136,7 +145,7 @@ export function AdminPage() {
     return () => {
       cancelled = true;
     };
-  }, [dataFetcher, setExistingSessionIds]);
+  }, [dataFetcher]);
 
   useEffect(() => {
     setSelectedGroupIds((prev) => {
@@ -146,7 +155,7 @@ export function AdminPage() {
     });
   }, [groups]);
 
-  // 一括保存処理
+  // 一括保存処理（V2: parsedSession → indexMerger.merge → sessionRecord）
   const handleBulkSave = useCallback(async () => {
     const itemsToSave = queue.filter((item) => item.status === 'ready');
     if (itemsToSave.length === 0) return;
@@ -155,34 +164,55 @@ export function AdminPage() {
     setSaveProgress({ current: 0, total: itemsToSave.length });
     setSaveStatusText(`保存中\u2026 0/${itemsToSave.length} 件`);
 
-    const preparedItems = itemsToSave.map((item) => {
-      let { sessionRecord, mergeInput } = item.parseResult;
-      sessionRecord = { ...sessionRecord };
-      delete sessionRecord.groupId;
+    // 1. 最新 index.json を取得
+    const indexResult = await indexFetcher.fetch();
+    if (!indexResult.ok) {
+      for (const item of itemsToSave) {
+        updateStatus(item.id, 'save_failed', {
+          errors: ['index.json の取得に失敗しました'],
+        });
+      }
+      setSaving(false);
+      setSaveStatusText('');
+      return;
+    }
 
-      // グループ上書きがある場合、mergeInput / sessionRecord を上書き
+    const baseVersion = indexResult.data.version ?? 0;
+    let currentIndex = indexResult.data;
+
+    // 2. 各 parsedSession を順にマージし sessionRecord を構築
+    const preparedItems = [];
+    for (const item of itemsToSave) {
+      let { parsedSession } = item.parseResult;
+
+      // グループ上書きがある場合は groupName を上書き
       if (item.groupOverride) {
-        const { groupId, groupName } = item.groupOverride;
-        const newSessionId = `${groupId}-${mergeInput.date}`;
-        mergeInput = { ...mergeInput, groupId, groupName, sessionId: newSessionId };
-        sessionRecord = { ...sessionRecord, id: newSessionId };
+        parsedSession = { ...parsedSession, groupName: item.groupOverride.groupName };
       }
 
-      return {
+      const { index: updatedIndex, sessionRecord } = indexMerger.merge(
+        currentIndex,
+        parsedSession
+      );
+      currentIndex = updatedIndex;
+
+      const ref = createSessionRef(sessionRecord.sessionId, sessionRecord.revision);
+
+      preparedItems.push({
         itemId: item.id,
-        sourcePath: `data/sources/${sessionRecord.id}.csv`,
-        sessionPath: `data/sessions/${sessionRecord.id}.json`,
+        sourcePath: `data/sources/${sessionRecord.sessionId}.csv`,
+        sessionPath: sessionRefToPath(ref),
         sourceFile: item.file,
         sessionRecord,
-        mergeInput,
-      };
-    });
+      });
+    }
 
     for (const prepared of preparedItems) {
       updateStatus(prepared.itemId, 'saving');
     }
 
-    const sessionPathSet = new Set(preparedItems.map((prepared) => prepared.sessionPath));
+    const mergedIndex = currentIndex;
+    const sessionPathSet = new Set(preparedItems.map((p) => p.sessionPath));
     let completedSessions = 0;
 
     const result = await blobWriter.executeWriteSequence({
@@ -198,36 +228,24 @@ export function AdminPage() {
           contentType: 'application/json',
         },
       ]),
-      indexUpdater: (currentIndex, writeResults) => {
-        const resultByPath = new Map(writeResults.map((writeResult) => [writeResult.path, writeResult]));
-        const successfulMergeInputs = preparedItems
-          .filter(
-            (prepared) =>
-              (resultByPath.get(prepared.sourcePath)?.success ?? false) &&
-              (resultByPath.get(prepared.sessionPath)?.success ?? false)
-          )
-          .map((prepared) => prepared.mergeInput);
-
-        if (successfulMergeInputs.length === 0) {
+      indexUpdater: (latestIndex) => {
+        // 楽観ロック: baseVersion と比較
+        if ((latestIndex.version ?? 0) !== baseVersion) {
           return null;
         }
-
-        return successfulMergeInputs.reduce(
-          (index, mergeInput) => indexMerger.merge(index, mergeInput).index,
-          currentIndex
-        );
+        return mergedIndex;
       },
       onItemComplete: (writeResult) => {
-        if (!sessionPathSet.has(writeResult.path)) {
-          return;
-        }
+        if (!sessionPathSet.has(writeResult.path)) return;
         completedSessions += 1;
         setSaveProgress({ current: completedSessions, total: itemsToSave.length });
         setSaveStatusText(`保存中\u2026 ${completedSessions}/${itemsToSave.length} 件`);
       },
     });
 
-    const resultByPath = new Map(result.results.map((writeResult) => [writeResult.path, writeResult]));
+    const resultByPath = new Map(
+      result.results.map((writeResult) => [writeResult.path, writeResult])
+    );
     const indexWriteResult = resultByPath.get('data/index.json');
     if (indexWriteResult?.success) {
       dataFetcher.invalidateIndexCache();
@@ -260,7 +278,7 @@ export function AdminPage() {
     setSaveProgress({ current: itemsToSave.length, total: itemsToSave.length });
     setSaving(false);
     setSaveStatusText('');
-  }, [queue, updateStatus, blobWriter, indexMerger, dataFetcher]);
+  }, [queue, updateStatus, blobWriter, indexMerger, indexFetcher, dataFetcher]);
 
   // リトライ処理
   const handleRetry = useCallback(async () => {
@@ -270,7 +288,7 @@ export function AdminPage() {
     }
   }, [queue, updateStatus]);
 
-  // グループ名保存処理
+  // グループ名保存処理（V2: version ベース楽観ロック）
   const handleSaveGroupName = useCallback(
     async (groupId, newName) => {
       setSavingGroupId(groupId);
@@ -288,8 +306,11 @@ export function AdminPage() {
           return false;
         }
 
-        // updatedAtタイムスタンプを比較
-        if (cachedIndex && latestIndexResult.data.updatedAt !== cachedIndex.updatedAt) {
+        // version を比較（楽観ロック）
+        if (
+          cachedIndex &&
+          (latestIndexResult.data.version ?? 0) !== (cachedIndex.version ?? 0)
+        ) {
           setGroupMessage({
             type: 'error',
             text: '他のユーザーが同時に編集しています。最新データを再読み込みしてください',
@@ -363,11 +384,11 @@ export function AdminPage() {
   const isSessionOperationDisabled = savingSessionId !== null || saving || merging;
 
   const sessionsByGroup = useMemo(() => {
-    const sessionMap = new Map(sessions.map((session) => [session.id, session]));
+    const sessionMap = new Map(sessions.map((session) => [session._ref, session]));
     const map = new Map();
     for (const group of groups) {
-      const groupSessions = group.sessionIds
-        .map((sessionId) => sessionMap.get(sessionId))
+      const groupSessions = group.sessionRevisions
+        .map((ref) => sessionMap.get(ref))
         .filter(Boolean);
       if (groupSessions.length > 0) {
         map.set(group.id, groupSessions);
@@ -414,6 +435,7 @@ export function AdminPage() {
     setMergeTargetGroupId(null);
   }, []);
 
+  // グループ統合処理（V2: version ベース楽観ロック）
   const handleMergeGroups = useCallback(async () => {
     if (!mergeTargetGroupId || selectedGroupIds.size < 2) {
       return;
@@ -432,7 +454,11 @@ export function AdminPage() {
         return;
       }
 
-      if (cachedIndex && latestIndexResult.data.updatedAt !== cachedIndex.updatedAt) {
+      // version を比較（楽観ロック）
+      if (
+        cachedIndex &&
+        (latestIndexResult.data.version ?? 0) !== (cachedIndex.version ?? 0)
+      ) {
         setGroupMessage({
           type: 'error',
           text: '他のユーザーが同時に編集しています。最新データを再読み込みしてください',
@@ -497,39 +523,79 @@ export function AdminPage() {
     closeMergeDialog,
   ]);
 
+  // セッション名保存処理（V2: 新リビジョンを作成しセッションファイルを追記）
   const handleSaveSessionName = useCallback(
-    async (sessionId, name) => {
-      const target = sessions.find((session) => session.id === sessionId);
-      if (!target) {
-        return;
-      }
+    async (sessionRef, name) => {
+      const target = sessions.find((session) => session._ref === sessionRef);
+      if (!target) return;
 
       const normalizedName = name.trim();
       if (normalizedName.length > MAX_SESSION_NAME_LENGTH) {
-        setSessionMessage({ type: 'error', text: 'セッション名は256文字以内で入力してください' });
+        setSessionMessage({
+          type: 'error',
+          text: 'セッション名は256文字以内で入力してください',
+        });
         return;
       }
 
-      const updatedSession = { ...target };
-      delete updatedSession.groupId;
-      if (normalizedName.length === 0) {
-        delete updatedSession.name;
-      } else {
-        updatedSession.name = normalizedName;
+      // 新リビジョンを構築
+      const { revision } = parseSessionRef(sessionRef);
+      const newRevision = revision + 1;
+      const newRef = createSessionRef(target.sessionId, newRevision);
+      const newPath = sessionRefToPath(newRef);
+
+      const newSessionRecord = {
+        sessionId: target.sessionId,
+        revision: newRevision,
+        startedAt: target.startedAt,
+        endedAt: target.endedAt,
+        attendances: target.attendances,
+        createdAt: target.createdAt,
+      };
+      if (normalizedName.length > 0) {
+        newSessionRecord.title = normalizedName;
       }
 
-      setSavingSessionId(sessionId);
+      setSavingSessionId(sessionRef);
       setSessionMessage({ type: '', text: '' });
 
       try {
         const result = await blobWriter.executeWriteSequence({
           newItems: [
             {
-              path: `data/sessions/${sessionId}.json`,
-              content: JSON.stringify(updatedSession, null, 2),
+              path: newPath,
+              content: JSON.stringify(newSessionRecord, null, 2),
               contentType: 'application/json',
             },
           ],
+          indexUpdater: (latestIndex) => {
+            // 楽観ロック: version チェック
+            if (
+              cachedIndex &&
+              (latestIndex.version ?? 0) !== (cachedIndex.version ?? 0)
+            ) {
+              return null;
+            }
+
+            // sessionRevisions で旧 ref → 新 ref に置換
+            const replaceRef = (refs) =>
+              refs.map((r) => (r === sessionRef ? newRef : r));
+
+            return {
+              ...latestIndex,
+              schemaVersion: 2,
+              version: (latestIndex.version ?? 0) + 1,
+              updatedAt: new Date().toISOString(),
+              groups: latestIndex.groups.map((g) => ({
+                ...g,
+                sessionRevisions: replaceRef(g.sessionRevisions),
+              })),
+              members: latestIndex.members.map((m) => ({
+                ...m,
+                sessionRevisions: replaceRef(m.sessionRevisions),
+              })),
+            };
+          },
         });
 
         if (!result.allSucceeded) {
@@ -544,25 +610,28 @@ export function AdminPage() {
           return;
         }
 
+        // ローカル状態を更新
         setSessions((prev) =>
           prev.map((session) => {
-            if (session.id !== sessionId) {
-              return session;
-            }
-            const updated = { ...session };
-            if (updatedSession.name === undefined) {
-              delete updated.name;
-            } else {
-              updated.name = updatedSession.name;
-            }
-            return updated;
+            if (session._ref !== sessionRef) return session;
+            return { ...newSessionRecord, _ref: newRef };
           })
         );
-        setSessionNameInputs((prev) => ({
-          ...prev,
-          [sessionId]: updatedSession.name || '',
-        }));
-        dataFetcher.invalidateSessionCache(sessionId);
+        setSessionNameInputs((prev) => {
+          const next = { ...prev };
+          delete next[sessionRef];
+          next[newRef] = normalizedName;
+          return next;
+        });
+
+        // キャッシュ無効化・再取得
+        dataFetcher.invalidateIndexCache();
+        const refreshed = await dataFetcher.fetchIndex();
+        if (refreshed.ok) {
+          setGroups(refreshed.data.groups);
+          setCachedIndex(refreshed.data);
+        }
+
         setSessionMessage({ type: 'success', text: 'セッション名を保存しました' });
       } catch (error) {
         setSessionMessage({
@@ -573,7 +642,7 @@ export function AdminPage() {
         setSavingSessionId(null);
       }
     },
-    [blobWriter, dataFetcher, sessions]
+    [blobWriter, dataFetcher, sessions, cachedIndex]
   );
 
   // 非管理者はダッシュボードにリダイレクト
@@ -601,7 +670,6 @@ export function AdminPage() {
         queue={queue}
         groups={groups}
         onRemove={removeFile}
-        onApproveDuplicate={approveDuplicate}
         onSelectGroup={selectGroup}
       />
 
@@ -733,7 +801,7 @@ export function AdminPage() {
                       {Math.floor((group.totalDurationSeconds % 3600) / 60)}分
                     </td>
                     <td className="px-4 py-3 text-sm text-text-primary text-right tabular-nums">
-                      {group.sessionIds.length}件
+                      {group.sessionRevisions.length}件
                     </td>
                   </tr>
                 ))}
@@ -779,7 +847,7 @@ export function AdminPage() {
               const groupSessions = sessionsByGroup.get(group.id) || [];
               if (groupSessions.length === 0) return null;
               const isExpanded = expandedGroupIds.has(group.id);
-              const unnamedCount = groupSessions.filter((s) => !s.name).length;
+              const unnamedCount = groupSessions.filter((s) => !s.title).length;
               return (
                 <div key={group.id} className="card-base overflow-hidden">
                   <button
@@ -825,22 +893,27 @@ export function AdminPage() {
                           </thead>
                           <tbody className="divide-y divide-border-light">
                             {groupSessions.map((session) => (
-                              <tr key={session.id} className="hover:bg-surface-muted transition-colors">
-                                <td className="px-4 py-3 text-sm text-text-primary tabular-nums">{session.date}</td>
+                              <tr
+                                key={session._ref}
+                                className="hover:bg-surface-muted transition-colors"
+                              >
+                                <td className="px-4 py-3 text-sm text-text-primary tabular-nums">
+                                  {session.startedAt?.slice(0, 10) ?? ''}
+                                </td>
                                 <td className="px-4 py-3 text-sm">
                                   <input
                                     type="text"
-                                    value={sessionNameInputs[session.id] || ''}
+                                    value={sessionNameInputs[session._ref] || ''}
                                     onChange={(event) =>
                                       setSessionNameInputs((prev) => ({
                                         ...prev,
-                                        [session.id]: event.target.value,
+                                        [session._ref]: event.target.value,
                                       }))
                                     }
                                     maxLength={MAX_SESSION_NAME_LENGTH}
                                     className="w-full px-3 py-2 border border-border-light rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-500"
                                     placeholder="未設定（空欄で日付のみ表示）"
-                                    aria-label={`${session.date} のセッション名`}
+                                    aria-label={`${session.startedAt?.slice(0, 10) ?? ''} のセッション名`}
                                     disabled={isSessionOperationDisabled}
                                   />
                                 </td>
@@ -848,7 +921,12 @@ export function AdminPage() {
                                   <button
                                     type="button"
                                     className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
-                                    onClick={() => handleSaveSessionName(session.id, sessionNameInputs[session.id] || '')}
+                                    onClick={() =>
+                                      handleSaveSessionName(
+                                        session._ref,
+                                        sessionNameInputs[session._ref] || ''
+                                      )
+                                    }
                                     disabled={isSessionOperationDisabled}
                                   >
                                     <Save className="w-4 h-4" aria-hidden="true" />
@@ -916,7 +994,8 @@ export function AdminPage() {
                     </div>
                   </div>
                   <div className="text-xs text-text-muted tabular-nums">
-                    {group.sessionIds.length}件 / {Math.floor(group.totalDurationSeconds / 3600)}時間
+                    {group.sessionRevisions.length}件 /{' '}
+                    {Math.floor(group.totalDurationSeconds / 3600)}時間
                     {Math.floor((group.totalDurationSeconds % 3600) / 60)}分
                   </div>
                 </label>

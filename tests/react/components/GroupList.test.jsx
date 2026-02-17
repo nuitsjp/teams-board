@@ -13,8 +13,8 @@ vi.mock('react-router-dom', async () => {
 });
 
 const mockGroups = [
-  { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['s1', 's2'] },
-  { id: 'g2', name: 'TypeScript読書会', totalDurationSeconds: 1800, sessionIds: ['s3'] },
+  { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionRevisions: ['s1/0', 's2/0'] },
+  { id: 'g2', name: 'TypeScript読書会', totalDurationSeconds: 1800, sessionRevisions: ['s3/0'] },
 ];
 
 const renderGroupList = (groups = mockGroups) => {

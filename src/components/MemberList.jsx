@@ -23,7 +23,7 @@ const MemberRow = memo(function MemberRow({ member, onNavigate }) {
             <div className="flex items-center text-sm text-text-secondary gap-4">
                 <span className="flex items-center gap-1.5 bg-surface-muted px-2 py-1 rounded">
                     <span className="font-semibold text-text-primary font-display">
-                        {member.sessionIds.length}
+                        {member.sessionRevisions.length}
                     </span>{' '}
                     回
                 </span>

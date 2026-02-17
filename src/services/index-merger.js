@@ -1,81 +1,95 @@
-// IndexMerger — DashboardIndexのマージロジック（ドメインモデル対応）
+// IndexMerger — DashboardIndex V2 のマージロジック（名前ベースマッチング）
+import { ulid } from 'ulidx';
+import { createSessionRef } from './session-ref.js';
+
 export class IndexMerger {
-  /**
-   * 新セッション追加に伴いDashboardIndexのGroupSummaryとMemberSummaryを更新する
-   * @param {object} currentIndex - 現在のDashboardIndex
-   * @param {object} newSession - 追加するセッション情報（MergeInput）
-   * @returns {{ index: object, warnings: string[] }}
-   */
-  merge(currentIndex, newSession) {
-    const warnings = [];
+    /**
+     * 新セッション追加に伴い DashboardIndex の GroupSummary と MemberSummary を更新する
+     * グループ・メンバーは名前ベースでマッチングし、不一致の場合は ULID を新規生成する
+     *
+     * @param {object} currentIndex - 現在の DashboardIndex（V2）
+     * @param {object} parsedSession - CsvTransformer が出力した parsedSession
+     * @returns {{ index: object, sessionRecord: object, warnings: string[] }}
+     */
+    merge(currentIndex, parsedSession) {
+        const warnings = [];
 
-    // 重複セッションID検出
-    const allSessionIds = new Set([...currentIndex.groups.flatMap((g) => g.sessionIds)]);
-    if (allSessionIds.has(newSession.sessionId)) {
-      warnings.push(`重複セッションID検出: ${newSession.sessionId} は既に存在します`);
-      return {
-        index: {
-          groups: currentIndex.groups.map((g) => ({ ...g, sessionIds: [...g.sessionIds] })),
-          members: currentIndex.members.map((m) => ({ ...m, sessionIds: [...m.sessionIds] })),
-          updatedAt: new Date().toISOString(),
-        },
-        warnings,
-      };
+        // グループの名前ベースマッチング
+        const groups = currentIndex.groups.map((g) => ({
+            ...g,
+            sessionRevisions: [...g.sessionRevisions],
+        }));
+        let targetGroup = groups.find((g) => g.name === parsedSession.groupName);
+        if (!targetGroup) {
+            targetGroup = {
+                id: ulid(),
+                name: parsedSession.groupName,
+                totalDurationSeconds: 0,
+                sessionRevisions: [],
+            };
+            groups.push(targetGroup);
+        }
+
+        // sessionRef を作成（revision は常に 0）
+        const sessionRef = createSessionRef(parsedSession.sessionId, 0);
+
+        // グループにセッション追加
+        const sessionTotalDuration = parsedSession.attendances.reduce(
+            (sum, a) => sum + a.durationSeconds,
+            0
+        );
+        targetGroup.totalDurationSeconds += sessionTotalDuration;
+        targetGroup.sessionRevisions.push(sessionRef);
+
+        // メンバーの名前ベースマッチングと sessionRecord の attendances 構築
+        const members = currentIndex.members.map((m) => ({
+            ...m,
+            sessionRevisions: [...m.sessionRevisions],
+        }));
+        const sessionAttendances = [];
+
+        for (const att of parsedSession.attendances) {
+            let existingMember = members.find((m) => m.name === att.memberName);
+            if (!existingMember) {
+                existingMember = {
+                    id: ulid(),
+                    name: att.memberName,
+                    totalDurationSeconds: 0,
+                    sessionRevisions: [],
+                };
+                members.push(existingMember);
+            }
+            existingMember.totalDurationSeconds += att.durationSeconds;
+            existingMember.sessionRevisions.push(sessionRef);
+
+            sessionAttendances.push({
+                memberId: existingMember.id,
+                durationSeconds: att.durationSeconds,
+            });
+        }
+
+        // version インクリメント
+        const currentVersion = currentIndex.version ?? 0;
+
+        const index = {
+            schemaVersion: 2,
+            version: currentVersion + 1,
+            updatedAt: new Date().toISOString(),
+            groups,
+            members,
+        };
+
+        // sessionRecord を構築（resolved memberId 入り）
+        const sessionRecord = {
+            sessionId: parsedSession.sessionId,
+            revision: 0,
+            title: '',
+            startedAt: parsedSession.startedAt,
+            endedAt: parsedSession.endedAt,
+            attendances: sessionAttendances,
+            createdAt: new Date().toISOString(),
+        };
+
+        return { index, sessionRecord, warnings };
     }
-
-    // GroupSummary の更新
-    const sessionTotalDuration = newSession.attendances.reduce(
-      (sum, a) => sum + a.durationSeconds,
-      0
-    );
-    const groupMap = new Map();
-    const groups = currentIndex.groups.map((g) => {
-      const copy = { ...g, sessionIds: [...g.sessionIds] };
-      groupMap.set(copy.id, copy);
-      return copy;
-    });
-    const existingGroup = groupMap.get(newSession.groupId);
-    if (existingGroup) {
-      existingGroup.totalDurationSeconds += sessionTotalDuration;
-      existingGroup.sessionIds.push(newSession.sessionId);
-    } else {
-      groups.push({
-        id: newSession.groupId,
-        name: newSession.groupName,
-        totalDurationSeconds: sessionTotalDuration,
-        sessionIds: [newSession.sessionId],
-      });
-    }
-
-    // MemberSummary の更新
-    const memberMap = new Map();
-    const members = currentIndex.members.map((m) => {
-      const copy = { ...m, sessionIds: [...m.sessionIds] };
-      memberMap.set(copy.id, copy);
-      return copy;
-    });
-    for (const attendance of newSession.attendances) {
-      const existingMember = memberMap.get(attendance.memberId);
-      if (existingMember) {
-        existingMember.totalDurationSeconds += attendance.durationSeconds;
-        existingMember.sessionIds.push(newSession.sessionId);
-      } else {
-        members.push({
-          id: attendance.memberId,
-          name: attendance.memberName,
-          totalDurationSeconds: attendance.durationSeconds,
-          sessionIds: [newSession.sessionId],
-        });
-      }
-    }
-
-    return {
-      index: {
-        groups,
-        members,
-        updatedAt: new Date().toISOString(),
-      },
-      warnings,
-    };
-  }
 }

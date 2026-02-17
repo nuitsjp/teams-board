@@ -6,23 +6,18 @@ function createMockTransformer(parseResult) {
     return { parse: vi.fn().mockResolvedValue(parseResult) };
 }
 
-// 標準的なパース成功結果
+// 標準的なパース成功結果（V2: parsedSession 形式）
 function createParseResult(overrides = {}) {
     return {
         ok: true,
-        sessionRecord: {
-            id: 'abc12345-2026-01-15',
-            groupId: 'abc12345',
-            date: '2026-01-15',
-            attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
-        },
-        mergeInput: {
-            sessionId: 'abc12345-2026-01-15',
-            groupId: 'abc12345',
+        parsedSession: {
+            sessionId: '01TESTSESSION00000000000',
             groupName: 'テスト勉強会',
             date: '2026-01-15',
+            startedAt: '2026-01-15T19:00:00',
+            endedAt: null,
             attendances: [
-                { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
             ],
         },
         warnings: [],
@@ -33,19 +28,14 @@ function createParseResult(overrides = {}) {
 // グループ名が空のパース結果
 function createEmptyGroupParseResult() {
     return createParseResult({
-        sessionRecord: {
-            id: 'e3b0c442-2026-01-15',
-            groupId: 'e3b0c442',
-            date: '2026-01-15',
-            attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
-        },
-        mergeInput: {
-            sessionId: 'e3b0c442-2026-01-15',
-            groupId: 'e3b0c442',
+        parsedSession: {
+            sessionId: '01EMPTYGROUP000000000000',
             groupName: '',
             date: '2026-01-15',
+            startedAt: '2026-01-15T19:00:00',
+            endedAt: null,
             attendances: [
-                { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
             ],
         },
     });
@@ -66,7 +56,6 @@ describe('useFileQueue — ファイルバリデーション', () => {
         });
 
         expect(result.current.queue[0].errors).toContain('CSVファイルのみ対応しています');
-        // パーサーは呼ばれないこと
         expect(transformer.parse).not.toHaveBeenCalled();
     });
 
@@ -74,7 +63,6 @@ describe('useFileQueue — ファイルバリデーション', () => {
         const transformer = createMockTransformer(createParseResult());
         const { result } = renderHook(() => useFileQueue(transformer));
 
-        // 10MB超のファイルを作成
         const largeContent = new ArrayBuffer(10 * 1024 * 1024 + 1);
         const file = new File([largeContent], 'large.csv', { type: 'text/csv' });
         act(() => {
@@ -143,59 +131,6 @@ describe('useFileQueue — パース処理', () => {
         });
 
         expect(result.current.queue[0].warnings).toEqual(['参加者名が不明です']);
-    });
-
-    it('既存セッションIDと重複する場合はduplicate_warningになる', async () => {
-        const transformer = createMockTransformer(createParseResult());
-        const { result } = renderHook(() => useFileQueue(transformer));
-
-        // 既存セッションIDを設定
-        act(() => {
-            result.current.setExistingSessionIds(new Set(['abc12345-2026-01-15']));
-        });
-
-        const file = new File(['dummy'], 'test.csv', { type: 'text/csv' });
-        act(() => {
-            result.current.addFiles([file]);
-        });
-
-        await waitFor(() => {
-            expect(result.current.queue[0].status).toBe('duplicate_warning');
-        });
-
-        expect(result.current.queue[0].hasDuplicate).toBe(true);
-        expect(result.current.queue[0].parseResult).toBeTruthy();
-    });
-});
-
-describe('useFileQueue — 重複承認', () => {
-    it('approveDuplicate でduplicate_warningからreadyに変更される', async () => {
-        const transformer = createMockTransformer(createParseResult());
-        const { result } = renderHook(() => useFileQueue(transformer));
-
-        // 既存セッションIDを設定して重複を発生させる
-        act(() => {
-            result.current.setExistingSessionIds(new Set(['abc12345-2026-01-15']));
-        });
-
-        const file = new File(['dummy'], 'test.csv', { type: 'text/csv' });
-        act(() => {
-            result.current.addFiles([file]);
-        });
-
-        await waitFor(() => {
-            expect(result.current.queue[0].status).toBe('duplicate_warning');
-        });
-
-        const itemId = result.current.queue[0].id;
-
-        // 重複を承認
-        act(() => {
-            result.current.approveDuplicate(itemId);
-        });
-
-        expect(result.current.queue[0].status).toBe('ready');
-        expect(result.current.readyItems).toHaveLength(1);
     });
 });
 
@@ -332,7 +267,6 @@ describe('useFileQueue — 保存ステータス更新', () => {
 
         const itemId = result.current.queue[0].id;
 
-        // save_failedにしてからreadyにリセット
         act(() => {
             result.current.updateStatus(itemId, 'save_failed', {
                 errors: ['エラー'],
@@ -368,7 +302,6 @@ describe('useFileQueue — 保存ステータス更新', () => {
             result.current.updateStatus(itemId, 'unknown_status');
         });
 
-        // ステータスは変わらない
         expect(result.current.queue[0].status).toBe('ready');
     });
 });
@@ -381,21 +314,16 @@ describe('useFileQueue — 複数アイテム操作', () => {
                 callCount++;
                 return Promise.resolve(
                     createParseResult({
-                        sessionRecord: {
-                            id: `group${callCount}-2026-01-15`,
-                            groupId: `group${callCount}`,
-                            date: '2026-01-15',
-                            attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
-                        },
-                        mergeInput: {
-                            sessionId: `group${callCount}-2026-01-15`,
-                            groupId: `group${callCount}`,
+                        parsedSession: {
+                            sessionId: `01TESTSESSION0000000000${String(callCount).padStart(2, '0')}`,
                             groupName: `グループ${callCount}`,
                             date: '2026-01-15',
+                            startedAt: '2026-01-15T19:00:00',
+                            endedAt: null,
                             attendances: [
                                 {
-                                    memberId: 'mem001',
                                     memberName: '佐藤 太郎',
+                                    memberEmail: 'taro@example.com',
                                     durationSeconds: 3600,
                                 },
                             ],
@@ -406,7 +334,6 @@ describe('useFileQueue — 複数アイテム操作', () => {
         };
         const { result } = renderHook(() => useFileQueue(transformer));
 
-        // 2つのファイルを追加
         const file1 = new File(['dummy1'], 'test1.csv', { type: 'text/csv' });
         const file2 = new File(['dummy2'], 'test2.csv', { type: 'text/csv' });
         act(() => {
@@ -420,7 +347,6 @@ describe('useFileQueue — 複数アイテム操作', () => {
 
         const firstItemId = result.current.queue[0].id;
 
-        // 1つ目のアイテムだけsavingにする
         act(() => {
             result.current.updateStatus(firstItemId, 'saving');
         });
@@ -428,7 +354,6 @@ describe('useFileQueue — 複数アイテム操作', () => {
         expect(result.current.queue[0].status).toBe('saving');
         expect(result.current.queue[1].status).toBe('ready');
 
-        // 1つ目をsavedにする
         act(() => {
             result.current.updateStatus(firstItemId, 'saved');
         });
@@ -436,8 +361,10 @@ describe('useFileQueue — 複数アイテム操作', () => {
         expect(result.current.queue[0].status).toBe('saved');
         expect(result.current.queue[1].status).toBe('ready');
     });
+});
 
-    it('approveDuplicate はduplicate_warningステータス以外のアイテムには影響しない', async () => {
+describe('useFileQueue — SELECT_GROUP', () => {
+    it('selectGroup で groupOverride が設定される', async () => {
         const transformer = createMockTransformer(createParseResult());
         const { result } = renderHook(() => useFileQueue(transformer));
 
@@ -452,74 +379,28 @@ describe('useFileQueue — 複数アイテム操作', () => {
 
         const itemId = result.current.queue[0].id;
 
-        // readyステータスのアイテムにapproveDuplicateしても変化しない
         act(() => {
-            result.current.approveDuplicate(itemId);
+            result.current.selectGroup(itemId, 'newgroup1', '別のグループ');
         });
 
+        expect(result.current.queue[0].groupOverride).toEqual({
+            groupId: 'newgroup1',
+            groupName: '別のグループ',
+        });
         expect(result.current.queue[0].status).toBe('ready');
-    });
-});
-
-describe('useFileQueue — SELECT_GROUP 分岐', () => {
-    it('parseResult の date が null の場合、重複チェックがスキップされる', async () => {
-        const resultWithNoDate = createParseResult({
-            mergeInput: {
-                sessionId: 'abc12345-2026-01-15',
-                groupId: 'abc12345',
-                groupName: 'テスト勉強会',
-                date: null,
-                attendances: [
-                    { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
-                ],
-            },
-        });
-        const transformer = createMockTransformer(resultWithNoDate);
-        const { result } = renderHook(() => useFileQueue(transformer));
-
-        // 既存セッションIDを設定
-        act(() => {
-            result.current.setExistingSessionIds(new Set(['existgrp1-2026-01-15']));
-        });
-
-        const file = new File(['dummy'], 'test.csv', { type: 'text/csv' });
-        act(() => {
-            result.current.addFiles([file]);
-        });
-
-        await waitFor(() => {
-            expect(result.current.queue[0].status).toBe('ready');
-        });
-
-        const itemId = result.current.queue[0].id;
-
-        // グループ選択（dateがnullなので重複チェックがスキップされる）
-        act(() => {
-            result.current.selectGroup(itemId, 'existgrp1', '既存グループ');
-        });
-
-        // dateがnullなのでnewSessionIdもnull → 重複にならずready
-        expect(result.current.queue[0].status).toBe('ready');
-        expect(result.current.queue[0].hasDuplicate).toBeFalsy();
     });
 
     it('警告がundefinedのパース結果でもwarningsが空配列になる', async () => {
-        // warnings プロパティが undefined の結果
         const resultWithoutWarnings = {
             ok: true,
-            sessionRecord: {
-                id: 'abc12345-2026-01-15',
-                groupId: 'abc12345',
-                date: '2026-01-15',
-                attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
-            },
-            mergeInput: {
-                sessionId: 'abc12345-2026-01-15',
-                groupId: 'abc12345',
+            parsedSession: {
+                sessionId: '01TESTSESSION00000000000',
                 groupName: '',
                 date: '2026-01-15',
+                startedAt: '2026-01-15T19:00:00',
+                endedAt: null,
                 attendances: [
-                    { memberId: 'mem001', memberName: '佐藤 太郎', durationSeconds: 3600 },
+                    { memberName: '佐藤 太郎', memberEmail: 'taro@example.com', durationSeconds: 3600 },
                 ],
             },
         };
@@ -538,67 +419,6 @@ describe('useFileQueue — SELECT_GROUP 分岐', () => {
 
         // warningsがundefinedでも空配列にフォールバックされる
         expect(result.current.queue[0].warnings).toEqual([]);
-    });
-});
-
-describe('useFileQueue — SELECT_GROUP', () => {
-    it('selectGroup で groupOverride が設定される', async () => {
-        const transformer = createMockTransformer(createParseResult());
-        const { result } = renderHook(() => useFileQueue(transformer));
-
-        // ファイルを追加
-        const file = new File(['dummy'], 'test.csv', { type: 'text/csv' });
-        act(() => {
-            result.current.addFiles([file]);
-        });
-
-        // パース完了を待つ
-        await waitFor(() => {
-            expect(result.current.queue[0].status).toBe('ready');
-        });
-
-        const itemId = result.current.queue[0].id;
-
-        // グループ選択
-        act(() => {
-            result.current.selectGroup(itemId, 'newgroup1', '別のグループ');
-        });
-
-        expect(result.current.queue[0].groupOverride).toEqual({
-            groupId: 'newgroup1',
-            groupName: '別のグループ',
-        });
-        expect(result.current.queue[0].status).toBe('ready');
-    });
-
-    it('selectGroup で変更後の sessionId が既存と重複する場合 duplicate_warning になる', async () => {
-        const transformer = createMockTransformer(createParseResult());
-        const { result } = renderHook(() => useFileQueue(transformer));
-
-        // 既存セッションIDを設定（重複を発生させる）
-        act(() => {
-            result.current.setExistingSessionIds(new Set(['existgrp1-2026-01-15']));
-        });
-
-        // ファイルを追加
-        const file = new File(['dummy'], 'test.csv', { type: 'text/csv' });
-        act(() => {
-            result.current.addFiles([file]);
-        });
-
-        await waitFor(() => {
-            expect(result.current.queue[0].status).toBe('ready');
-        });
-
-        const itemId = result.current.queue[0].id;
-
-        // 重複するグループを選択
-        act(() => {
-            result.current.selectGroup(itemId, 'existgrp1', '既存グループ');
-        });
-
-        expect(result.current.queue[0].status).toBe('duplicate_warning');
-        expect(result.current.queue[0].hasDuplicate).toBe(true);
     });
 });
 
@@ -635,7 +455,6 @@ describe('useFileQueue — MISSING_GROUP', () => {
 
         const itemId = result.current.queue[0].id;
 
-        // 既存グループを選択
         act(() => {
             result.current.selectGroup(itemId, 'existgrp1', '既存グループ');
         });
