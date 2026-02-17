@@ -1417,4 +1417,42 @@ describe('AdminPage — セッション名管理', () => {
     const savedSession = JSON.parse(callArgs.newItems[0].content);
     expect(savedSession.name).toBeUndefined();
   });
+
+  it('グループ別アコーディオンの展開・折りたたみが動作する', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    // グループアコーディオンヘッダーが表示されるのを待つ
+    const accordionButton = await screen.findByRole('button', { name: /テストグループ1/ });
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'true');
+
+    // セッション名入力が表示されている
+    expect(screen.getByRole('textbox', { name: '2026-02-08 のセッション名' })).toBeInTheDocument();
+
+    // 折りたたみ
+    await user.click(accordionButton);
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'false');
+
+    // 再展開
+    await user.click(accordionButton);
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('未設定バッジがセッション名未設定のグループに表示される', async () => {
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    // セッション名が未設定なので「未設定 1件」バッジが表示される
+    await waitFor(() => {
+      expect(screen.getByText('未設定 1件')).toBeInTheDocument();
+    });
+  });
 });
