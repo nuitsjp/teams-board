@@ -41,10 +41,31 @@ describe('AzureBlobStorage', () => {
                     'Content-Type': 'application/json',
                     'x-ms-blob-type': 'BlockBlob',
                     'x-ms-version': '2025-01-05',
+                    'x-ms-blob-cache-control': 'no-cache',
                 },
                 body: '{}',
             }
         );
+    });
+
+    it('data/ パスに no-cache の Cache-Control ヘッダーが設定されること', async () => {
+        const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', mockFetch);
+
+        await storage.write('data/sessions/abc.json', '{}', 'application/json');
+
+        const headers = mockFetch.mock.calls[0][1].headers;
+        expect(headers['x-ms-blob-cache-control']).toBe('no-cache');
+    });
+
+    it('assets/ パスに immutable の Cache-Control ヘッダーが設定されること', async () => {
+        const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', mockFetch);
+
+        await storage.write('assets/index-abc123.js', 'code', 'application/javascript');
+
+        const headers = mockFetch.mock.calls[0][1].headers;
+        expect(headers['x-ms-blob-cache-control']).toBe('max-age=31536000, immutable');
     });
 
     it('HTTPエラー時に { success: false } とエラーメッセージを返すこと', async () => {
