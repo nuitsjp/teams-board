@@ -63,20 +63,13 @@ CSV をドラッグ＆ドロップするだけで、参加状況を**自動で�
 
 # アーキテクチャ
 
-サーバーレス SPA + Azure Blob Storage の静的サイトホスティング
+**サーバーレス SPA** — Azure Blob Storage の静的サイトホスティングのみで動作
 
-```
-┌─────────────┐     CSV      ┌──────────────┐    PUT     ┌──────────────────┐
-│  ブラウザ    │ ──────────→  │  SPA (React) │ ────────→  │  Azure Blob      │
-│             │              │              │            │  Storage          │
-│             │  ←────────── │  CSV解析      │  ←──────── │  $web コンテナ   │
-│             │   ダッシュ    │  集計・可視化  │   JSON     │  data/index.json │
-│             │   ボード表示  │              │            │  data/sessions/* │
-└─────────────┘              └──────────────┘            └──────────────────┘
-```
-
-- 読み取り: 静的 Web エンドポイント → `index.json` + `sessions/*.json`
-- 書き込み: CSV → CsvTransformer → IndexMerger → BlobWriter（SAS トークン）
+- アプリ本体（HTML/JS/CSS）もデータ（JSON）も **同じ Blob Storage** に格納
+- バックエンドサーバーなし — CSV 解析・集計はすべて**ブラウザ内で完結**
+- データ書き込みは **SAS トークン付き PUT** で直接 Blob Storage へ
+  - 秘匿性の高くない情報が対象 → Entra ID 認証の複雑さより運用の簡素さを優先
+- 閉域網対応: PaaS ファイアウォール + Private Endpoint 構成も可能
 
 ---
 
