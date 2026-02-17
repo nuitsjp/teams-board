@@ -164,6 +164,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Marp プレゼンテーション生成物
+docs/presentation/index.html
+
 # Python / MkDocs
 .venv
 /site

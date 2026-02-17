@@ -5,5 +5,8 @@ AGENTS.md
 # OpenSpec ワークフロー文書
 openspec/**
 
+# Marp プレゼンテーション（体言止め等がtextlintルールと非互換）
+docs/presentation/**
+
 # rulesync 生成ファイル
 .rulesync/**

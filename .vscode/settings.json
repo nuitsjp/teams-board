@@ -27,6 +27,7 @@
   "textlint.configPath": ".textlintrc.json",
   "textlint.autoFixOnSave": false,
   "textlint.run": "onType",
+  "markdown.marp.themes": ["./docs/presentation/theme.css"],
   "files.associations": {
     "**/.rulesync/skills/*/SKILL.md": "markdown"
   },
