@@ -700,16 +700,16 @@ wheels = [
 
 [[package]]
 name = "mkdocs-svg-to-png"
-version = "1.0.0"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mkdocs" },
     { name = "mkdocs-material" },
     { name = "playwright" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/a1/f13ffd5040dfaefef3b7504f41faa84fda4c995e889cf2079b057e56cf7a/mkdocs_svg_to_png-1.0.0.tar.gz", hash = "sha256:99df8d13f3727c1afb781e8a125dcfb526ae34ace0a651add6e4ef9351b788bd", size = 285303, upload-time = "2025-11-01T00:58:31.195Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/e2/80f0c10121a9026cfa006469db087d905c8c7fc9f4d67268f5dd53530de0/mkdocs_svg_to_png-1.0.1.tar.gz", hash = "sha256:eb888f5d5b5afa60d800603459786dc28c7f8eca0a12556c89823f2140d01ce4", size = 309789, upload-time = "2026-02-17T01:09:19.757Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/34/1b/3abf20af0c83a18bc4754d45fcd31a53ab1370ab203a122feabe8509c3d5/mkdocs_svg_to_png-1.0.0-py3-none-any.whl", hash = "sha256:de3a171be76171fab6c264e3db1591b64b2e3b7ba720c1d52583346880a44fad", size = 30560, upload-time = "2025-11-01T00:58:30.028Z" },
+    { url = "https://files.pythonhosted.org/packages/22/27/6a923d525591b4907e1748bd578457d6740a093012325de5ceea2a4f3579/mkdocs_svg_to_png-1.0.1-py3-none-any.whl", hash = "sha256:d90bcd70dfbe0adffdcd477da6c75a25ed1f4769ee36e6b19aec0ea9acfde9c2", size = 31092, upload-time = "2026-02-17T01:09:18.466Z" },
 ]
 
 [[package]]
