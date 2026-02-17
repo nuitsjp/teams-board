@@ -11,6 +11,9 @@ export class DataFetcher {
     /** @type {Map<string, {ok: true, data: object}>} */
     #sessionCache = new Map();
 
+    /** @type {Map<string, number>} セッション単位のリビジョン（編集後のキャッシュバスター用） */
+    #sessionRevisions = new Map();
+
     /** @type {Map<string, Promise<{ok: true, data: object} | {ok: false, error: string}>>} */
     #inflight = new Map();
 
@@ -31,14 +34,19 @@ export class DataFetcher {
 
     /**
      * セッションJSONキャッシュを明示的に無効化する
-     * @param {string} [sessionId]
+     * @param {string} [sessionId] 指定時は対象セッションのみ無効化しリビジョンを進める。
+     *   省略時はセッションキャッシュとリビジョン管理を全消去する。
      */
     invalidateSessionCache(sessionId) {
         if (typeof sessionId === 'string' && sessionId.length > 0) {
             this.#sessionCache.delete(`data/sessions/${sessionId}.json`);
+            // リビジョンを進めて次回 fetchSession でキャッシュバスターを付与する
+            const current = this.#sessionRevisions.get(sessionId) ?? 0;
+            this.#sessionRevisions.set(sessionId, current + 1);
             return;
         }
         this.#sessionCache.clear();
+        this.#sessionRevisions.clear();
     }
 
     /**
@@ -63,24 +71,30 @@ export class DataFetcher {
     }
 
     /**
-     * セッション詳細JSONを取得する（永続キャッシュ付き、不変リソース）
+     * セッション詳細JSONを取得する（永続キャッシュ付き）
+     * リビジョンが存在する場合はキャッシュバスター付き URL で取得し、
+     * ブラウザの HTTP キャッシュをバイパスする。
      * @param {string} sessionId
      * @returns {Promise<{ok: true, data: object} | {ok: false, error: string}>}
      */
     async fetchSession(sessionId) {
-        const url = `data/sessions/${sessionId}.json`;
+        const cacheKey = `data/sessions/${sessionId}.json`;
 
         // 永続キャッシュヒット
-        const cached = this.#sessionCache.get(url);
+        const cached = this.#sessionCache.get(cacheKey);
         if (cached) {
             return cached;
         }
 
+        // リビジョンがある場合のみキャッシュバスターを付与
+        const revision = this.#sessionRevisions.get(sessionId);
+        const url = revision != null ? `${cacheKey}?v=${revision}` : cacheKey;
+
         const result = await this.#fetchJsonWithDedup(url);
 
-        // 成功時のみキャッシュに保存
+        // 成功時のみキャッシュに保存（キャッシュキーはリビジョンなしの固定パス）
         if (result.ok) {
-            this.#sessionCache.set(url, result);
+            this.#sessionCache.set(cacheKey, result);
         }
 
         return result;

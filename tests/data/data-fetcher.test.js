@@ -270,7 +270,7 @@ describe('DataFetcher', () => {
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
 
-        it('明示的無効化後は同一 sessionId でも再取得すること', async () => {
+        it('明示的無効化後は同一 sessionId でもキャッシュバスター付きで再取得すること', async () => {
             mockFetch
                 .mockResolvedValueOnce({
                     ok: true,
@@ -287,6 +287,89 @@ describe('DataFetcher', () => {
 
             expect(result1).toEqual({ ok: true, data: { id: 'abc12345', name: 'v1' } });
             expect(result2).toEqual({ ok: true, data: { id: 'abc12345', name: 'v2' } });
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+
+            // 初回はキャッシュバスターなし、2回目はリビジョン付き
+            expect(mockFetch.mock.calls[0][0]).toBe('data/sessions/abc12345.json');
+            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/abc12345.json?v=1');
+        });
+
+        it('全消去（引数なし）後はリビジョンもクリアされキャッシュバスターが付かないこと', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ id: 'abc12345' }),
+            });
+
+            await fetcher.fetchSession('abc12345');
+            fetcher.invalidateSessionCache('abc12345'); // リビジョン 1
+            fetcher.invalidateSessionCache(); // 全消去（リビジョンもクリア）
+            await fetcher.fetchSession('abc12345');
+
+            // 全消去後はリビジョンがないためキャッシュバスターなし
+            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/abc12345.json');
+        });
+    });
+
+    describe('セッションリビジョン管理', () => {
+        it('初回取得時はキャッシュバスターを付与しないこと', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ id: 'session-1' }),
+            });
+
+            await fetcher.fetchSession('session-1');
+
+            expect(mockFetch.mock.calls[0][0]).toBe('data/sessions/session-1.json');
+        });
+
+        it('invalidateSessionCache(sessionId) 後の fetchSession はキャッシュバスター付き URL でリクエストすること', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ id: 'session-1' }),
+            });
+
+            await fetcher.fetchSession('session-1');
+            fetcher.invalidateSessionCache('session-1');
+            await fetcher.fetchSession('session-1');
+
+            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/session-1.json?v=1');
+        });
+
+        it('複数回の invalidateSessionCache でリビジョンが累積すること', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ id: 'session-1' }),
+            });
+
+            await fetcher.fetchSession('session-1');
+            fetcher.invalidateSessionCache('session-1'); // rev 1
+            await fetcher.fetchSession('session-1');
+            fetcher.invalidateSessionCache('session-1'); // rev 2
+            await fetcher.fetchSession('session-1');
+
+            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/session-1.json?v=1');
+            expect(mockFetch.mock.calls[2][0]).toBe('data/sessions/session-1.json?v=2');
+        });
+
+        it('影響のない他のセッションは既存キャッシュ挙動を維持すること', async () => {
+            mockFetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ id: 'session-a' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ id: 'session-b' }),
+                });
+
+            await fetcher.fetchSession('session-a');
+            await fetcher.fetchSession('session-b');
+
+            // session-a のみ無効化
+            fetcher.invalidateSessionCache('session-a');
+
+            // session-b はキャッシュから返却（fetch 呼ばれない）
+            await fetcher.fetchSession('session-b');
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
     });
