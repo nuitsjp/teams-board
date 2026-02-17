@@ -136,10 +136,14 @@ describe('MemberDetailPage', () => {
 
     // 期サマリーが表示される（2025年度 下期 = 2026年1月）
     expect(screen.getByText('2025年度 下期')).toBeInTheDocument();
-    // グループが1つのみなのでデフォルト展開され、セッション名付きで表示される
-    expect(screen.getByText('振り返り会 - 2026-01-15')).toBeInTheDocument();
+    // グループが1つのみなのでデフォルト展開され、日付が先頭・別名が後続で表示される
+    expect(screen.getByText('2026-01-15')).toBeInTheDocument();
+    expect(screen.getByText('振り返り会')).toBeInTheDocument();
     // グループ名がサマリーカードに表示される
     expect(screen.getByText(/フロントエンド勉強会/)).toBeInTheDocument();
+    // セッション履歴テーブルの列見出しが存在する
+    expect(screen.getByRole('columnheader', { name: '日付' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '参加時間' })).toBeInTheDocument();
   });
 
   it('存在しないメンバーIDの場合にエラーを表示すること', async () => {

@@ -7,8 +7,12 @@ import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight } from 'lucide-re
 
 const fetcher = new DataFetcher();
 
-function formatSessionLabel(session) {
-  return session.title ? `${session.title} - ${session.date}` : session.date;
+/**
+ * セッションの日付と別名を分離して返す
+ * 日付を先頭に固定し、別名がある場合は別要素として返す
+ */
+function formatSessionParts(session) {
+  return { date: session.date, title: session.title || null };
 }
 
 /**
@@ -236,7 +240,7 @@ export function MemberDetailPage() {
       </Link>
 
       {/* メンバーヘッダーカード — アクセント帯付き */}
-      <div className="card-base overflow-hidden animate-fade-in-up">
+      <div className="card-base rounded-t-none overflow-hidden animate-fade-in-up">
         <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-accent-400" />
         <div className="p-8 flex items-center gap-6">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-2xl">
@@ -269,10 +273,10 @@ export function MemberDetailPage() {
                 key={period.label}
                 onClick={() => setSelectedPeriodLabel(period.label)}
                 aria-pressed={isSelected}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+                className={`w-full text-left px-4 py-3 rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
                   isSelected
-                    ? 'bg-primary-50 border-l-4 border-l-primary-500'
-                    : 'hover:bg-surface-muted border-l-4 border-l-transparent'
+                    ? 'bg-white shadow-sm border-l-3 border-l-primary-500'
+                    : 'hover:bg-surface-muted border-l-3 border-l-transparent'
                 }`}
               >
                 <div className="text-base font-bold text-text-primary">{period.label}</div>
@@ -305,7 +309,7 @@ export function MemberDetailPage() {
                 <button
                   onClick={() => toggleGroup(group.groupId)}
                   aria-expanded={isExpanded}
-                  className="w-full p-6 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                  className="w-full px-6 py-3.5 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
                 >
                   <div className="flex items-center gap-4">
                     {isExpanded ? (
@@ -340,25 +344,35 @@ export function MemberDetailPage() {
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
-                            <tr className="border-b border-border-light bg-surface-muted text-left text-xs text-text-muted uppercase tracking-wider">
-                              <th className="px-6 py-3 font-medium">日付</th>
-                              <th className="px-6 py-3 font-medium text-right">参加時間</th>
+                            <tr>
+                              <th scope="col" className="sr-only">
+                                日付
+                              </th>
+                              <th scope="col" className="sr-only">
+                                参加時間
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border-light">
-                            {group.sessions.map((session) => (
-                              <tr
-                                key={session.sessionId}
-                                className="text-sm hover:bg-surface-muted transition-colors"
-                              >
-                                <td className="px-6 py-3 text-text-primary">
-                                  {formatSessionLabel(session)}
-                                </td>
-                                <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
-                                  {formatDuration(session.durationSeconds)}
-                                </td>
-                              </tr>
-                            ))}
+                            {group.sessions.map((session) => {
+                              const parts = formatSessionParts(session);
+                              return (
+                                <tr
+                                  key={session.sessionId}
+                                  className="text-sm hover:bg-surface-muted transition-colors"
+                                >
+                                  <td className="px-6 py-3">
+                                    <span className="text-text-primary">{parts.date}</span>
+                                    {parts.title && (
+                                      <span className="ml-2 text-text-secondary">{parts.title}</span>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
+                                    {formatDuration(session.durationSeconds)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
