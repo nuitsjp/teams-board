@@ -14,8 +14,12 @@ import {
 
 const fetcher = new DataFetcher();
 
-function formatSessionLabel(session) {
-  return session.title ? `${session.title} - ${session.date}` : session.date;
+/**
+ * セッションの日付と別名を分離して返す
+ * 日付を先頭に固定し、別名がある場合は別要素として返す
+ */
+function formatSessionParts(session) {
+  return { date: session.date, title: session.title || null };
 }
 
 /**
@@ -209,7 +213,7 @@ export function GroupDetailPage() {
       </Link>
 
       {/* グループヘッダーカード — アクセント帯付き */}
-      <div className="card-base overflow-hidden animate-fade-in-up">
+      <div className="card-base rounded-t-none overflow-hidden animate-fade-in-up">
         <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-accent-400" />
         <div className="p-8 flex items-center gap-6">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700">
@@ -242,20 +246,20 @@ export function GroupDetailPage() {
                 key={period.label}
                 onClick={() => setSelectedPeriodLabel(period.label)}
                 aria-pressed={isSelected}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+                className={`w-full text-left px-4 py-3 rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
                   isSelected
-                    ? 'bg-primary-50 border-l-4 border-l-primary-500'
-                    : 'hover:bg-surface-muted border-l-4 border-l-transparent'
+                    ? 'bg-white shadow-sm border-l-3 border-l-primary-500'
+                    : 'hover:bg-surface-muted border-l-3 border-l-transparent'
                 }`}
               >
-                <div className="text-sm font-bold text-text-primary">{period.label}</div>
-                <div className="flex items-center gap-3 mt-1 text-xs text-text-secondary">
+                <div className="text-base font-bold text-text-primary">{period.label}</div>
+                <div className="flex items-center gap-3 mt-1 text-sm text-text-secondary">
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-text-muted" aria-hidden="true" />
+                    <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                     <span className="font-display font-semibold">{period.totalSessions}</span>回
                   </span>
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-text-muted" aria-hidden="true" />
+                    <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                     <span className="font-display">{formatDuration(period.totalDurationSeconds)}</span>
                   </span>
                 </div>
@@ -278,7 +282,7 @@ export function GroupDetailPage() {
                 <button
                   onClick={() => toggleSession(session.sessionId)}
                   aria-expanded={isExpanded}
-                  className="w-full p-6 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                  className="w-full px-6 py-3.5 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
                 >
                   <div className="flex items-center gap-4">
                     {isExpanded ? (
@@ -288,7 +292,17 @@ export function GroupDetailPage() {
                     )}
                     <div>
                       <h3 className="text-base font-bold text-text-primary">
-                        {formatSessionLabel(session)}
+                        {(() => {
+                          const parts = formatSessionParts(session);
+                          return (
+                            <>
+                              <span>{parts.date}</span>
+                              {parts.title && (
+                                <span className="ml-2 font-normal text-text-secondary">{parts.title}</span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </h3>
                       <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                         <span className="flex items-center gap-1.5">
@@ -315,9 +329,13 @@ export function GroupDetailPage() {
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
-                            <tr className="border-b border-border-light bg-surface-muted text-left text-xs text-text-muted uppercase tracking-wider">
-                              <th className="px-6 py-3 font-medium">名前</th>
-                              <th className="px-6 py-3 font-medium text-right">参加時間</th>
+                            <tr>
+                              <th scope="col" className="sr-only">
+                                名前
+                              </th>
+                              <th scope="col" className="sr-only">
+                                参加時間
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border-light">
