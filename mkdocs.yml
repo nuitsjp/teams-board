@@ -54,3 +54,6 @@ plugins:
       toc_level: 3
       output_path: pdf/teams-board-docs.pdf
       enabled_if_env: ENABLE_PDF
+      exclude_pages:
+        - ^adr*
+        - ^openspec*
