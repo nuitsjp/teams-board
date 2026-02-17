@@ -21,11 +21,11 @@ const MemberRow = memo(function MemberRow({ member, onNavigate }) {
                 <h3 className="font-medium text-text-primary">{member.name}</h3>
             </div>
             <div className="flex items-center text-sm text-text-secondary gap-4">
-                <span className="flex items-center gap-1.5 bg-surface-muted px-2 py-1 rounded">
+                <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
                     <span className="font-semibold text-text-primary font-display">
                         {member.sessionRevisions.length}
                     </span>{' '}
-                    回
+                    回参加
                 </span>
                 <span className="flex items-center gap-1.5 w-24 justify-end">
                     <Clock className="w-4 h-4 text-text-muted" />
