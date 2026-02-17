@@ -343,6 +343,16 @@ export function MemberDetailPage() {
                     <div className="border-t border-border-light">
                       <div className="overflow-x-auto">
                         <table className="w-full">
+                          <thead>
+                            <tr>
+                              <th scope="col" className="sr-only">
+                                日付
+                              </th>
+                              <th scope="col" className="sr-only">
+                                参加時間
+                              </th>
+                            </tr>
+                          </thead>
                           <tbody className="divide-y divide-border-light">
                             {group.sessions.map((session) => {
                               const parts = formatSessionParts(session);

@@ -141,6 +141,9 @@ describe('MemberDetailPage', () => {
     expect(screen.getByText('振り返り会')).toBeInTheDocument();
     // グループ名がサマリーカードに表示される
     expect(screen.getByText(/フロントエンド勉強会/)).toBeInTheDocument();
+    // セッション履歴テーブルの列見出しが存在する
+    expect(screen.getByRole('columnheader', { name: '日付' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '参加時間' })).toBeInTheDocument();
   });
 
   it('存在しないメンバーIDの場合にエラーを表示すること', async () => {
