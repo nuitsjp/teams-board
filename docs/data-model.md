@@ -1,28 +1,18 @@
-# データモデル（現行仕様）
-
-## 背景（Issue #136）
-
-Issue #136 の検討では、既存データモデルが次の課題を持つことを確認した。
-
-- `sessionId` の構造（`<groupId>-<date>`）に業務意味が入り、Group と Session の関係が ID 形式に強く依存していた
-- セッション名変更時に同一 `session.json` を上書きするため、キャッシュ整合と参照整合の扱いが複雑化していた
-- `index.json` に派生情報を多く持つと、更新時の置換箇所が増えやすく、整合性維持コストが高くなる
-
-このため、本書後半の改善案では「後方互換性を考慮しない」前提で、データ構造を単純化する方針を採用した。
-
-## 検討結果の概略
-
-- ID は `groupId` / `memberId` / `sessionId` を ULID に統一する
-- Session は `sessionId` 固定 + `revision`（0 始まり整数）で版管理する
-- `session.json` は `data/sessions/<sessionId>/<revision>.json` に追記保存し、既存ファイルを上書きしない
-- `index.json` は `groups[]` / `members[]` が `sessionRevisions`（`<sessionId>/<revision>`）を保持する
-- 重複判定は行わない
-- 更新整合の要点は `index.json` の楽観ロック（`version` インクリメント）に集約する
+# データモデル
 
 ## 1. 目的
 
-本書は、Teams Board が現在扱っている永続データ構造を整理するための仕様メモである。  
-主な対象は `data/index.json` と `data/sessions/*.json`。
+本書は、Teams Board が扱う永続データ構造の仕様を定義する。
+主な対象は `data/index.json` と `data/sessions/<sessionId>/<revision>.json` である。
+
+### 1.1 設計方針
+
+- すべての ID（`groupId` / `memberId` / `sessionId`）は ULID を使用する
+- セッションは `sessionId`（固定）+ `revision`（0 始まり整数）で版管理する
+- セッション JSON は `data/sessions/<sessionId>/<revision>.json` に追記保存し、既存ファイルを上書きしない
+- `index.json` は `groups[]` / `members[]` が `sessionRevisions`（`<sessionId>/<revision>` 文字列配列）を保持する
+- 重複判定は行わない
+- 更新整合は `index.json` の楽観ロック（`version` インクリメント）に集約する
 
 ## 2. クラス図
 
@@ -31,29 +21,35 @@ classDiagram
     direction LR
 
     class DashboardIndex {
+        +number schemaVersion
+        +number version
+        +string updatedAt
         +GroupSummary[] groups
         +MemberSummary[] members
-        +string updatedAt
     }
 
     class GroupSummary {
         +string id
         +string name
         +number totalDurationSeconds
-        +string[] sessionIds
+        +string[] sessionRevisions
     }
 
     class MemberSummary {
         +string id
         +string name
         +number totalDurationSeconds
-        +string[] sessionIds
+        +string[] sessionRevisions
     }
 
     class SessionRecord {
-        +string id
-        +string date
+        +string sessionId
+        +number revision
+        +string title
+        +string startedAt
+        +string|null endedAt
         +Attendance[] attendances
+        +string createdAt
     }
 
     class Attendance {
@@ -63,8 +59,8 @@ classDiagram
 
     DashboardIndex "1" *-- "0..*" GroupSummary : groups
     DashboardIndex "1" *-- "0..*" MemberSummary : members
-    GroupSummary "0..*" ..> "0..*" SessionRecord : sessionIds[] で参照
-    MemberSummary "0..*" ..> "0..*" SessionRecord : sessionIds[] で参照
+    GroupSummary "0..*" ..> "0..*" SessionRecord : sessionRevisions[] で参照
+    MemberSummary "0..*" ..> "0..*" SessionRecord : sessionRevisions[] で参照
     SessionRecord "1" *-- "1..*" Attendance : attendances
 ```
 
@@ -74,64 +70,87 @@ classDiagram
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
-| `groups` | `GroupSummary[]` | 必須 | 会議グループ集約の一覧 | 配列要素は `id` 一意を想定 |
-| `members` | `MemberSummary[]` | 必須 | メンバー集約の一覧 | 配列要素は `id` 一意を想定 |
-| `updatedAt` | `string` | 必須 | 最終更新日時 | ISO 8601 形式（例: `2026-02-11T00:00:00.000Z`） |
+| `schemaVersion` | `number` | 必須 | スキーマバージョン | 固定値 `2` |
+| `version` | `number` | 必須 | 楽観ロック用バージョン | 0 始まりの整数。更新のたびにインクリメントする |
+| `updatedAt` | `string` | 必須 | 最終更新日時 | ISO 8601 形式（例: `2026-02-17T09:30:00.000Z`） |
+| `groups` | `GroupSummary[]` | 必須 | 会議グループ集約の一覧 | 配列要素は `id` 一意 |
+| `members` | `MemberSummary[]` | 必須 | メンバー集約の一覧 | 配列要素は `id` 一意 |
 
 ### 3.2 GroupSummary
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
-| `id` | `string` | 必須 | 会議グループID | 会議タイトルの SHA-256 先頭 8 桁（hex） |
-| `name` | `string` | 必須 | 会議グループ名 | CSV 取込時の正規化済み会議タイトル |
+| `id` | `string` | 必須 | 会議グループ ID | ULID（26 文字） |
+| `name` | `string` | 必須 | 会議グループ名 | CSV 取込時の正規化済み会議タイトル。名前ベースで既存グループとマッチングする |
 | `totalDurationSeconds` | `number` | 必須 | グループ累計参加秒数 | 0 以上の整数 |
-| `sessionIds` | `string[]` | 必須 | グループに属するセッションID一覧 | `SessionRecord.id` を参照 |
+| `sessionRevisions` | `string[]` | 必須 | グループに属するセッション参照一覧 | `<sessionId>/<revision>` 形式 |
 
 ### 3.3 MemberSummary
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
-| `id` | `string` | 必須 | メンバーID | メールアドレスの SHA-256 先頭 8 桁（hex） |
-| `name` | `string` | 必須 | 表示名 | CSV の参加者名 |
+| `id` | `string` | 必須 | メンバー ID | ULID（26 文字） |
+| `name` | `string` | 必須 | 表示名 | CSV の参加者名。名前ベースで既存メンバーとマッチングする |
 | `totalDurationSeconds` | `number` | 必須 | メンバー累計参加秒数 | 0 以上の整数 |
-| `sessionIds` | `string[]` | 必須 | 参加したセッションID一覧 | `SessionRecord.id` を参照 |
+| `sessionRevisions` | `string[]` | 必須 | 参加したセッション参照一覧 | `<sessionId>/<revision>` 形式 |
 
-### 3.4 SessionRecord（`data/sessions/<sessionId>.json`）
+### 3.4 SessionRecord（`data/sessions/<sessionId>/<revision>.json`）
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
-| `id` | `string` | 必須 | セッションID | `<groupId>-<YYYY-MM-DD>` 形式 |
-| `date` | `string` | 必須 | 開催日 | `YYYY-MM-DD` |
-| `attendances` | `Attendance[]` | 必須 | 参加明細一覧 | 1件以上を想定 |
+| `sessionId` | `string` | 必須 | セッション ID | ULID（26 文字）。全リビジョンで共通の固定値 |
+| `revision` | `number` | 必須 | リビジョン番号 | 0 始まりの整数 |
+| `title` | `string` | 必須 | セッションタイトル | 初期値は空文字。名称変更機能で設定する |
+| `startedAt` | `string` | 必須 | 開始日時 | ISO 8601 形式 |
+| `endedAt` | `string \| null` | 必須 | 終了日時 | ISO 8601 形式。未設定の場合は `null` |
+| `attendances` | `Attendance[]` | 必須 | 参加明細一覧 | 1 件以上 |
+| `createdAt` | `string` | 必須 | 作成日時 | ISO 8601 形式 |
+
+補足：
+
+- セッション JSON は追記のみで更新しないため、`updatedAt` は持たない
+- `groupId` はセッション JSON では持たず、`index.json` 側の所属情報で解決する
 
 ### 3.5 Attendance
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
-| `memberId` | `string` | 必須 | 参加メンバーID | `MemberSummary.id` を参照 |
+| `memberId` | `string` | 必須 | 参加メンバー ID | `MemberSummary.id`（ULID）を参照 |
 | `durationSeconds` | `number` | 必須 | 参加秒数 | 0 以上の整数 |
 
-## 4. 参照整合ルール（現行）
+## 4. 参照整合ルール
 
 | ルール | 説明 |
 | --- | --- |
-| セッション参照 | `groups[].sessionIds[]` / `members[].sessionIds[]` は `sessions/*.json` の `id` を参照する |
-| グループ所属 | `SessionRecord` は `groupId` を明示保持せず、`id` の prefix から導出する |
-| 重複制御 | `IndexMerger` は既存 `sessionId` を検出した場合、集約更新をスキップして warning を返す |
+| セッション参照 | `groups[].sessionRevisions[]` / `members[].sessionRevisions[]` は `data/sessions/<sessionId>/<revision>.json` を参照する |
+| パス導出 | 参照キー `<sessionId>/<revision>` から保存パス `data/sessions/<sessionId>/<revision>.json` を直接組み立てる |
+| グループ所属 | `SessionRecord` は `groupId` を持たず、`index.json` の `groups[].sessionRevisions[]` で所属を解決する |
+| 楽観ロック | `index.json` の `version` フィールドで競合を検出する。書き込み前に最新の `version` を確認し、不一致の場合は更新を中止する |
 | 更新日時 | `index.json` 更新時に `updatedAt` を現在時刻で更新する |
 
-## 5. 改善案サンプル（後方互換なし / sessionRefs なし）
+## 5. 保存順序
 
-### 5.1 前提
+セッション追加・更新時は、以下の順序で保存する。
 
-- すべての ID は ULID を使用する（`groupId` / `memberId` / `sessionId`）
-- `sessionId` は会議実体の固定 ID、`revision` は保存版番号（`0` 始まり整数インクリメント）
-- 重複判定は行わない
-- `groups` と `members` は `sessionRevisions`（`<sessionId>/<revision>` 文字列配列）を持つ
-- 別名変更時は既存ファイルを上書きせず、`revision` を増分した `session.json` を追加保存する
-- `index.json` は `version` を整数インクリメントして楽観ロックする
+1. 新しいリビジョンのセッション JSON を `data/sessions/<sessionId>/<revision>.json` に保存する
+2. `index.json` の `groups[].sessionRevisions[]` と `members[].sessionRevisions[]` の対象キーを置換する
+3. `index.json` の `version` を +1 して保存する
+4. 旧リビジョンのセッション JSON は削除しない
 
-### 5.2 `index.json` 例
+この順序により、セッション JSON が先に永続化されてから `index.json` が更新されるため、中断時にもデータの不整合を最小化できる。
+
+### `sessionRevisions` 方式の特徴
+
+| 観点 | 内容 |
+| --- | --- |
+| 構造の単純さ | 参照テーブルを作らず、グループ/メンバーの配列だけで参照できる |
+| 取得のしやすさ | 参照キー（`<sessionId>/<revision>`）から保存パスを直接組み立てられる |
+| 更新コスト | 別名変更時は `groups` と `members` の両方で参照キー置換が必要 |
+| 整合性管理 | 整合性の要は `index.json` の `version` による楽観ロックに集約される |
+
+## 6. JSON 例
+
+### 6.1 `index.json`
 
 ```json
 {
@@ -171,7 +190,7 @@ classDiagram
 }
 ```
 
-### 5.3 `data/sessions/<sessionId>/<revision>.json` 例
+### 6.2 `data/sessions/<sessionId>/<revision>.json`
 
 ```json
 {
@@ -194,24 +213,35 @@ classDiagram
 }
 ```
 
-補足：
+---
 
-- `title` の初期値は空文字とし、名称変更機能で値を設定する
-- `session.json` は更新しない前提のため、`updatedAt` は持たない
-- `groupId` は `session.json` では持たず、`index.json` 側の所属情報で解決する
+## 付録: 参考（過去仕様 V1）
 
-### 5.4 保存順序サンプル
+以下は V2 導入以前の旧データモデルである。現在は使用されていない。
 
-1. `revision` を +1 した `session.json` を保存する  
-2. `index.json` の `groups[].sessionRevisions[]` と `members[].sessionRevisions[]` の対象キーを置換する  
-3. `index.json` の `version` を +1 して保存する  
-4. 旧 `revision` の `session.json` は削除しない
+### V1 の ID 体系
 
-### 5.5 `sessionRevisions` 方式の特徴
+- `groupId`: 会議タイトルの SHA-256 先頭 8 桁（hex）
+- `memberId`: メールアドレスの SHA-256 先頭 8 桁（hex）
+- `sessionId`: `<groupId>-<YYYY-MM-DD>` 形式
 
-| 観点 | 内容 |
-| --- | --- |
-| 構造の単純さ | 参照テーブルを作らず、グループ/メンバーの配列だけで参照できる |
-| 取得のしやすさ | 参照キー（`sessionId/revision`）から `session.json` のパスを直接組み立てられる |
-| 更新コスト | 別名変更時は `groups` と `members` の両方で参照キー置換が必要 |
-| 整合性管理 | 整合性の要は `index.json` の更新成功に集約される |
+### V1 の保存パス
+
+- セッション JSON: `data/sessions/<sessionId>.json`（1 セッション = 1 ファイル、上書き更新）
+
+### V1 の `index.json` 構造
+
+- `schemaVersion` / `version` フィールドなし
+- `groups[]` / `members[]` は `sessionIds`（`string[]`）で `SessionRecord.id` を参照
+- 重複制御： `IndexMerger` は既存 `sessionId` を検出した場合、集約更新をスキップして warning を返す
+
+### V1 から V2 への主な変更点
+
+| 観点 | V1 | V2 |
+| --- | --- | --- |
+| ID 生成 | SHA-256 先頭 8 桁（hex） | ULID（26 文字） |
+| セッション参照 | `sessionIds[]` | `sessionRevisions[]`（`<sessionId>/<revision>` 形式） |
+| 保存パス | `data/sessions/<sessionId>.json` | `data/sessions/<sessionId>/<revision>.json` |
+| 更新方式 | 同一ファイルを上書き | リビジョンを追記（既存ファイルは不変） |
+| 整合性管理 | `updatedAt` のみ | `version`（楽観ロック）+ `updatedAt` |
+| スキーマバージョン | なし | `schemaVersion: 2` |
