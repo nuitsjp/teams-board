@@ -1,0 +1,18 @@
+{
+  "sessionId": "01KHNHF98N550RZ2Q24ZECZ5TC",
+  "revision": 0,
+  "title": "第3回 React入門",
+  "startedAt": "2026-01-15T09:00:00.000Z",
+  "endedAt": null,
+  "attendances": [
+    {
+      "memberId": "01KHNHF98NYNJPQV869R3WT90Y",
+      "durationSeconds": 3552
+    },
+    {
+      "memberId": "01KHNHF98NDVMV15W5VA72P6D0",
+      "durationSeconds": 1259
+    }
+  ],
+  "createdAt": "2026-02-17T10:13:57.654Z"
+}

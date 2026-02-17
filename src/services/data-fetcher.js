@@ -1,18 +1,21 @@
-// DataFetcher — 静的サイトからのJSONデータ取得（キャッシュ・重複排除付き）
+// DataFetcher — 静的サイトからのJSONデータ取得（V2: sessionRef ベース）
+import { sessionRefToPath } from './session-ref.js';
+
 const DEFAULT_INDEX_TTL = 30_000;
+const DEFAULT_SESSION_TTL = 30_000;
 
 export class DataFetcher {
     /** @type {number} index.json キャッシュの TTL（ミリ秒） */
     #indexTtl;
 
+    /** @type {number} セッション JSON キャッシュの TTL（ミリ秒） */
+    #sessionTtl;
+
     /** @type {{ data: {ok: true, data: object}, timestamp: number } | null} */
     #indexCache = null;
 
-    /** @type {Map<string, {ok: true, data: object}>} */
+    /** @type {Map<string, {data: {ok: true, data: object}, timestamp: number}>} */
     #sessionCache = new Map();
-
-    /** @type {Map<string, number>} セッション単位のリビジョン（編集後のキャッシュバスター用） */
-    #sessionRevisions = new Map();
 
     /** @type {Map<string, Promise<{ok: true, data: object} | {ok: false, error: string}>>} */
     #inflight = new Map();
@@ -20,9 +23,11 @@ export class DataFetcher {
     /**
      * @param {object} [options]
      * @param {number} [options.indexTtl=30000] index.json キャッシュの TTL（ミリ秒）
+     * @param {number} [options.sessionTtl=30000] セッション JSON キャッシュの TTL（ミリ秒）
      */
-    constructor({ indexTtl = DEFAULT_INDEX_TTL } = {}) {
+    constructor({ indexTtl = DEFAULT_INDEX_TTL, sessionTtl = DEFAULT_SESSION_TTL } = {}) {
         this.#indexTtl = indexTtl;
+        this.#sessionTtl = sessionTtl;
     }
 
     /**
@@ -34,19 +39,15 @@ export class DataFetcher {
 
     /**
      * セッションJSONキャッシュを明示的に無効化する
-     * @param {string} [sessionId] 指定時は対象セッションのみ無効化しリビジョンを進める。
-     *   省略時はセッションキャッシュとリビジョン管理を全消去する。
+     * @param {string} [sessionRef] 指定時は対象セッションのみ無効化。
+     *   省略時はセッションキャッシュを全消去する。
      */
-    invalidateSessionCache(sessionId) {
-        if (typeof sessionId === 'string' && sessionId.length > 0) {
-            this.#sessionCache.delete(`data/sessions/${sessionId}.json`);
-            // リビジョンを進めて次回 fetchSession でキャッシュバスターを付与する
-            const current = this.#sessionRevisions.get(sessionId) ?? 0;
-            this.#sessionRevisions.set(sessionId, current + 1);
+    invalidateSessionCache(sessionRef) {
+        if (typeof sessionRef === 'string' && sessionRef.length > 0) {
+            this.#sessionCache.delete(sessionRefToPath(sessionRef));
             return;
         }
         this.#sessionCache.clear();
-        this.#sessionRevisions.clear();
     }
 
     /**
@@ -71,30 +72,26 @@ export class DataFetcher {
     }
 
     /**
-     * セッション詳細JSONを取得する（永続キャッシュ付き）
-     * リビジョンが存在する場合はキャッシュバスター付き URL で取得し、
-     * ブラウザの HTTP キャッシュをバイパスする。
-     * @param {string} sessionId
+     * セッション詳細JSONを取得する（V2: sessionRef ベース）
+     * V2 ではセッションファイルは不変（追記のみ）なのでキャッシュバスター不要。
+     * @param {string} sessionRef - "sessionId/revision" 形式
      * @returns {Promise<{ok: true, data: object} | {ok: false, error: string}>}
      */
-    async fetchSession(sessionId) {
-        const cacheKey = `data/sessions/${sessionId}.json`;
+    async fetchSession(sessionRef) {
+        const cacheKey = sessionRefToPath(sessionRef);
 
-        // 永続キャッシュヒット
+        // TTL ベースキャッシュヒット
         const cached = this.#sessionCache.get(cacheKey);
-        if (cached) {
-            return cached;
+        if (cached && Date.now() - cached.timestamp < this.#sessionTtl) {
+            return cached.data;
         }
 
-        // リビジョンがある場合のみキャッシュバスターを付与
-        const revision = this.#sessionRevisions.get(sessionId);
-        const url = revision != null ? `${cacheKey}?v=${revision}` : cacheKey;
+        // V2 セッションは不変のためキャッシュバスター不要
+        const result = await this.#fetchJsonWithDedup(cacheKey);
 
-        const result = await this.#fetchJsonWithDedup(url);
-
-        // 成功時のみキャッシュに保存（キャッシュキーはリビジョンなしの固定パス）
+        // 成功時のみキャッシュに保存
         if (result.ok) {
-            this.#sessionCache.set(cacheKey, result);
+            this.#sessionCache.set(cacheKey, { data: result, timestamp: Date.now() });
         }
 
         return result;

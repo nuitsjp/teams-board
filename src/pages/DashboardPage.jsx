@@ -82,7 +82,7 @@ export function DashboardPage() {
 
   const { totalSessions, totalDuration } = groups.reduce(
     (acc, g) => ({
-      totalSessions: acc.totalSessions + g.sessionIds.length,
+      totalSessions: acc.totalSessions + g.sessionRevisions.length,
       totalDuration: acc.totalDuration + g.totalDurationSeconds,
     }),
     { totalSessions: 0, totalDuration: 0 }

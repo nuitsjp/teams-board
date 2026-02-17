@@ -1,6 +1,9 @@
-// IndexMerger テスト — 新ドメインモデル対応
+// IndexMerger テスト — V2 名前ベースマッチング
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IndexMerger } from '../../src/services/index-merger.js';
+
+// ULID パターン（Crockford's Base32: 26文字）
+const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 
 describe('IndexMerger', () => {
   let merger;
@@ -12,189 +15,265 @@ describe('IndexMerger', () => {
   });
 
   const emptyIndex = {
+    schemaVersion: 2,
+    version: 0,
     groups: [],
     members: [],
-    updatedAt: '2026-01-01T00:00:00+09:00',
+    updatedAt: '2026-01-01T00:00:00.000Z',
   };
+
+  // V2 parsedSession ヘルパー
+  function createParsedSession(overrides = {}) {
+    return {
+      sessionId: '01TESTID0000000000000000A',
+      groupName: 'フロントエンド勉強会',
+      date: '2026-01-15',
+      startedAt: '2026-01-15T19:00:00',
+      endedAt: null,
+      attendances: [
+        { memberName: '佐藤 一郎', memberEmail: 'ichiro@example.com', durationSeconds: 3600 },
+      ],
+      ...overrides,
+    };
+  }
 
   describe('新規グループ追加', () => {
     it('空のindexに新規セッションを追加するとGroupSummaryが作成されること', () => {
-      const newSession = {
-        sessionId: 'abc12345-2026-01-15',
-        groupId: 'abc12345',
-        groupName: 'フロントエンド勉強会',
-        date: '2026-01-15',
-        attendances: [
-          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 3600 },
-        ],
-      };
-      const result = merger.merge(emptyIndex, newSession);
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
       expect(result.index.groups).toHaveLength(1);
-      expect(result.index.groups[0].id).toBe('abc12345');
+      expect(result.index.groups[0].id).toMatch(ULID_PATTERN);
       expect(result.index.groups[0].name).toBe('フロントエンド勉強会');
       expect(result.index.groups[0].totalDurationSeconds).toBe(3600);
-      expect(result.index.groups[0].sessionIds).toContain('abc12345-2026-01-15');
+      expect(result.index.groups[0].sessionRevisions).toContain('01TESTID0000000000000000A/0');
     });
   });
 
-  describe('既存グループ更新', () => {
-    it('既存のGroupSummaryにセッションを追加するとtotalDurationSecondsが加算されること', () => {
+  describe('既存グループ更新（名前ベースマッチング）', () => {
+    it('同名グループが存在する場合は既存IDを再利用しセッションを追加すること', () => {
       const currentIndex = {
+        schemaVersion: 2,
+        version: 1,
         groups: [
-          { id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          {
+            id: '01EXISTGROUP00000000000A',
+            name: 'フロントエンド勉強会',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['01EXISTSESSION000000000A/0'],
+          },
         ],
         members: [
-          { id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          {
+            id: '01EXISTMEMBER00000000000',
+            name: '佐藤 一郎',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['01EXISTSESSION000000000A/0'],
+          },
         ],
-        updatedAt: '2026-01-15T00:00:00+09:00',
+        updatedAt: '2026-01-15T00:00:00.000Z',
       };
-      const newSession = {
-        sessionId: 'abc12345-2026-01-22',
-        groupId: 'abc12345',
-        groupName: 'フロントエンド勉強会',
-        date: '2026-01-22',
-        attendances: [
-          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 1800 },
-        ],
-      };
-      const result = merger.merge(currentIndex, newSession);
-      expect(result.index.groups[0].totalDurationSeconds).toBe(5400);
-      expect(result.index.groups[0].sessionIds).toHaveLength(2);
+      const parsedSession = createParsedSession({
+        sessionId: '01NEWSESSION0000000000000',
+      });
+
+      const result = merger.merge(currentIndex, parsedSession);
+
+      // 既存グループIDが再利用される
+      expect(result.index.groups[0].id).toBe('01EXISTGROUP00000000000A');
+      expect(result.index.groups[0].totalDurationSeconds).toBe(7200);
+      expect(result.index.groups[0].sessionRevisions).toHaveLength(2);
+      expect(result.index.groups[0].sessionRevisions).toContain('01NEWSESSION0000000000000/0');
     });
   });
 
   describe('新規メンバー追加', () => {
     it('新しいメンバーがMemberSummaryに追加されること', () => {
-      const newSession = {
-        sessionId: 'abc12345-2026-01-15',
-        groupId: 'abc12345',
-        groupName: 'フロントエンド勉強会',
-        date: '2026-01-15',
+      const parsedSession = createParsedSession({
         attendances: [
-          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 3600 },
-          { memberId: 'mem00002', memberName: '高橋 美咲', durationSeconds: 1800 },
+          { memberName: '佐藤 一郎', memberEmail: 'ichiro@example.com', durationSeconds: 3600 },
+          { memberName: '高橋 美咲', memberEmail: 'misaki@example.com', durationSeconds: 1800 },
         ],
-      };
-      const result = merger.merge(emptyIndex, newSession);
+      });
+
+      const result = merger.merge(emptyIndex, parsedSession);
+
       expect(result.index.members).toHaveLength(2);
-      expect(result.index.members[0].id).toBe('mem00001');
+      expect(result.index.members[0].id).toMatch(ULID_PATTERN);
       expect(result.index.members[0].name).toBe('佐藤 一郎');
       expect(result.index.members[0].totalDurationSeconds).toBe(3600);
-      expect(result.index.members[0].sessionIds).toContain('abc12345-2026-01-15');
+      expect(result.index.members[0].sessionRevisions).toHaveLength(1);
+      expect(result.index.members[1].name).toBe('高橋 美咲');
       expect(result.index.members[1].totalDurationSeconds).toBe(1800);
     });
   });
 
-  describe('既存メンバー更新', () => {
-    it('既存メンバーのtotalDurationSecondsとsessionIdsが更新されること', () => {
+  describe('既存メンバー更新（名前ベースマッチング）', () => {
+    it('同名メンバーが存在する場合は既存IDを再利用し情報を更新すること', () => {
       const currentIndex = {
+        schemaVersion: 2,
+        version: 1,
         groups: [
-          { id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          {
+            id: '01EXISTGROUP00000000000A',
+            name: 'フロントエンド勉強会',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['01EXISTSESSION000000000A/0'],
+          },
         ],
         members: [
-          { id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          {
+            id: '01EXISTMEMBER00000000000',
+            name: '佐藤 一郎',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['01EXISTSESSION000000000A/0'],
+          },
         ],
-        updatedAt: '2026-01-15T00:00:00+09:00',
+        updatedAt: '2026-01-15T00:00:00.000Z',
       };
-      const newSession = {
-        sessionId: 'abc12345-2026-01-22',
-        groupId: 'abc12345',
-        groupName: 'フロントエンド勉強会',
-        date: '2026-01-22',
+      const parsedSession = createParsedSession({
+        sessionId: '01NEWSESSION0000000000000',
         attendances: [
-          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 2400 },
+          { memberName: '佐藤 一郎', memberEmail: 'ichiro@example.com', durationSeconds: 2400 },
         ],
-      };
-      const result = merger.merge(currentIndex, newSession);
+      });
+
+      const result = merger.merge(currentIndex, parsedSession);
+
+      expect(result.index.members[0].id).toBe('01EXISTMEMBER00000000000');
       expect(result.index.members[0].totalDurationSeconds).toBe(6000);
-      expect(result.index.members[0].sessionIds).toEqual(['abc12345-2026-01-15', 'abc12345-2026-01-22']);
+      expect(result.index.members[0].sessionRevisions).toEqual([
+        '01EXISTSESSION000000000A/0',
+        '01NEWSESSION0000000000000/0',
+      ]);
     });
   });
 
-  describe('重複セッションID検出', () => {
-    it('重複セッションIDが検出された場合にwarningsを返し上書きしないこと', () => {
-      const currentIndex = {
-        groups: [
-          { id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
-        ],
-        members: [
-          { id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
-        ],
-        updatedAt: '2026-01-15T00:00:00+09:00',
-      };
-      const newSession = {
-        sessionId: 'abc12345-2026-01-15',
-        groupId: 'abc12345',
-        groupName: 'フロントエンド勉強会',
-        date: '2026-01-15',
-        attendances: [
-          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 9999 },
-        ],
-      };
-      const result = merger.merge(currentIndex, newSession);
-      expect(result.warnings.length).toBeGreaterThan(0);
-      expect(result.warnings[0]).toContain('abc12345-2026-01-15');
-      // 元のデータは変更されない
-      expect(result.index.groups[0].totalDurationSeconds).toBe(3600);
+  describe('version インクリメント', () => {
+    it('マージ後の version が +1 されること', () => {
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
+      expect(result.index.version).toBe(1);
+    });
+
+    it('既存 version が存在する場合はインクリメントされること', () => {
+      const currentIndex = { ...emptyIndex, version: 5 };
+      const parsedSession = createParsedSession();
+      const result = merger.merge(currentIndex, parsedSession);
+
+      expect(result.index.version).toBe(6);
+    });
+  });
+
+  describe('schemaVersion', () => {
+    it('マージ後の schemaVersion が 2 であること', () => {
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
+      expect(result.index.schemaVersion).toBe(2);
     });
   });
 
   describe('updatedAt更新', () => {
     it('マージ後のupdatedAtが現在時刻に更新されていること', () => {
-      const newSession = {
-        sessionId: 'abc12345-2026-01-15',
-        groupId: 'abc12345',
-        groupName: 'フロントエンド勉強会',
-        date: '2026-01-15',
-        attendances: [
-          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 3600 },
-        ],
-      };
-      const result = merger.merge(emptyIndex, newSession);
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
       expect(result.index.updatedAt).toBe('2026-02-06T03:00:00.000Z');
+    });
+  });
+
+  describe('sessionRecord 返却', () => {
+    it('resolved memberId 入りの sessionRecord を返すこと', () => {
+      const parsedSession = createParsedSession({
+        attendances: [
+          { memberName: '佐藤 一郎', memberEmail: 'ichiro@example.com', durationSeconds: 3600 },
+          { memberName: '高橋 美咲', memberEmail: 'misaki@example.com', durationSeconds: 1800 },
+        ],
+      });
+
+      const result = merger.merge(emptyIndex, parsedSession);
+
+      expect(result.sessionRecord.sessionId).toBe('01TESTID0000000000000000A');
+      expect(result.sessionRecord.revision).toBe(0);
+      expect(result.sessionRecord.title).toBe('');
+      expect(result.sessionRecord.startedAt).toBe('2026-01-15T19:00:00');
+      expect(result.sessionRecord.endedAt).toBeNull();
+      expect(result.sessionRecord.attendances).toHaveLength(2);
+      expect(result.sessionRecord.attendances[0].memberId).toMatch(ULID_PATTERN);
+      expect(result.sessionRecord.attendances[0].durationSeconds).toBe(3600);
+      expect(result.sessionRecord.attendances[1].memberId).toMatch(ULID_PATTERN);
+      expect(result.sessionRecord.attendances[1].durationSeconds).toBe(1800);
+      expect(result.sessionRecord.createdAt).toBe('2026-02-06T03:00:00.000Z');
+    });
+
+    it('sessionRecord の memberId が index.members の ID と一致すること', () => {
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
+      const memberIdInIndex = result.index.members[0].id;
+      const memberIdInRecord = result.sessionRecord.attendances[0].memberId;
+      expect(memberIdInRecord).toBe(memberIdInIndex);
     });
   });
 
   describe('イミュータブル性', () => {
     it('元のindexオブジェクトが変更されないこと', () => {
       const currentIndex = {
+        schemaVersion: 2,
+        version: 1,
         groups: [
-          { id: 'abc12345', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          {
+            id: '01EXISTGROUP00000000000A',
+            name: 'フロントエンド勉強会',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['01EXISTSESSION000000000A/0'],
+          },
         ],
         members: [
-          { id: 'mem00001', name: '佐藤 一郎', totalDurationSeconds: 3600, sessionIds: ['abc12345-2026-01-15'] },
+          {
+            id: '01EXISTMEMBER00000000000',
+            name: '佐藤 一郎',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['01EXISTSESSION000000000A/0'],
+          },
         ],
-        updatedAt: '2026-01-15T00:00:00+09:00',
+        updatedAt: '2026-01-15T00:00:00.000Z',
       };
       const original = JSON.parse(JSON.stringify(currentIndex));
-      const newSession = {
-        sessionId: 'abc12345-2026-01-22',
-        groupId: 'abc12345',
-        groupName: 'フロントエンド勉強会',
-        date: '2026-01-22',
+      const parsedSession = createParsedSession({
+        sessionId: '01NEWSESSION0000000000000',
         attendances: [
-          { memberId: 'mem00002', memberName: '高橋 美咲', durationSeconds: 2400 },
+          { memberName: '高橋 美咲', memberEmail: 'misaki@example.com', durationSeconds: 2400 },
         ],
-      };
-      merger.merge(currentIndex, newSession);
+      });
+
+      merger.merge(currentIndex, parsedSession);
       expect(currentIndex).toEqual(original);
     });
   });
 
   describe('グループ合計のtotalDurationSeconds', () => {
     it('GroupSummaryのtotalDurationSecondsが全参加者の時間を合計した値であること', () => {
-      const newSession = {
-        sessionId: 'abc12345-2026-01-15',
-        groupId: 'abc12345',
-        groupName: 'フロントエンド勉強会',
-        date: '2026-01-15',
+      const parsedSession = createParsedSession({
         attendances: [
-          { memberId: 'mem00001', memberName: '佐藤 一郎', durationSeconds: 3600 },
-          { memberId: 'mem00002', memberName: '高橋 美咲', durationSeconds: 1800 },
+          { memberName: '佐藤 一郎', memberEmail: 'ichiro@example.com', durationSeconds: 3600 },
+          { memberName: '高橋 美咲', memberEmail: 'misaki@example.com', durationSeconds: 1800 },
         ],
-      };
-      const result = merger.merge(emptyIndex, newSession);
+      });
+
+      const result = merger.merge(emptyIndex, parsedSession);
       expect(result.index.groups[0].totalDurationSeconds).toBe(5400);
+    });
+  });
+
+  describe('warnings', () => {
+    it('通常のマージでは空の warnings を返すこと', () => {
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
+      expect(result.warnings).toEqual([]);
     });
   });
 });

@@ -22,8 +22,6 @@ function StatusIcon({ status }) {
       return <X size={size} className="text-error" />;
     case 'missing_group':
       return <AlertTriangle size={size} className="text-error" />;
-    case 'duplicate_warning':
-      return <AlertTriangle size={size} className="text-warning" />;
     default:
       return null;
   }
@@ -54,8 +52,6 @@ function getBorderColorClass(status) {
     case 'save_failed':
     case 'missing_group':
       return 'border-l-red-500';
-    case 'duplicate_warning':
-      return 'border-l-amber-500';
     case 'saving':
       return 'border-l-primary-500';
     default:
@@ -64,29 +60,32 @@ function getBorderColorClass(status) {
 }
 
 /**
- * 統合ファイルキューカード
+ * 統合ファイルキューカード（V2: parsedSession ベース、重複検出なし）
  * 1ファイル = 1カード。ファイルメタ + パース結果サマリー + 展開テーブル + エラー/警告 + アクションボタン
  *
- * @param {{ item: object, groups: Array, onRemove: (id: string) => void, onApproveDuplicate: (id: string) => void, onSelectGroup: (fileId: string, groupId: string, groupName: string) => void }} props
+ * @param {{ item: object, groups: Array, onRemove: (id: string) => void, onSelectGroup: (fileId: string, groupId: string, groupName: string) => void }} props
  */
-export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], onRemove, onApproveDuplicate, onSelectGroup }) {
+export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], onRemove, onSelectGroup }) {
   const [expanded, setExpanded] = useState(false);
 
   const hasParseResult = item.parseResult && item.parseResult.ok;
   const canExpand = hasParseResult && item.status !== 'saving';
   const isMissingGroup = item.status === 'missing_group';
 
-  // パース結果からサマリー情報を抽出
-  const mergeInput = hasParseResult ? item.parseResult.mergeInput : null;
+  // V2: parsedSession から情報を取得
+  const parsedSession = hasParseResult ? item.parseResult.parsedSession : null;
 
-  // 表示用のグループ情報（上書きがあればそちらを優先）
-  const displayGroupId = item.groupOverride?.groupId ?? mergeInput?.groupId;
+  // 名前ベースで既存グループを検索
+  const autoDetectedGroup = parsedSession
+    ? groups.find((g) => g.name === parsedSession.groupName)
+    : null;
 
-  // 自動検出グループが既存グループに含まれるか
-  const isAutoDetectedExisting = mergeInput && groups.some((g) => g.id === mergeInput.groupId);
+  // 表示用のグループID（上書きがあればそちらを優先）
+  const displayGroupId = item.groupOverride?.groupId ?? autoDetectedGroup?.id ?? '';
+  const isAutoDetectedExisting = !!autoDetectedGroup;
   const isDisabled = item.status === 'saving' || item.status === 'saved';
-  const totalDuration = mergeInput
-    ? mergeInput.attendances.reduce((sum, a) => sum + a.durationSeconds, 0)
+  const totalDuration = parsedSession
+    ? parsedSession.attendances.reduce((sum, a) => sum + a.durationSeconds, 0)
     : 0;
 
   return (
@@ -112,21 +111,6 @@ export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], on
           <span className="text-xs text-error bg-red-50 px-1.5 py-0.5 rounded">
             グループを選択してください
           </span>
-        )}
-
-        {/* 重複警告 + 上書きボタン */}
-        {item.status === 'duplicate_warning' && (
-          <>
-            <span className="text-xs text-warning bg-amber-50 px-1.5 py-0.5 rounded">
-              重複セッションが検出されました
-            </span>
-            <button
-              className="text-xs px-2 py-0.5 rounded border border-accent-400 bg-accent-50 text-accent-600 hover:bg-accent-200 transition-colors"
-              onClick={() => onApproveDuplicate(item.id)}
-            >
-              上書き
-            </button>
-          </>
         )}
 
         {/* 削除ボタン */}
@@ -164,8 +148,8 @@ export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], on
                 const selectedId = e.target.value;
                 if (!selectedId) return;
                 // 自動検出グループ（新規）を選択した場合
-                if (selectedId === mergeInput?.groupId && !isAutoDetectedExisting) {
-                  onSelectGroup?.(item.id, mergeInput.groupId, mergeInput.groupName);
+                if (selectedId === '_new_group_') {
+                  onSelectGroup?.(item.id, '_new_group_', parsedSession.groupName);
                   return;
                 }
                 const selected = groups.find((g) => g.id === selectedId);
@@ -177,23 +161,20 @@ export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], on
               {isMissingGroup && (
                 <option value="">グループを選択してください</option>
               )}
-              {!isAutoDetectedExisting && mergeInput?.groupName && (
-                <option value={mergeInput.groupId}>（新規）{mergeInput.groupName}</option>
+              {!isAutoDetectedExisting && parsedSession?.groupName && (
+                <option value="_new_group_">（新規）{parsedSession.groupName}</option>
               )}
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>{g.name}</option>
               ))}
             </select>
-            <span className="text-text-secondary text-sm">{mergeInput.date}</span>
+            <span className="text-text-secondary text-sm">{parsedSession.date}</span>
             <span className="text-sm text-text-secondary">
-              参加者: {mergeInput.attendances.length}名
+              参加者: {parsedSession.attendances.length}名
             </span>
             <span className="text-sm text-text-secondary">
               合計: {formatDuration(totalDuration)}
             </span>
-            {item.hasDuplicate && (
-              <span className="text-xs text-warning bg-amber-50 px-1.5 py-0.5 rounded">重複</span>
-            )}
           </div>
 
           {/* 展開時の参加者テーブル */}
@@ -207,7 +188,7 @@ export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], on
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-light">
-                  {mergeInput.attendances.map((a, i) => (
+                  {parsedSession.attendances.map((a, i) => (
                     <tr key={i} className="hover:bg-surface-muted transition-colors">
                       <td className="py-2 px-3 text-text-primary">{a.memberName}</td>
                       <td className="py-2 px-3 text-text-secondary tabular-nums">

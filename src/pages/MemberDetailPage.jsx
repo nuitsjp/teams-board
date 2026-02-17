@@ -8,7 +8,15 @@ import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight } from 'lucide-re
 const fetcher = new DataFetcher();
 
 function formatSessionLabel(session) {
-  return session.name ? `${session.name} - ${session.date}` : session.date;
+  return session.title ? `${session.title} - ${session.date}` : session.date;
+}
+
+/**
+ * startedAt（ISO 8601）から YYYY-MM-DD を抽出する
+ */
+function extractDate(startedAt) {
+  if (!startedAt) return '';
+  return startedAt.slice(0, 10);
 }
 
 /**
@@ -44,15 +52,16 @@ export function MemberDetailPage() {
 
       setMember(found);
 
+      // sessionRef → グループ情報のマッピング
       const sessionGroupMap = new Map();
       for (const group of groups) {
-        for (const sessionId of group.sessionIds) {
-          sessionGroupMap.set(sessionId, { groupId: group.id, groupName: group.name });
+        for (const ref of group.sessionRevisions) {
+          sessionGroupMap.set(ref, { groupId: group.id, groupName: group.name });
         }
       }
 
       const sessionResults = await Promise.all(
-        found.sessionIds.map((sid) => fetcher.fetchSession(sid))
+        found.sessionRevisions.map((ref) => fetcher.fetchSession(ref))
       );
       if (cancelled) return;
 
@@ -63,15 +72,18 @@ export function MemberDetailPage() {
         return;
       }
 
-      // 第1段: 期別にグルーピング
+      // 第1段: 期別にグルーピング（V2: sessionRef ベース）
       const periodMap = new Map();
-      for (const result of sessionResults) {
+      for (let i = 0; i < sessionResults.length; i++) {
+        const result = sessionResults[i];
         if (!result.ok) continue;
         const session = result.data;
+        const ref = found.sessionRevisions[i];
         const attendance = session.attendances.find((a) => a.memberId === memberId);
         if (!attendance) continue;
 
-        const period = getFiscalPeriod(session.date);
+        const date = extractDate(session.startedAt);
+        const period = getFiscalPeriod(date);
         if (!periodMap.has(period.label)) {
           periodMap.set(period.label, {
             label: period.label,
@@ -86,20 +98,20 @@ export function MemberDetailPage() {
         const periodEntry = periodMap.get(period.label);
         periodEntry.totalSessions += 1;
         periodEntry.totalDurationSeconds += attendance.durationSeconds;
-        const resolvedGroup = sessionGroupMap.get(session.id);
+        const resolvedGroup = sessionGroupMap.get(ref);
         if (!resolvedGroup) {
           setError(
-            `データ不整合: セッション ${session.id} の所属グループが index.json に見つかりません`
+            `データ不整合: セッション ${session.sessionId} の所属グループが index.json に見つかりません`
           );
           setLoading(false);
           return;
         }
         periodEntry.sessions.push({
-          sessionId: session.id,
+          sessionId: session.sessionId,
           groupId: resolvedGroup.groupId,
           groupName: resolvedGroup.groupName,
-          date: session.date,
-          name: session.name,
+          date,
+          title: session.title,
           durationSeconds: attendance.durationSeconds,
         });
       }
@@ -122,7 +134,7 @@ export function MemberDetailPage() {
           group.sessions.push({
             sessionId: session.sessionId,
             date: session.date,
-            name: session.name,
+            title: session.title,
             durationSeconds: session.durationSeconds,
           });
         }
@@ -239,7 +251,7 @@ export function MemberDetailPage() {
               </span>
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-text-muted" aria-hidden="true" />
-                <span className="font-display font-semibold text-text-primary">{member.sessionIds.length}</span>回参加
+                <span className="font-display font-semibold text-text-primary">{member.sessionRevisions.length}</span>回参加
               </span>
             </div>
           </div>

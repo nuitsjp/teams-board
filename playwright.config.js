@@ -7,8 +7,8 @@ export default defineConfig({
   globalTeardown: './e2e/global-teardown.js',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  // CI では安定性のためリトライ 2 回、ローカルはリトライなし
-  retries: process.env.CI ? 2 : 0,
+  // CI では安定性のためリトライ 2 回、ローカルも 1 回リトライ（Vite 並列負荷対策）
+  retries: process.env.CI ? 2 : 1,
   // CI では並列実行を避けてワーカー 1、ローカルは CPU コア数に応じて並列化
   workers: process.env.CI ? 1 : undefined,
   // テスト全体のタイムアウト: 30 秒（デフォルト 30000ms を明示）

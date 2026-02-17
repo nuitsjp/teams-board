@@ -13,10 +13,10 @@ vi.mock('react-router-dom', async () => {
 
 // テスト用メンバーデータ（意図的にソート順をバラバラにする）
 const mockMembers = [
-  { id: 'm1', name: '佐藤', totalDurationSeconds: 3600, sessionIds: ['s1', 's2'] },
-  { id: 'm2', name: '加藤', totalDurationSeconds: 1800, sessionIds: ['s1'] },
-  { id: 'm3', name: '中島', totalDurationSeconds: 7200, sessionIds: ['s1', 's2', 's3'] },
-  { id: 'm4', name: 'Alice', totalDurationSeconds: 900, sessionIds: ['s1'] },
+  { id: 'm1', name: '佐藤', totalDurationSeconds: 3600, sessionRevisions: ['s1', 's2'] },
+  { id: 'm2', name: '加藤', totalDurationSeconds: 1800, sessionRevisions: ['s1'] },
+  { id: 'm3', name: '中島', totalDurationSeconds: 7200, sessionRevisions: ['s1', 's2', 's3'] },
+  { id: 'm4', name: 'Alice', totalDurationSeconds: 900, sessionRevisions: ['s1'] },
 ];
 
 const renderMemberList = (members = mockMembers) => {
@@ -59,9 +59,9 @@ describe('MemberList', () => {
 
     it('日本語名・英語名が混在しても正しくソートされること', () => {
       const mixedMembers = [
-        { id: 'm1', name: 'Bob', totalDurationSeconds: 100, sessionIds: ['s1'] },
-        { id: 'm2', name: '伊藤', totalDurationSeconds: 200, sessionIds: ['s1'] },
-        { id: 'm3', name: 'Alice', totalDurationSeconds: 300, sessionIds: ['s1'] },
+        { id: 'm1', name: 'Bob', totalDurationSeconds: 100, sessionRevisions: ['s1'] },
+        { id: 'm2', name: '伊藤', totalDurationSeconds: 200, sessionRevisions: ['s1'] },
+        { id: 'm3', name: 'Alice', totalDurationSeconds: 300, sessionRevisions: ['s1'] },
       ];
       renderMemberList(mixedMembers);
 
@@ -151,9 +151,9 @@ describe('MemberList', () => {
 
     it('検索フィルタ適用後もソート順が維持されること', () => {
       const members = [
-        { id: 'm1', name: '佐藤一郎', totalDurationSeconds: 100, sessionIds: ['s1'] },
-        { id: 'm2', name: '加藤', totalDurationSeconds: 200, sessionIds: ['s1'] },
-        { id: 'm3', name: '佐藤二郎', totalDurationSeconds: 300, sessionIds: ['s1'] },
+        { id: 'm1', name: '佐藤一郎', totalDurationSeconds: 100, sessionRevisions: ['s1'] },
+        { id: 'm2', name: '加藤', totalDurationSeconds: 200, sessionRevisions: ['s1'] },
+        { id: 'm3', name: '佐藤二郎', totalDurationSeconds: 300, sessionRevisions: ['s1'] },
       ];
       renderMemberList(members);
 

@@ -35,6 +35,7 @@ export class AzureBlobStorage {
           'Content-Type': contentType,
           'x-ms-blob-type': 'BlockBlob',
           'x-ms-version': '2025-01-05',
+          'x-ms-blob-cache-control': AzureBlobStorage.#resolveCacheControl(path),
         },
         body: content,
       });
@@ -46,6 +47,18 @@ export class AzureBlobStorage {
     } catch (err) {
       return { path, success: false, error: err.message };
     }
+  }
+
+  /**
+   * パスに基づいて Cache-Control ヘッダー値を決定する
+   * @param {string} path - ファイルパス
+   * @returns {string} Cache-Control 値
+   */
+  static #resolveCacheControl(path) {
+    if (path.startsWith('assets/')) return 'max-age=31536000, immutable';
+    // V2: セッションファイルは不変（revision が変わればパスも変わる）
+    if (path.startsWith('data/sessions/')) return 'max-age=31536000, immutable';
+    return 'no-cache';
   }
 }
 

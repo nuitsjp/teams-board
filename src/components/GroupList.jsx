@@ -16,7 +16,7 @@ const GroupRow = memo(function GroupRow({ group, onNavigate, index }) {
                 <div className="flex items-center text-sm text-text-secondary gap-6">
                     <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
                         <span className="font-bold text-text-primary font-display">
-                            {group.sessionIds.length}
+                            {group.sessionRevisions.length}
                         </span>{' '}
                         回開催
                     </span>

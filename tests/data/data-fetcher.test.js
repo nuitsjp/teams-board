@@ -1,4 +1,4 @@
-// DataFetcher テスト — キャッシュ・重複排除対応
+// DataFetcher テスト — V2: sessionRef ベースのフェッチ・キャッシュ
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DataFetcher } from '../../src/services/data-fetcher.js';
 
@@ -25,20 +25,22 @@ describe('DataFetcher', () => {
 
         it('成功時に { ok: true, data: DashboardIndex } を返すこと', async () => {
             const indexData = {
+                schemaVersion: 2,
+                version: 1,
                 groups: [
                     {
-                        id: 'abc12345',
+                        id: '01ABC',
                         name: 'フロントエンド勉強会',
                         totalDurationSeconds: 3600,
-                        sessionIds: ['abc12345-2026-01-15'],
+                        sessionRevisions: ['01DEF/0'],
                     },
                 ],
                 members: [
                     {
-                        id: 'mem00001',
+                        id: '01GHI',
                         name: '佐藤 一郎',
                         totalDurationSeconds: 3600,
-                        sessionIds: ['abc12345-2026-01-15'],
+                        sessionRevisions: ['01DEF/0'],
                     },
                 ],
                 updatedAt: '2026-02-01',
@@ -70,36 +72,42 @@ describe('DataFetcher', () => {
         });
     });
 
-    describe('fetchSession', () => {
-        it('data/sessions/<id>.json にキャッシュバスターなしでリクエストすること', async () => {
+    describe('fetchSession（V2: sessionRef ベース）', () => {
+        it('sessionRef からパスを構築してリクエストすること（キャッシュバスターなし）', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
                 json: () =>
                     Promise.resolve({
-                        id: 'abc12345-2026-01-15',
-                        groupId: 'abc12345',
-                        date: '2026-01-15',
+                        sessionId: '01DEF',
+                        revision: 0,
+                        title: '',
+                        startedAt: '2026-01-15T09:00:00.000Z',
+                        endedAt: null,
                         attendances: [],
+                        createdAt: '2026-01-15T09:00:00.000Z',
                     }),
             });
-            await fetcher.fetchSession('abc12345-2026-01-15');
+            await fetcher.fetchSession('01DEF/0');
             const url = mockFetch.mock.calls[0][0];
-            expect(url).toBe('data/sessions/abc12345-2026-01-15.json');
-            expect(url).not.toContain('?v=');
+            // V2: キャッシュバスターなし、パスは data/sessions/<sessionId>/<revision>.json
+            expect(url).toBe('data/sessions/01DEF/0.json');
         });
 
         it('成功時に { ok: true, data: SessionRecord } を返すこと', async () => {
             const sessionData = {
-                id: 'abc12345-2026-01-15',
-                groupId: 'abc12345',
-                date: '2026-01-15',
-                attendances: [{ memberId: 'mem00001', durationSeconds: 3600 }],
+                sessionId: '01DEF',
+                revision: 0,
+                title: '',
+                startedAt: '2026-01-15T09:00:00.000Z',
+                endedAt: null,
+                attendances: [{ memberId: '01GHI', durationSeconds: 3600 }],
+                createdAt: '2026-01-15T09:00:00.000Z',
             };
             mockFetch.mockResolvedValue({
                 ok: true,
                 json: () => Promise.resolve(sessionData),
             });
-            const result = await fetcher.fetchSession('abc12345-2026-01-15');
+            const result = await fetcher.fetchSession('01DEF/0');
             expect(result).toEqual({ ok: true, data: sessionData });
         });
 
@@ -109,14 +117,14 @@ describe('DataFetcher', () => {
                 status: 500,
                 statusText: 'Internal Server Error',
             });
-            const result = await fetcher.fetchSession('missing');
+            const result = await fetcher.fetchSession('missing/0');
             expect(result.ok).toBe(false);
             expect(result.error).toContain('500');
         });
 
         it('ネットワークエラー時に適切なエラー結果を返すこと', async () => {
             mockFetch.mockRejectedValue(new TypeError('Failed to fetch'));
-            const result = await fetcher.fetchSession('err');
+            const result = await fetcher.fetchSession('err/0');
             expect(result.ok).toBe(false);
             expect(result.error).toContain('Failed to fetch');
         });
@@ -212,40 +220,74 @@ describe('DataFetcher', () => {
         });
     });
 
-    describe('セッション JSON キャッシュ', () => {
-        it('同一 sessionId の再リクエストではキャッシュから返却すること', async () => {
+    describe('セッション JSON キャッシュ（V2: sessionRef ベース）', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('TTL 内の再リクエストではキャッシュから返却し、fetch を呼ばないこと', async () => {
             const sessionData = {
-                id: 'abc12345-2026-01-15',
-                groupId: 'abc12345',
-                date: '2026-01-15',
+                sessionId: '01DEF',
+                revision: 0,
+                title: '',
+                startedAt: '2026-01-15T09:00:00.000Z',
+                endedAt: null,
                 attendances: [],
+                createdAt: '2026-01-15T09:00:00.000Z',
             };
             mockFetch.mockResolvedValue({
                 ok: true,
                 json: () => Promise.resolve(sessionData),
             });
 
-            const result1 = await fetcher.fetchSession('abc12345-2026-01-15');
-            const result2 = await fetcher.fetchSession('abc12345-2026-01-15');
+            const result1 = await fetcher.fetchSession('01DEF/0');
+            const result2 = await fetcher.fetchSession('01DEF/0');
 
             expect(mockFetch).toHaveBeenCalledTimes(1);
             expect(result1).toEqual({ ok: true, data: sessionData });
             expect(result2).toEqual({ ok: true, data: sessionData });
         });
 
-        it('異なる sessionId は別々にリクエストすること', async () => {
+        it('TTL 超過後はネットワークから再取得すること', async () => {
+            const sessionData1 = { sessionId: '01DEF', revision: 0 };
+            const sessionData2 = { sessionId: '01DEF', revision: 1 };
             mockFetch
                 .mockResolvedValueOnce({
                     ok: true,
-                    json: () => Promise.resolve({ id: 'session-a' }),
+                    json: () => Promise.resolve(sessionData1),
                 })
                 .mockResolvedValueOnce({
                     ok: true,
-                    json: () => Promise.resolve({ id: 'session-b' }),
+                    json: () => Promise.resolve(sessionData2),
                 });
 
-            await fetcher.fetchSession('session-a');
-            await fetcher.fetchSession('session-b');
+            const shortTtlFetcher = new DataFetcher({ sessionTtl: 5000 });
+
+            await shortTtlFetcher.fetchSession('01DEF/0');
+            vi.advanceTimersByTime(5001);
+            const result2 = await shortTtlFetcher.fetchSession('01DEF/0');
+
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+            expect(result2).toEqual({ ok: true, data: sessionData2 });
+        });
+
+        it('異なる sessionRef は別々にリクエストすること', async () => {
+            mockFetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ sessionId: 'session-a' }),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: () => Promise.resolve({ sessionId: 'session-b' }),
+                });
+
+            await fetcher.fetchSession('session-a/0');
+            await fetcher.fetchSession('session-b/0');
 
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
@@ -259,123 +301,80 @@ describe('DataFetcher', () => {
                 })
                 .mockResolvedValueOnce({
                     ok: true,
-                    json: () => Promise.resolve({ id: 'abc12345' }),
+                    json: () => Promise.resolve({ sessionId: '01DEF' }),
                 });
 
-            const result1 = await fetcher.fetchSession('abc12345');
-            const result2 = await fetcher.fetchSession('abc12345');
+            const result1 = await fetcher.fetchSession('01DEF/0');
+            const result2 = await fetcher.fetchSession('01DEF/0');
 
             expect(result1.ok).toBe(false);
             expect(result2.ok).toBe(true);
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
 
-        it('明示的無効化後は同一 sessionId でもキャッシュバスター付きで再取得すること', async () => {
+        it('明示的無効化後は TTL 内でも再取得すること', async () => {
             mockFetch
                 .mockResolvedValueOnce({
                     ok: true,
-                    json: () => Promise.resolve({ id: 'abc12345', name: 'v1' }),
+                    json: () => Promise.resolve({ sessionId: '01DEF', title: 'v1' }),
                 })
                 .mockResolvedValueOnce({
                     ok: true,
-                    json: () => Promise.resolve({ id: 'abc12345', name: 'v2' }),
+                    json: () => Promise.resolve({ sessionId: '01DEF', title: 'v2' }),
                 });
 
-            const result1 = await fetcher.fetchSession('abc12345');
-            fetcher.invalidateSessionCache('abc12345');
-            const result2 = await fetcher.fetchSession('abc12345');
+            const result1 = await fetcher.fetchSession('01DEF/0');
+            fetcher.invalidateSessionCache('01DEF/0');
+            const result2 = await fetcher.fetchSession('01DEF/0');
 
-            expect(result1).toEqual({ ok: true, data: { id: 'abc12345', name: 'v1' } });
-            expect(result2).toEqual({ ok: true, data: { id: 'abc12345', name: 'v2' } });
+            expect(result1).toEqual({ ok: true, data: { sessionId: '01DEF', title: 'v1' } });
+            expect(result2).toEqual({ ok: true, data: { sessionId: '01DEF', title: 'v2' } });
             expect(mockFetch).toHaveBeenCalledTimes(2);
 
-            // 初回はキャッシュバスターなし、2回目はリビジョン付き
-            expect(mockFetch.mock.calls[0][0]).toBe('data/sessions/abc12345.json');
-            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/abc12345.json?v=1');
+            // V2: キャッシュバスターなし
+            expect(mockFetch.mock.calls[0][0]).toBe('data/sessions/01DEF/0.json');
+            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/01DEF/0.json');
         });
 
-        it('全消去（引数なし）後はリビジョンもクリアされキャッシュバスターが付かないこと', async () => {
+        it('全消去（引数なし）後は再取得すること', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
-                json: () => Promise.resolve({ id: 'abc12345' }),
+                json: () => Promise.resolve({ sessionId: '01DEF' }),
             });
 
-            await fetcher.fetchSession('abc12345');
-            fetcher.invalidateSessionCache('abc12345'); // リビジョン 1
-            fetcher.invalidateSessionCache(); // 全消去（リビジョンもクリア）
-            await fetcher.fetchSession('abc12345');
+            await fetcher.fetchSession('01DEF/0');
+            fetcher.invalidateSessionCache(); // 全消去
+            await fetcher.fetchSession('01DEF/0');
 
-            // 全消去後はリビジョンがないためキャッシュバスターなし
-            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/abc12345.json');
-        });
-    });
-
-    describe('セッションリビジョン管理', () => {
-        it('初回取得時はキャッシュバスターを付与しないこと', async () => {
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve({ id: 'session-1' }),
-            });
-
-            await fetcher.fetchSession('session-1');
-
-            expect(mockFetch.mock.calls[0][0]).toBe('data/sessions/session-1.json');
-        });
-
-        it('invalidateSessionCache(sessionId) 後の fetchSession はキャッシュバスター付き URL でリクエストすること', async () => {
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve({ id: 'session-1' }),
-            });
-
-            await fetcher.fetchSession('session-1');
-            fetcher.invalidateSessionCache('session-1');
-            await fetcher.fetchSession('session-1');
-
-            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/session-1.json?v=1');
-        });
-
-        it('複数回の invalidateSessionCache でリビジョンが累積すること', async () => {
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve({ id: 'session-1' }),
-            });
-
-            await fetcher.fetchSession('session-1');
-            fetcher.invalidateSessionCache('session-1'); // rev 1
-            await fetcher.fetchSession('session-1');
-            fetcher.invalidateSessionCache('session-1'); // rev 2
-            await fetcher.fetchSession('session-1');
-
-            expect(mockFetch.mock.calls[1][0]).toBe('data/sessions/session-1.json?v=1');
-            expect(mockFetch.mock.calls[2][0]).toBe('data/sessions/session-1.json?v=2');
+            expect(mockFetch).toHaveBeenCalledTimes(2);
         });
 
         it('影響のない他のセッションは既存キャッシュ挙動を維持すること', async () => {
             mockFetch
                 .mockResolvedValueOnce({
                     ok: true,
-                    json: () => Promise.resolve({ id: 'session-a' }),
+                    json: () => Promise.resolve({ sessionId: 'session-a' }),
                 })
                 .mockResolvedValueOnce({
                     ok: true,
-                    json: () => Promise.resolve({ id: 'session-b' }),
+                    json: () => Promise.resolve({ sessionId: 'session-b' }),
                 });
 
-            await fetcher.fetchSession('session-a');
-            await fetcher.fetchSession('session-b');
+            await fetcher.fetchSession('session-a/0');
+            await fetcher.fetchSession('session-b/0');
 
             // session-a のみ無効化
-            fetcher.invalidateSessionCache('session-a');
+            fetcher.invalidateSessionCache('session-a/0');
 
-            // session-b はキャッシュから返却（fetch 呼ばれない）
-            await fetcher.fetchSession('session-b');
+            // session-b は TTL 内キャッシュから返却（fetch 呼ばれない）
+            await fetcher.fetchSession('session-b/0');
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
     });
 
     describe('重複排除', () => {
         it('同一 URL の同時リクエストを 1 つの fetch に統合すること', async () => {
+            vi.useFakeTimers();
             let resolveResponse;
             mockFetch.mockReturnValue(
                 new Promise((resolve) => {
@@ -384,8 +383,8 @@ describe('DataFetcher', () => {
             );
 
             // 同時に 2 つのリクエストを発行
-            const promise1 = fetcher.fetchSession('abc12345');
-            const promise2 = fetcher.fetchSession('abc12345');
+            const promise1 = fetcher.fetchSession('01DEF/0');
+            const promise2 = fetcher.fetchSession('01DEF/0');
 
             // fetch は 1 回のみ呼ばれる
             expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -393,24 +392,25 @@ describe('DataFetcher', () => {
             // レスポンスを解決
             resolveResponse({
                 ok: true,
-                json: () => Promise.resolve({ id: 'abc12345' }),
+                json: () => Promise.resolve({ sessionId: '01DEF' }),
             });
 
             const [result1, result2] = await Promise.all([promise1, promise2]);
             expect(result1).toEqual(result2);
-            expect(result1).toEqual({ ok: true, data: { id: 'abc12345' } });
+            expect(result1).toEqual({ ok: true, data: { sessionId: '01DEF' } });
+            vi.useRealTimers();
         });
 
         it('異なる URL は重複排除しないこと', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
-                json: () => Promise.resolve({ id: 'dummy' }),
+                json: () => Promise.resolve({ sessionId: 'dummy' }),
             });
 
-            // 異なる sessionId で同時にリクエスト
+            // 異なる sessionRef で同時にリクエスト
             await Promise.all([
-                fetcher.fetchSession('session-a'),
-                fetcher.fetchSession('session-b'),
+                fetcher.fetchSession('session-a/0'),
+                fetcher.fetchSession('session-b/0'),
             ]);
 
             expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -446,7 +446,27 @@ describe('DataFetcher', () => {
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
 
-        it('デフォルトでは TTL が 30,000ms であること', async () => {
+        it('sessionTtl を指定するとカスタム TTL が適用されること', async () => {
+            const customFetcher = new DataFetcher({ sessionTtl: 2000 });
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ sessionId: 'session-1' }),
+            });
+
+            await customFetcher.fetchSession('session-1/0');
+
+            // 2000ms 以内はキャッシュヒット
+            vi.advanceTimersByTime(1999);
+            await customFetcher.fetchSession('session-1/0');
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+
+            // 2000ms 超過でキャッシュミス
+            vi.advanceTimersByTime(2);
+            await customFetcher.fetchSession('session-1/0');
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+        });
+
+        it('デフォルトでは indexTtl が 30,000ms であること', async () => {
             mockFetch.mockResolvedValue({
                 ok: true,
                 json: () => Promise.resolve({ groups: [], members: [], updatedAt: '' }),
@@ -462,6 +482,25 @@ describe('DataFetcher', () => {
             // 30,000ms 超過でキャッシュミス
             vi.advanceTimersByTime(2);
             await fetcher.fetchIndex();
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+        });
+
+        it('デフォルトでは sessionTtl が 30,000ms であること', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ sessionId: 'session-1' }),
+            });
+
+            await fetcher.fetchSession('session-1/0');
+
+            // 29,999ms ではキャッシュヒット
+            vi.advanceTimersByTime(29_999);
+            await fetcher.fetchSession('session-1/0');
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+
+            // 30,000ms 超過でキャッシュミス
+            vi.advanceTimersByTime(2);
+            await fetcher.fetchSession('session-1/0');
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
     });
@@ -491,19 +530,19 @@ describe('DataFetcher', () => {
         });
 
         it('fetchSession の成功時に { ok: true, data } を返すこと', async () => {
-            const sessionData = { id: 'test-session' };
+            const sessionData = { sessionId: 'test-session' };
             mockFetch.mockResolvedValue({
                 ok: true,
                 json: () => Promise.resolve(sessionData),
             });
-            const result = await fetcher.fetchSession('test-session');
+            const result = await fetcher.fetchSession('test-session/0');
             expect(result).toHaveProperty('ok', true);
             expect(result).toHaveProperty('data', sessionData);
         });
 
         it('fetchSession の失敗時に { ok: false, error } を返すこと', async () => {
             mockFetch.mockRejectedValue(new Error('Network error'));
-            const result = await fetcher.fetchSession('err');
+            const result = await fetcher.fetchSession('err/0');
             expect(result).toHaveProperty('ok', false);
             expect(result).toHaveProperty('error');
             expect(typeof result.error).toBe('string');

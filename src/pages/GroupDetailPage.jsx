@@ -15,7 +15,15 @@ import {
 const fetcher = new DataFetcher();
 
 function formatSessionLabel(session) {
-  return session.name ? `${session.name} - ${session.date}` : session.date;
+  return session.title ? `${session.title} - ${session.date}` : session.date;
+}
+
+/**
+ * startedAt（ISO 8601）から YYYY-MM-DD を抽出する
+ */
+function extractDate(startedAt) {
+  if (!startedAt) return '';
+  return startedAt.slice(0, 10);
 }
 
 /**
@@ -54,7 +62,7 @@ export function GroupDetailPage() {
       const memberNameMap = new Map(members.map((m) => [m.id, m.name]));
 
       const sessionResults = await Promise.all(
-        found.sessionIds.map((sid) => fetcher.fetchSession(sid))
+        found.sessionRevisions.map((ref) => fetcher.fetchSession(ref))
       );
       if (cancelled) return;
 
@@ -82,7 +90,8 @@ export function GroupDetailPage() {
         // 参加者を名前の日本語ロケール順でソート
         attendees.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
-        const period = getFiscalPeriod(session.date);
+        const date = extractDate(session.startedAt);
+        const period = getFiscalPeriod(date);
         if (!periodMap.has(period.label)) {
           periodMap.set(period.label, {
             label: period.label,
@@ -98,9 +107,9 @@ export function GroupDetailPage() {
         periodEntry.totalSessions += 1;
         periodEntry.totalDurationSeconds += totalDurationSeconds;
         periodEntry.sessions.push({
-          sessionId: session.id,
-          date: session.date,
-          name: session.name,
+          sessionId: session.sessionId,
+          date,
+          title: session.title,
           attendeeCount: attendees.length,
           totalDurationSeconds,
           attendees,
@@ -211,7 +220,7 @@ export function GroupDetailPage() {
             <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-text-muted" aria-hidden="true" />
-                <span className="font-display font-semibold text-text-primary">{group.sessionIds.length}</span>回開催
+                <span className="font-display font-semibold text-text-primary">{group.sessionRevisions.length}</span>回開催
               </span>
               <span className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-text-muted" aria-hidden="true" />

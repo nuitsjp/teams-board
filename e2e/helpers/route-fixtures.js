@@ -19,10 +19,13 @@ export const registerIndexRoute = async (page) => {
     })
   );
 
-  await page.route('**/data/sessions/*.json', (route) => {
+  // V2: sessions/<sessionId>/<revision>.json パターン
+  await page.route('**/data/sessions/*/*.json', (route) => {
     const url = new URL(route.request().url());
-    const fileName = url.pathname.split('/').pop();
-    const filePath = resolve(sessionFixturesDir, fileName);
+    const parts = url.pathname.split('/');
+    const revisionFile = parts.pop(); // "0.json"
+    const sessionId = parts.pop(); // ULID
+    const filePath = resolve(sessionFixturesDir, sessionId, revisionFile);
     if (!existsSync(filePath)) {
       return route.fallback();
     }

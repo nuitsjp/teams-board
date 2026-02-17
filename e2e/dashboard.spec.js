@@ -6,7 +6,7 @@ import { navigateTo } from './helpers/navigation.js';
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getMemberGroups = (index, member) =>
-  index.groups.filter((group) => group.sessionIds.some((id) => member.sessionIds.includes(id)));
+  index.groups.filter((group) => group.sessionRevisions.some((ref) => member.sessionRevisions.includes(ref)));
 
 const selectMember = (index, minGroups) =>
   index.members.find((member) => getMemberGroups(index, member).length >= minGroups) ??
@@ -145,7 +145,7 @@ test.describe('グループ詳細画面', () => {
     await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
     // 開催回数が表示される
-    await expect(page.getByText(new RegExp(`${group.sessionIds.length}回開催`))).toBeVisible();
+    await expect(page.getByText(new RegExp(`${group.sessionRevisions.length}回開催`))).toBeVisible();
 
     // セッション日付が表示される（複数あるので折りたたみ状態）
     const expandedTables = page.locator('.accordion-panel[data-expanded="true"] table');
