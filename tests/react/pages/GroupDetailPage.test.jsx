@@ -263,6 +263,17 @@ describe('GroupDetailPage', () => {
     });
   });
 
+  it('全セッションの取得に失敗した場合にエラーメッセージを表示すること', async () => {
+    mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+    mockFetchSession.mockResolvedValue({ ok: false, error: 'fetch failed' });
+
+    renderWithRouter('g1');
+
+    await waitFor(() => {
+      expect(screen.getByText('セッションデータの取得に失敗しました')).toBeInTheDocument();
+    });
+  });
+
   it('「一覧へ戻る」ボタンが表示されること', async () => {
     mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
     mockFetchSession.mockImplementation((ref) => {

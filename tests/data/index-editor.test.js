@@ -242,5 +242,41 @@ describe('IndexEditor', () => {
       expect(result.error).toBe('グループID missing が見つかりません');
       expect(result.index).toBe(sampleIndex);
     });
+
+    it('正常系: sessionRevisions が空のグループを含む統合で totalDurationSeconds が正しく計算される', () => {
+      const editor = new IndexEditor();
+      const indexWithEmptyGroup = {
+        ...sampleIndex,
+        groups: [
+          {
+            id: 'group1',
+            name: 'セッションありグループ',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['session1/0'],
+          },
+          {
+            id: 'group2',
+            name: 'セッションなしグループ',
+            totalDurationSeconds: 0,
+            sessionRevisions: [],
+          },
+        ],
+      };
+      const result = editor.mergeGroups(indexWithEmptyGroup, 'group1', ['group1', 'group2']);
+
+      expect(result.error).toBeUndefined();
+      expect(result.index.groups).toHaveLength(1);
+      expect(result.index.groups[0].sessionRevisions).toEqual(['session1/0']);
+      expect(result.index.groups[0].totalDurationSeconds).toBe(3600);
+    });
+  });
+
+  describe('validateMergeGroupsInput', () => {
+    it('異常系: selectedGroupIds が配列でない場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      expect(editor.validateMergeGroupsInput('group1', 'not-array')).toBe(
+        '選択グループIDは配列である必要があります'
+      );
+    });
   });
 });

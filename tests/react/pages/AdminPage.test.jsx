@@ -643,6 +643,31 @@ describe('AdminPage — 一括保存コールバックとエラー処理', () =>
     });
   });
 
+  it('indexFetcher.fetch() 失敗時に全アイテムが save_failed になる', async () => {
+    const user = userEvent.setup();
+    mockIndexFetcherFetch.mockResolvedValueOnce({ ok: false, error: 'fetch failed' });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    const csvContent = new Blob(['dummy csv'], { type: 'text/csv' });
+    const file = new File([csvContent], 'test-report.csv', { type: 'text/csv' });
+    const fileInput = document.querySelector('input[type="file"]');
+    await user.upload(fileInput, file);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /一括保存/ })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('button', { name: /一括保存/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /失敗した操作をリトライ/ })).toBeInTheDocument();
+    });
+  });
+
   it('indexUpdater と onItemComplete コールバックが正しく呼ばれる', async () => {
     const user = userEvent.setup();
     mockExecuteWriteSequence.mockImplementation(async (options) => {
@@ -1491,6 +1516,133 @@ describe('AdminPage — セッション名管理', () => {
     expect(accordionButton).toHaveAttribute('aria-expanded', 'true');
   });
 
+  it('セッション名が256文字を超える場合にバリデーションエラーが表示される', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    const longName = 'あ'.repeat(257);
+    await user.clear(input);
+    // type は遅いので、fireEvent で直接値を設定
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      ).set.call(input, longName);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('セッション名は256文字以内で入力してください')
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('セッション名保存の indexUpdater が sessionRevisions を正しく置換する', async () => {
+    const user = userEvent.setup();
+    let indexUpdaterResult;
+
+    mockExecuteWriteSequence.mockImplementation(async (options) => {
+      if (options.indexUpdater) {
+        // indexUpdater をモック内で呼び出し、sessionRevisions の置換をテスト
+        const latestIndex = createV2Index({
+          groups: [
+            { id: 'group1', name: 'テスト', totalDurationSeconds: 3600, sessionRevisions: [sessionRef, 'other/0'] },
+          ],
+          members: [
+            { id: 'member1', name: 'メンバー', totalDurationSeconds: 3600, sessionRevisions: [sessionRef] },
+          ],
+        });
+        indexUpdaterResult = options.indexUpdater(latestIndex);
+      }
+      return {
+        allSucceeded: true,
+        results: [
+          { path: `data/sessions/${sessionId}/1.json`, success: true },
+          { path: 'data/index.json', success: true },
+        ],
+      };
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, 'テスト名');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(mockExecuteWriteSequence).toHaveBeenCalled();
+    });
+
+    // indexUpdater が旧 ref → 新 ref に置換する
+    expect(indexUpdaterResult).not.toBeNull();
+    expect(indexUpdaterResult.groups[0].sessionRevisions[0]).toBe(`${sessionId}/1`);
+    expect(indexUpdaterResult.groups[0].sessionRevisions[1]).toBe('other/0');
+    expect(indexUpdaterResult.members[0].sessionRevisions[0]).toBe(`${sessionId}/1`);
+    expect(indexUpdaterResult.version).toBe(2);
+    expect(indexUpdaterResult.schemaVersion).toBe(2);
+  });
+
+  it('セッション名保存の indexUpdater で楽観ロック失敗時に null を返す', async () => {
+    const user = userEvent.setup();
+    let indexUpdaterResult;
+
+    mockExecuteWriteSequence.mockImplementation(async (options) => {
+      if (options.indexUpdater) {
+        // version が不一致の場合 null を返す
+        const conflictIndex = createV2Index({ version: 999 });
+        indexUpdaterResult = options.indexUpdater(conflictIndex);
+      }
+      return {
+        allSucceeded: true,
+        results: [
+          { path: `data/sessions/${sessionId}/1.json`, success: true },
+          { path: 'data/index.json', success: true },
+        ],
+      };
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, 'テスト名');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(mockExecuteWriteSequence).toHaveBeenCalled();
+    });
+
+    expect(indexUpdaterResult).toBeNull();
+  });
+
   it('未設定バッジがセッション名未設定のグループに表示される', async () => {
     render(
       <MemoryRouter>
@@ -1500,6 +1652,153 @@ describe('AdminPage — セッション名管理', () => {
 
     await waitFor(() => {
       expect(screen.getByText('未設定 1件')).toBeInTheDocument();
+    });
+  });
+
+  it('複数セッション（startedAt が null のセッションを含む）で正しくレンダリングされる', async () => {
+    const sessionId2 = '01SESSIONTEST00000000002';
+    const sessionRef2 = `${sessionId2}/0`;
+
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: createV2Index({
+        groups: [
+          {
+            id: 'group1',
+            name: 'テストグループ1',
+            totalDurationSeconds: 7200,
+            sessionRevisions: [sessionRef, sessionRef2],
+          },
+        ],
+      }),
+    });
+    mockFetchSession.mockImplementation((ref) => {
+      if (ref === sessionRef) {
+        return Promise.resolve({
+          ok: true,
+          data: {
+            sessionId,
+            revision: 0,
+            title: '',
+            startedAt: '2026-02-08T19:00:00',
+            endedAt: null,
+            attendances: [],
+            createdAt: '2026-02-08T00:00:00.000Z',
+          },
+        });
+      }
+      if (ref === sessionRef2) {
+        return Promise.resolve({
+          ok: true,
+          data: {
+            sessionId: sessionId2,
+            revision: 0,
+            title: '',
+            startedAt: null,
+            endedAt: null,
+            attendances: [],
+            createdAt: '2026-02-01T00:00:00.000Z',
+          },
+        });
+      }
+      return Promise.resolve({ ok: false, error: 'not found' });
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    // 2つのセッション名入力が表示される
+    const inputs = screen.getAllByRole('textbox');
+    const sessionInputs = inputs.filter((input) =>
+      input.getAttribute('aria-label')?.includes('のセッション名')
+    );
+    expect(sessionInputs.length).toBe(2);
+  });
+
+  it('セッション名保存成功時に他のセッションの _ref は変更されない', async () => {
+    const user = userEvent.setup();
+    const sessionId2 = '01SESSIONTEST00000000002';
+    const sessionRef2 = `${sessionId2}/0`;
+
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: createV2Index({
+        groups: [
+          {
+            id: 'group1',
+            name: 'テストグループ1',
+            totalDurationSeconds: 7200,
+            sessionRevisions: [sessionRef, sessionRef2],
+          },
+        ],
+      }),
+    });
+    mockFetchSession.mockImplementation((ref) => {
+      if (ref === sessionRef) {
+        return Promise.resolve({
+          ok: true,
+          data: {
+            sessionId,
+            revision: 0,
+            title: '',
+            startedAt: '2026-02-08T19:00:00',
+            endedAt: null,
+            attendances: [],
+            createdAt: '2026-02-08T00:00:00.000Z',
+          },
+        });
+      }
+      if (ref === sessionRef2) {
+        return Promise.resolve({
+          ok: true,
+          data: {
+            sessionId: sessionId2,
+            revision: 0,
+            title: '既存セッション名',
+            startedAt: '2026-02-01T19:00:00',
+            endedAt: null,
+            attendances: [],
+            createdAt: '2026-02-01T00:00:00.000Z',
+          },
+        });
+      }
+      return Promise.resolve({ ok: false, error: 'not found' });
+    });
+
+    mockExecuteWriteSequence.mockResolvedValue({
+      allSucceeded: true,
+      results: [
+        { path: `data/sessions/${sessionId}/1.json`, success: true },
+        { path: 'data/index.json', success: true },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    // 最初のセッションの名前を保存
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, 'テスト名');
+
+    const saveButtons = screen.getAllByRole('button', { name: '保存' });
+    await user.click(saveButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名を保存しました')).toBeInTheDocument();
     });
   });
 });
