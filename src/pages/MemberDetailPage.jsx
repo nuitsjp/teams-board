@@ -44,7 +44,6 @@ export function MemberDetailPage() {
 
       setMember(found);
 
-      const groupNameMap = new Map(groups.map((g) => [g.id, g.name]));
       const sessionGroupMap = new Map();
       for (const group of groups) {
         for (const sessionId of group.sessionIds) {
@@ -88,10 +87,17 @@ export function MemberDetailPage() {
         periodEntry.totalSessions += 1;
         periodEntry.totalDurationSeconds += attendance.durationSeconds;
         const resolvedGroup = sessionGroupMap.get(session.id);
+        if (!resolvedGroup) {
+          setError(
+            `データ不整合: セッション ${session.id} の所属グループが index.json に見つかりません`
+          );
+          setLoading(false);
+          return;
+        }
         periodEntry.sessions.push({
           sessionId: session.id,
-          groupId: resolvedGroup?.groupId || session.groupId,
-          groupName: resolvedGroup?.groupName || groupNameMap.get(session.groupId) || '不明',
+          groupId: resolvedGroup.groupId,
+          groupName: resolvedGroup.groupName,
           date: session.date,
           name: session.name,
           durationSeconds: attendance.durationSeconds,

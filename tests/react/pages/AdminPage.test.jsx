@@ -100,7 +100,6 @@ describe('AdminPage — ソースファイル保存パス', () => {
       ok: true,
       sessionRecord: {
         id: 'abc12345-2026-02-08',
-        groupId: 'abc12345',
         date: '2026-02-08',
         attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
       },
@@ -226,7 +225,6 @@ describe('AdminPage — グループ選択による mergeInput 上書き', () =>
       ok: true,
       sessionRecord: {
         id: 'newgrp01-2026-02-08',
-        groupId: 'newgrp01',
         date: '2026-02-08',
         attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
       },
@@ -290,7 +288,7 @@ describe('AdminPage — グループ選択による mergeInput 上書き', () =>
     // sessionRecord の中身も上書きされていることを確認
     const sessionRecord = JSON.parse(sessionItem.content);
     expect(sessionRecord.id).toBe('existgrp1-2026-02-08');
-    expect(sessionRecord.groupId).toBe('existgrp1');
+    expect(sessionRecord.groupId).toBeUndefined();
   });
 });
 
@@ -606,7 +604,6 @@ describe('AdminPage — 一括保存コールバックとエラー処理', () =>
       ok: true,
       sessionRecord: {
         id: 'abc12345-2026-02-08',
-        groupId: 'abc12345',
         date: '2026-02-08',
         attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
       },
@@ -788,7 +785,6 @@ describe('AdminPage — リトライ処理', () => {
       ok: true,
       sessionRecord: {
         id: 'abc12345-2026-02-08',
-        groupId: 'abc12345',
         date: '2026-02-08',
         attendances: [{ memberId: 'mem001', durationSeconds: 3600 }],
       },
@@ -1297,6 +1293,46 @@ describe('AdminPage — セッション名管理', () => {
     });
   });
 
+  it('セッションJSONのgroupIdが不一致でも index.json の所属グループ名を表示する', async () => {
+    mockFetchIndex.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        groups: [
+          {
+            id: 'group-target',
+            name: '統合先グループ',
+            totalDurationSeconds: 3600,
+            sessionIds: ['group-old-2026-02-08'],
+          },
+        ],
+        members: [],
+        updatedAt: '2026-02-08T00:00:00.000Z',
+      },
+    });
+    mockFetchSession.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        id: 'group-old-2026-02-08',
+        groupId: 'group-old',
+        date: '2026-02-08',
+        attendances: [],
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByText('統合先グループ').length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText('group-old')).not.toBeInTheDocument();
+  });
+
   it('セッション名保存時に data/sessions/{sessionId}.json を上書きする', async () => {
     const user = userEvent.setup();
 
@@ -1324,6 +1360,7 @@ describe('AdminPage — セッション名管理', () => {
 
     const savedSession = JSON.parse(callArgs.newItems[0].content);
     expect(savedSession.name).toBe('第3回 React入門');
+    expect(savedSession.groupId).toBeUndefined();
     expect(mockInvalidateSessionCache).toHaveBeenCalledWith('group1-2026-02-08');
   });
 
@@ -1416,6 +1453,7 @@ describe('AdminPage — セッション名管理', () => {
     const callArgs = mockExecuteWriteSequence.mock.calls[0][0];
     const savedSession = JSON.parse(callArgs.newItems[0].content);
     expect(savedSession.name).toBeUndefined();
+    expect(savedSession.groupId).toBeUndefined();
   });
 
   it('グループ別アコーディオンの展開・折りたたみが動作する', async () => {

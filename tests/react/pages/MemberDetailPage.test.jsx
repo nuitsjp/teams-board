@@ -365,7 +365,7 @@ describe('MemberDetailPage', () => {
     expect(screen.queryByText('2026-01-25')).not.toBeInTheDocument();
   });
 
-  it('sessionGroupMapに該当がないセッションでもフォールバックで表示されること', async () => {
+  it('sessionIdの所属グループが index.json で解決できない場合は不整合エラーを表示すること', async () => {
     // グループのsessionIdsに含まれないセッションIDのケース
     const indexData = {
       groups: [
@@ -395,11 +395,12 @@ describe('MemberDetailPage', () => {
     renderWithRouter('m1');
 
     await waitFor(() => {
-      expect(screen.getByText('山田')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'データ不整合: セッション orphan-session の所属グループが index.json に見つかりません'
+        )
+      ).toBeInTheDocument();
     });
-
-    // groupNameMapからフォールバックで「元グループ」が取得される
-    expect(screen.getByText(/元グループ/)).toBeInTheDocument();
   });
 
   it('統合後でも sessionId 逆引きで統合先グループ名を表示すること', async () => {

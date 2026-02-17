@@ -123,7 +123,13 @@ export function AdminPage() {
 
         // 最初のグループを展開状態にする
         if (loadedSessions.length > 0) {
-          setExpandedGroupIds(new Set([loadedSessions[0].groupId]));
+          const loadedSessionIdSet = new Set(loadedSessions.map((session) => session.id));
+          const firstGroupWithSessions = indexResult.data.groups.find((group) =>
+            group.sessionIds.some((sessionId) => loadedSessionIdSet.has(sessionId))
+          );
+          if (firstGroupWithSessions) {
+            setExpandedGroupIds(new Set([firstGroupWithSessions.id]));
+          }
         }
       }
     })();
@@ -151,13 +157,15 @@ export function AdminPage() {
 
     const preparedItems = itemsToSave.map((item) => {
       let { sessionRecord, mergeInput } = item.parseResult;
+      sessionRecord = { ...sessionRecord };
+      delete sessionRecord.groupId;
 
       // グループ上書きがある場合、mergeInput / sessionRecord を上書き
       if (item.groupOverride) {
         const { groupId, groupName } = item.groupOverride;
         const newSessionId = `${groupId}-${mergeInput.date}`;
         mergeInput = { ...mergeInput, groupId, groupName, sessionId: newSessionId };
-        sessionRecord = { ...sessionRecord, groupId, id: newSessionId };
+        sessionRecord = { ...sessionRecord, id: newSessionId };
       }
 
       return {
@@ -353,18 +361,20 @@ export function AdminPage() {
 
   const isGroupOperationDisabled = savingGroupId !== null || merging || saving;
   const isSessionOperationDisabled = savingSessionId !== null || saving || merging;
-  const groupNameMap = useMemo(() => new Map(groups.map((group) => [group.id, group.name])), [groups]);
 
   const sessionsByGroup = useMemo(() => {
+    const sessionMap = new Map(sessions.map((session) => [session.id, session]));
     const map = new Map();
-    for (const session of sessions) {
-      if (!map.has(session.groupId)) {
-        map.set(session.groupId, []);
+    for (const group of groups) {
+      const groupSessions = group.sessionIds
+        .map((sessionId) => sessionMap.get(sessionId))
+        .filter(Boolean);
+      if (groupSessions.length > 0) {
+        map.set(group.id, groupSessions);
       }
-      map.get(session.groupId).push(session);
     }
     return map;
-  }, [sessions]);
+  }, [groups, sessions]);
 
   const toggleGroupSelection = useCallback((groupId) => {
     setSelectedGroupIds((prev) => {
@@ -501,6 +511,7 @@ export function AdminPage() {
       }
 
       const updatedSession = { ...target };
+      delete updatedSession.groupId;
       if (normalizedName.length === 0) {
         delete updatedSession.name;
       } else {
