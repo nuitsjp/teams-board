@@ -23,6 +23,8 @@
     "mkdocs:build": "uv run mkdocs build",
     "mkdocs:build:svg": "node scripts/mkdocs-svg.mjs",
     "mkdocs:pdf": "node scripts/mkdocs-pdf.mjs",
+    "data:sessions:check": "node scripts/normalize-sessions.mjs --check",
+    "data:sessions:fix": "node scripts/normalize-sessions.mjs --fix",
     "rulesync:generate": "rulesync generate --targets claudecode,codexcli,copilot --features rules,commands,skills",
     "rulesync:ignore": "rulesync gitignore",
     "rulesync:import": "rulesync import --targets claudecode --features rules,commands,skills"

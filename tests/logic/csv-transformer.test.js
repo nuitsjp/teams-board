@@ -372,7 +372,7 @@ describe('CsvTransformer', () => {
 
       // SessionRecord の検証
       const { sessionRecord } = result;
-      expect(sessionRecord.groupId).toMatch(/^[0-9a-f]{8}$/);
+      expect(sessionRecord).not.toHaveProperty('groupId');
       expect(sessionRecord.date).toBe('2026-01-15');
       expect(sessionRecord.attendances).toHaveLength(2);
       expect(sessionRecord.attendances[0].durationSeconds).toBe(3552);

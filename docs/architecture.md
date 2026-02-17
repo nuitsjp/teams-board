@@ -123,9 +123,10 @@ graph TD
 | フィールド | 説明 |
 | --- | --- |
 | `id` | `groupId-YYYY-MM-DD` 形式のセッション ID |
-| `groupId` | 会議グループ ID |
 | `date` | 開催日（`YYYY-MM-DD`） |
 | `attendances[]` | `memberId`, `durationSeconds` の配列 |
+
+所属グループは `sessions/*.json` では保持せず、`index.json` の `groups[].sessionIds` で一元管理する。
 
 ### 6.4 ID 生成ルール
 

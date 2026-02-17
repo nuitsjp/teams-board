@@ -143,13 +143,15 @@ export function AdminPage() {
 
     const preparedItems = itemsToSave.map((item) => {
       let { sessionRecord, mergeInput } = item.parseResult;
+      sessionRecord = { ...sessionRecord };
+      delete sessionRecord.groupId;
 
       // グループ上書きがある場合、mergeInput / sessionRecord を上書き
       if (item.groupOverride) {
         const { groupId, groupName } = item.groupOverride;
         const newSessionId = `${groupId}-${mergeInput.date}`;
         mergeInput = { ...mergeInput, groupId, groupName, sessionId: newSessionId };
-        sessionRecord = { ...sessionRecord, groupId, id: newSessionId };
+        sessionRecord = { ...sessionRecord, id: newSessionId };
       }
 
       return {
@@ -345,7 +347,15 @@ export function AdminPage() {
 
   const isGroupOperationDisabled = savingGroupId !== null || merging || saving;
   const isSessionOperationDisabled = savingSessionId !== null || saving || merging;
-  const groupNameMap = useMemo(() => new Map(groups.map((group) => [group.id, group.name])), [groups]);
+  const sessionGroupNameMap = useMemo(() => {
+    const map = new Map();
+    for (const group of groups) {
+      for (const sessionId of group.sessionIds) {
+        map.set(sessionId, group.name);
+      }
+    }
+    return map;
+  }, [groups]);
 
   const toggleGroupSelection = useCallback((groupId) => {
     setSelectedGroupIds((prev) => {
@@ -470,6 +480,7 @@ export function AdminPage() {
       }
 
       const updatedSession = { ...target };
+      delete updatedSession.groupId;
       if (normalizedName.length === 0) {
         delete updatedSession.name;
       } else {
@@ -755,7 +766,7 @@ export function AdminPage() {
                   <tr key={session.id} className="hover:bg-surface-muted transition-colors">
                     <td className="px-4 py-3 text-sm text-text-primary tabular-nums">{session.date}</td>
                     <td className="px-4 py-3 text-sm text-text-primary">
-                      {groupNameMap.get(session.groupId) || session.groupId}
+                      {sessionGroupNameMap.get(session.id) || '不整合データ'}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <input

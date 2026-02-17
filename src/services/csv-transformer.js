@@ -63,7 +63,6 @@ export class CsvTransformer {
 
       const sessionRecord = {
         id: sessionId,
-        groupId,
         date,
         attendances,
       };
