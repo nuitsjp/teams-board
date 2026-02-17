@@ -22,6 +22,8 @@ import {
   GitMerge,
   Save,
   X,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { GroupNameEditor } from '../components/GroupNameEditor.jsx';
 
@@ -89,6 +91,7 @@ export function AdminPage() {
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const [mergeTargetGroupId, setMergeTargetGroupId] = useState(null);
   const [merging, setMerging] = useState(false);
+  const [expandedGroupIds, setExpandedGroupIds] = useState(new Set());
 
   // 既存セッションIDの取得とグループ一覧の取得
   useEffect(() => {
@@ -117,6 +120,17 @@ export function AdminPage() {
         setSessionNameInputs(
           Object.fromEntries(loadedSessions.map((session) => [session.id, session.name || '']))
         );
+
+        // 最初のグループを展開状態にする
+        if (loadedSessions.length > 0) {
+          const loadedSessionIdSet = new Set(loadedSessions.map((session) => session.id));
+          const firstGroupWithSessions = indexResult.data.groups.find((group) =>
+            group.sessionIds.some((sessionId) => loadedSessionIdSet.has(sessionId))
+          );
+          if (firstGroupWithSessions) {
+            setExpandedGroupIds(new Set([firstGroupWithSessions.id]));
+          }
+        }
       }
     })();
     return () => {
@@ -347,18 +361,35 @@ export function AdminPage() {
 
   const isGroupOperationDisabled = savingGroupId !== null || merging || saving;
   const isSessionOperationDisabled = savingSessionId !== null || saving || merging;
-  const sessionGroupNameMap = useMemo(() => {
+
+  const sessionsByGroup = useMemo(() => {
+    const sessionMap = new Map(sessions.map((session) => [session.id, session]));
     const map = new Map();
     for (const group of groups) {
-      for (const sessionId of group.sessionIds) {
-        map.set(sessionId, group.name);
+      const groupSessions = group.sessionIds
+        .map((sessionId) => sessionMap.get(sessionId))
+        .filter(Boolean);
+      if (groupSessions.length > 0) {
+        map.set(group.id, groupSessions);
       }
     }
     return map;
-  }, [groups]);
+  }, [groups, sessions]);
 
   const toggleGroupSelection = useCallback((groupId) => {
     setSelectedGroupIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleGroupAccordion = useCallback((groupId) => {
+    setExpandedGroupIds((prev) => {
       const next = new Set(prev);
       if (next.has(groupId)) {
         next.delete(groupId);
@@ -743,63 +774,97 @@ export function AdminPage() {
         {sessions.length === 0 ? (
           <p className="text-sm text-text-muted">セッションがありません</p>
         ) : (
-          <div className="card-base overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface-muted">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    日付
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    グループ
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
-                    セッション名
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">
-                    操作
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-light">
-                {sessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-surface-muted transition-colors">
-                    <td className="px-4 py-3 text-sm text-text-primary tabular-nums">{session.date}</td>
-                    <td className="px-4 py-3 text-sm text-text-primary">
-                      {sessionGroupNameMap.get(session.id) || '不整合データ'}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <input
-                        type="text"
-                        value={sessionNameInputs[session.id] || ''}
-                        onChange={(event) =>
-                          setSessionNameInputs((prev) => ({
-                            ...prev,
-                            [session.id]: event.target.value,
-                          }))
-                        }
-                        maxLength={MAX_SESSION_NAME_LENGTH}
-                        className="w-full px-3 py-2 border border-border-light rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-500"
-                        placeholder="未設定（空欄で日付のみ表示）"
-                        aria-label={`${session.date} のセッション名`}
-                        disabled={isSessionOperationDisabled}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
-                        onClick={() => handleSaveSessionName(session.id, sessionNameInputs[session.id] || '')}
-                        disabled={isSessionOperationDisabled}
-                      >
-                        <Save className="w-4 h-4" aria-hidden="true" />
-                        保存
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {groups.map((group) => {
+              const groupSessions = sessionsByGroup.get(group.id) || [];
+              if (groupSessions.length === 0) return null;
+              const isExpanded = expandedGroupIds.has(group.id);
+              const unnamedCount = groupSessions.filter((s) => !s.name).length;
+              return (
+                <div key={group.id} className="card-base overflow-hidden">
+                  <button
+                    onClick={() => toggleGroupAccordion(group.id)}
+                    aria-expanded={isExpanded}
+                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                  >
+                    <div className="flex items-center gap-3">
+                      {isExpanded ? (
+                        <ChevronDown className="w-4 h-4 text-text-muted" aria-hidden="true" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-text-muted" aria-hidden="true" />
+                      )}
+                      <span className="text-sm font-bold text-text-primary">{group.name}</span>
+                      <span className="text-xs text-text-muted">{groupSessions.length}件</span>
+                      {unnamedCount > 0 && (
+                        <span className="text-xs bg-accent-100 text-accent-600 px-2 py-0.5 rounded-full">
+                          未設定 {unnamedCount}件
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                  <div
+                    className="accordion-panel"
+                    data-expanded={isExpanded}
+                    aria-hidden={!isExpanded}
+                  >
+                    <div className="accordion-panel-inner">
+                      <div className="border-t border-border-light">
+                        <table className="w-full">
+                          <thead className="bg-surface-muted">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                                日付
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                                セッション名
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">
+                                操作
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border-light">
+                            {groupSessions.map((session) => (
+                              <tr key={session.id} className="hover:bg-surface-muted transition-colors">
+                                <td className="px-4 py-3 text-sm text-text-primary tabular-nums">{session.date}</td>
+                                <td className="px-4 py-3 text-sm">
+                                  <input
+                                    type="text"
+                                    value={sessionNameInputs[session.id] || ''}
+                                    onChange={(event) =>
+                                      setSessionNameInputs((prev) => ({
+                                        ...prev,
+                                        [session.id]: event.target.value,
+                                      }))
+                                    }
+                                    maxLength={MAX_SESSION_NAME_LENGTH}
+                                    className="w-full px-3 py-2 border border-border-light rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-500"
+                                    placeholder="未設定（空欄で日付のみ表示）"
+                                    aria-label={`${session.date} のセッション名`}
+                                    disabled={isSessionOperationDisabled}
+                                  />
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <button
+                                    type="button"
+                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 transition-colors disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
+                                    onClick={() => handleSaveSessionName(session.id, sessionNameInputs[session.id] || '')}
+                                    disabled={isSessionOperationDisabled}
+                                  >
+                                    <Save className="w-4 h-4" aria-hidden="true" />
+                                    保存
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
