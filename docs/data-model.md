@@ -194,7 +194,7 @@ classDiagram
 }
 ```
 
-補足:
+補足：
 
 - `title` の初期値は空文字とし、名称変更機能で値を設定する
 - `session.json` は更新しない前提のため、`updatedAt` は持たない
