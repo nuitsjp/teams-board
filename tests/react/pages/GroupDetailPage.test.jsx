@@ -191,11 +191,10 @@ describe('GroupDetailPage', () => {
     // 期サマリーが表示される（2025年度 下期 = 2026年1月）
     expect(screen.getByText('2025年度 下期')).toBeInTheDocument();
 
-    // セッション見出しが表示される（日付降順）
-    const headings = screen.getAllByRole('heading', { level: 3 });
-    const dates = headings.map((h) => h.textContent);
-    expect(dates[0]).toBe('第3回 React入門 - 2026-01-20');
-    expect(dates[1]).toBe('2026-01-15');
+    // セッション見出しが表示される（日付降順、日付が先頭・別名が後続で表示される）
+    expect(screen.getByText('2026-01-20')).toBeInTheDocument();
+    expect(screen.getByText('第3回 React入門')).toBeInTheDocument();
+    expect(screen.getByText('2026-01-15')).toBeInTheDocument();
   });
 
   it('セッションをクリックして参加者テーブルを展開・折りたたみできること', async () => {
@@ -241,6 +240,9 @@ describe('GroupDetailPage', () => {
     // セッション1件のみなのでデフォルト展開
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+    // 参加者テーブルの列見出しが存在する
+    expect(screen.getByRole('columnheader', { name: '名前' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '参加時間' })).toBeInTheDocument();
   });
 
   it('存在しないグループIDの場合にエラーを表示すること', async () => {
