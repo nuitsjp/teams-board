@@ -4,6 +4,19 @@ import { formatDuration } from '../utils/format-duration';
 import { User, Clock, ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+/** ホバー時にテキストが省略されている場合のみツールチップを有効化 */
+function handleTruncateMouseEnter(e) {
+    const wrapper = e.currentTarget;
+    const textEl = wrapper.querySelector('.truncate');
+    if (textEl && textEl.scrollWidth > textEl.clientWidth) {
+        wrapper.setAttribute('data-truncated', '');
+    }
+}
+
+function handleTruncateMouseLeave(e) {
+    e.currentTarget.removeAttribute('data-truncated');
+}
+
 /** メンバー1行の推定高さ（px）: padding 32 + avatar 40 + border 1 */
 const ROW_HEIGHT_ESTIMATE = 73;
 
@@ -18,7 +31,14 @@ const MemberRow = memo(function MemberRow({ member, onNavigate }) {
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-sm shrink-0">
                     {member.name.charAt(0)}
                 </div>
-                <h3 className="font-medium text-text-primary truncate">{member.name}</h3>
+                <div
+                    className="min-w-0 flex-1 truncate-with-tooltip"
+                    data-fulltext={member.name}
+                    onMouseEnter={handleTruncateMouseEnter}
+                    onMouseLeave={handleTruncateMouseLeave}
+                >
+                    <h3 className="font-medium text-text-primary truncate">{member.name}</h3>
+                </div>
             </div>
             <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
                 <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
