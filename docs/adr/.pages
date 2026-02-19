@@ -1,3 +1,4 @@
 title: ADR (Architecture Decision Records)
 nav:
   - ADR-0001-server-side-performance-not-applicable.md
+  - ADR-0002-environment-setup-architecture.md
