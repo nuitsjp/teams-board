@@ -220,7 +220,7 @@ export function GroupDetailPage() {
             <Users className="w-8 h-8" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-text-primary">{group.name}</h2>
+            <h2 className="text-xl font-bold text-text-primary break-words">{group.name}</h2>
             <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-text-muted" aria-hidden="true" />

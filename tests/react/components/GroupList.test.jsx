@@ -55,6 +55,59 @@ describe('GroupList', () => {
     }
   });
 
+  it('長いグループ名に truncate と tooltip が適用されること', () => {
+    const longNameGroups = [
+      {
+        id: 'g-long',
+        name: '複合ＳＩ・ソリューション勉強会',
+        totalDurationSeconds: 3600,
+        sessionRevisions: ['s1/0'],
+      },
+    ];
+    renderGroupList(longNameGroups);
+
+    const heading = screen.getByText('複合ＳＩ・ソリューション勉強会');
+    expect(heading).toHaveClass('truncate');
+
+    // ツールチップ用の data-fulltext 属性がラッパーに設定されていること
+    const tooltipWrapper = heading.closest('[data-fulltext]');
+    expect(tooltipWrapper).toHaveAttribute('data-fulltext', '複合ＳＩ・ソリューション勉強会');
+    expect(tooltipWrapper).toHaveClass('truncate-with-tooltip');
+  });
+
+  it('テキスト省略時にホバーで data-truncated が付与されること', () => {
+    renderGroupList();
+
+    const heading = screen.getByText('フロントエンド勉強会');
+    const tooltipWrapper = heading.closest('[data-fulltext]');
+    const truncateEl = tooltipWrapper.querySelector('.truncate');
+
+    // scrollWidth > clientWidth をモックして省略状態をシミュレート
+    Object.defineProperty(truncateEl, 'scrollWidth', { value: 200, configurable: true });
+    Object.defineProperty(truncateEl, 'clientWidth', { value: 100, configurable: true });
+
+    fireEvent.mouseEnter(tooltipWrapper);
+    expect(tooltipWrapper).toHaveAttribute('data-truncated');
+
+    fireEvent.mouseLeave(tooltipWrapper);
+    expect(tooltipWrapper).not.toHaveAttribute('data-truncated');
+  });
+
+  it('テキスト非省略時にホバーしても data-truncated が付与されないこと', () => {
+    renderGroupList();
+
+    const heading = screen.getByText('フロントエンド勉強会');
+    const tooltipWrapper = heading.closest('[data-fulltext]');
+    const truncateEl = tooltipWrapper.querySelector('.truncate');
+
+    // scrollWidth === clientWidth（省略なし）
+    Object.defineProperty(truncateEl, 'scrollWidth', { value: 100, configurable: true });
+    Object.defineProperty(truncateEl, 'clientWidth', { value: 100, configurable: true });
+
+    fireEvent.mouseEnter(tooltipWrapper);
+    expect(tooltipWrapper).not.toHaveAttribute('data-truncated');
+  });
+
   it('開催回数と参加時間が表示されること', () => {
     renderGroupList();
 
