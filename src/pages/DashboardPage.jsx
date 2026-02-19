@@ -48,7 +48,7 @@ export function DashboardPage() {
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-6">
             <div className="card-base p-6 space-y-4">
               <div className="h-5 w-32 skeleton" />
               {[...Array(3)].map((_, i) => (
@@ -56,7 +56,7 @@ export function DashboardPage() {
               ))}
             </div>
           </div>
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-6">
             <div className="card-base p-6 space-y-4">
               <div className="h-5 w-32 skeleton" />
               {[...Array(5)].map((_, i) => (
@@ -99,12 +99,12 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* 左カラム: グループ — メンバー一覧スクロール時もビューポートに追従 */}
-        <div className="lg:col-span-5 lg:sticky lg:top-20 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+        <div className="lg:col-span-6 lg:sticky lg:top-20 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
           <GroupList groups={groups} />
         </div>
 
         {/* 右カラム: メンバー一覧 */}
-        <div className="lg:col-span-7 animate-fade-in-up" style={{ animationDelay: '250ms' }}>
+        <div className="lg:col-span-6 animate-fade-in-up" style={{ animationDelay: '250ms' }}>
           <MemberList members={members} />
         </div>
       </div>
