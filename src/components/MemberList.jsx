@@ -14,13 +14,13 @@ const MemberRow = memo(function MemberRow({ member, onNavigate }) {
             onClick={() => onNavigate(`/members/${member.id}`)}
             className="list-accent-warm p-4 px-6 hover:bg-surface-muted cursor-pointer flex justify-between items-center group border-b border-border-light h-full"
         >
-            <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-sm">
+            <div className="flex items-center gap-4 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-sm shrink-0">
                     {member.name.charAt(0)}
                 </div>
-                <h3 className="font-medium text-text-primary">{member.name}</h3>
+                <h3 className="font-medium text-text-primary truncate">{member.name}</h3>
             </div>
-            <div className="flex items-center text-sm text-text-secondary gap-4">
+            <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
                 <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
                     <span className="font-semibold text-text-primary font-display">
                         {member.sessionRevisions.length}

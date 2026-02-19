@@ -156,6 +156,57 @@
     animation: shimmer 1.5s infinite;
     @apply rounded-lg;
   }
+
+  /* テキスト省略時のツールチップ */
+  .truncate-with-tooltip {
+    position: relative;
+  }
+
+  .truncate-with-tooltip::after {
+    content: attr(data-fulltext);
+    position: absolute;
+    left: 0;
+    top: calc(100% + 8px);
+    z-index: 50;
+    padding: 0.375rem 0.75rem;
+    background-color: var(--color-text-primary);
+    color: white;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    border-radius: 0.5rem;
+    white-space: normal;
+    max-width: 280px;
+    width: max-content;
+    word-break: break-word;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 150ms ease, visibility 150ms ease;
+    pointer-events: none;
+  }
+
+  /* ツールチップの矢印（上向き） */
+  .truncate-with-tooltip::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: calc(100% + 4px);
+    z-index: 50;
+    border-width: 4px;
+    border-style: solid;
+    border-color: transparent transparent var(--color-text-primary) transparent;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 150ms ease, visibility 150ms ease;
+    pointer-events: none;
+  }
+
+  .truncate-with-tooltip[data-truncated]:hover::after,
+  .truncate-with-tooltip[data-truncated]:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 300ms; /* 表示は300ms遅延、非表示は即座 */
+  }
 }
 
 /* アニメーション軽減設定への対応 */
@@ -175,6 +226,11 @@
   }
 
   .accordion-panel {
+    transition: none !important;
+  }
+
+  .truncate-with-tooltip::after,
+  .truncate-with-tooltip::before {
     transition: none !important;
   }
 }
