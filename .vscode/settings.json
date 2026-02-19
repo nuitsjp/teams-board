@@ -29,5 +29,8 @@
   "textlint.run": "onType",
   "files.associations": {
     "**/.rulesync/skills/*/SKILL.md": "markdown"
-  }
+  },
+  "markdown.marp.themes": [
+    "./docs/90.スライド/theme/marp.css"
+  ]
 }
