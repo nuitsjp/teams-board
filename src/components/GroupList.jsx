@@ -39,7 +39,7 @@ const GroupRow = memo(function GroupRow({ group, onNavigate, index }) {
                     </span>{' '}
                     回開催
                 </span>
-                <span className="flex items-center gap-1.5 w-24 justify-end">
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
                     <Clock className="w-4 h-4 text-text-muted" />
                     <span className="font-display">{formatDuration(group.totalDurationSeconds)}</span>
                 </span>
