@@ -225,28 +225,6 @@ export function GroupDetailPage() {
         setDeleteMessage(null);
 
         try {
-            // 最新 index.json を取得
-            const latestIndexResult = await sharedDataFetcher.fetchIndex();
-            if (!latestIndexResult.ok) {
-                setDeleteMessage({
-                    type: 'error',
-                    text: '最新データの取得に失敗しました。ネットワーク接続を確認してください',
-                });
-                return;
-            }
-
-            // 楽観ロック: version を比較
-            if (
-                cachedIndex &&
-                (latestIndexResult.data.version ?? 0) !== (cachedIndex.version ?? 0)
-            ) {
-                setDeleteMessage({
-                    type: 'error',
-                    text: '他のユーザーが同時に編集しています。ページを再読み込みしてください',
-                });
-                return;
-            }
-
             // セッション生データを取得
             const sessionData = sessionDataMap.get(deleteTarget.sessionRef);
             if (!sessionData) {
@@ -257,24 +235,29 @@ export function GroupDetailPage() {
                 return;
             }
 
-            // IndexEditor でセッション削除
-            const { index: updatedIndex, error: editError } =
-                indexEditor.removeSessionFromGroup(
-                    latestIndexResult.data,
-                    groupId,
-                    deleteTarget.sessionRef,
-                    sessionData
-                );
-
-            if (editError) {
-                setDeleteMessage({ type: 'error', text: editError });
-                return;
-            }
-
-            // BlobWriter で保存
+            // BlobWriter で保存（indexUpdater 内で楽観ロック + 再計算）
+            const cachedVersion = cachedIndex?.version ?? 0;
+            const targetSessionRef = deleteTarget.sessionRef;
             const result = await blobWriter.executeWriteSequence({
                 newItems: [],
-                indexUpdater: () => updatedIndex,
+                indexUpdater: (latestIndex) => {
+                    // 楽観ロック: BlobWriter が取得した最新 index の version を検証
+                    if ((latestIndex.version ?? 0) !== cachedVersion) {
+                        return null;
+                    }
+                    // 最新 index から削除結果を再計算
+                    const { index: updatedIndex, error: editError } =
+                        indexEditor.removeSessionFromGroup(
+                            latestIndex,
+                            groupId,
+                            targetSessionRef,
+                            sessionData
+                        );
+                    if (editError) {
+                        return null;
+                    }
+                    return updatedIndex;
+                },
             });
 
             if (!result.allSucceeded) {

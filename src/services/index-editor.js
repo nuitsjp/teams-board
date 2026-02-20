@@ -201,10 +201,11 @@ export class IndexEditor {
             targetGroup.totalDurationSeconds - groupSessionDuration
         );
 
-        // メンバー更新
-        const memberDurationMap = new Map(
-            sessionData.attendances.map((a) => [a.memberId, a.durationSeconds])
-        );
+        // メンバー更新（同一 memberId が複数回出現する場合に備えて合算）
+        const memberDurationMap = new Map();
+        for (const a of sessionData.attendances) {
+            memberDurationMap.set(a.memberId, (memberDurationMap.get(a.memberId) ?? 0) + a.durationSeconds);
+        }
         const members = currentIndex.members.map((m) => {
             if (!m.sessionRevisions.includes(sessionRef)) {
                 return { ...m, sessionRevisions: [...m.sessionRevisions] };

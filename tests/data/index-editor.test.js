@@ -467,6 +467,74 @@ describe('IndexEditor', () => {
       expect(result.error).toBe('セッション session3/0 はこのグループに属していません');
       expect(result.index).toBe(indexForRemove);
     });
+
+    it('エラー系: groupId が空の場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(indexForRemove, '', 'session1/0', sessionData1);
+
+      expect(result.error).toBe('グループIDが指定されていません');
+      expect(result.index).toBe(indexForRemove);
+    });
+
+    it('エラー系: sessionRef が空の場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(indexForRemove, 'group1', '', sessionData1);
+
+      expect(result.error).toBe('セッションRefが指定されていません');
+      expect(result.index).toBe(indexForRemove);
+    });
+
+    it('エラー系: sessionData が不正な場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(indexForRemove, 'group1', 'session1/0', {});
+
+      expect(result.error).toBe('セッションデータが不正です（attendances が必要です）');
+      expect(result.index).toBe(indexForRemove);
+    });
+
+    it('正常系: 同一 memberId が複数回出現する場合に durationSeconds を合算して減算する', () => {
+      const editor = new IndexEditor();
+      const indexWithDuplicate = {
+        schemaVersion: 2,
+        version: 1,
+        groups: [
+          {
+            id: 'group1',
+            name: 'グループA',
+            totalDurationSeconds: 1800,
+            sessionRevisions: ['dup-session/0'],
+          },
+        ],
+        members: [
+          {
+            id: 'member1',
+            name: 'メンバー1',
+            totalDurationSeconds: 1800,
+            sessionRevisions: ['dup-session/0'],
+          },
+        ],
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+      // 同一メンバーが再入室して2つの attendance レコードを持つケース
+      const sessionDataDuplicate = {
+        attendances: [
+          { memberId: 'member1', durationSeconds: 600 },
+          { memberId: 'member1', durationSeconds: 300 },
+        ],
+      };
+      const result = editor.removeSessionFromGroup(
+        indexWithDuplicate,
+        'group1',
+        'dup-session/0',
+        sessionDataDuplicate
+      );
+
+      expect(result.error).toBeUndefined();
+      const member = result.index.members.find((m) => m.id === 'member1');
+      // 600 + 300 = 900 を合算して減算: 1800 - 900 = 900
+      expect(member.totalDurationSeconds).toBe(900);
+      expect(member.sessionRevisions).toEqual([]);
+    });
   });
 
   describe('validateMergeGroupsInput', () => {
