@@ -271,6 +271,204 @@ describe('IndexEditor', () => {
     });
   });
 
+  describe('removeSessionFromGroup', () => {
+    const indexForRemove = {
+      schemaVersion: 2,
+      version: 3,
+      groups: [
+        {
+          id: 'group1',
+          name: 'グループA',
+          totalDurationSeconds: 7200,
+          sessionRevisions: ['session1/0', 'session2/0'],
+        },
+        {
+          id: 'group2',
+          name: 'グループB',
+          totalDurationSeconds: 1800,
+          sessionRevisions: ['session3/0'],
+        },
+      ],
+      members: [
+        {
+          id: 'member1',
+          name: 'メンバー1',
+          totalDurationSeconds: 5400,
+          sessionRevisions: ['session1/0', 'session2/0'],
+        },
+        {
+          id: 'member2',
+          name: 'メンバー2',
+          totalDurationSeconds: 1800,
+          sessionRevisions: ['session1/0'],
+        },
+        {
+          id: 'member3',
+          name: 'メンバー3',
+          totalDurationSeconds: 3600,
+          sessionRevisions: ['session3/0'],
+        },
+      ],
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const sessionData1 = {
+      sessionId: 'session1',
+      revision: 0,
+      attendances: [
+        { memberId: 'member1', durationSeconds: 3600 },
+        { memberId: 'member2', durationSeconds: 1800 },
+      ],
+    };
+
+    const sessionData2 = {
+      sessionId: 'session2',
+      revision: 0,
+      attendances: [{ memberId: 'member1', durationSeconds: 1800 }],
+    };
+
+    it('正常系: グループから sessionRef が除去され、totalDurationSeconds が再計算される', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(
+        indexForRemove,
+        'group1',
+        'session1/0',
+        sessionData1
+      );
+
+      expect(result.error).toBeUndefined();
+      const group = result.index.groups.find((g) => g.id === 'group1');
+      expect(group.sessionRevisions).toEqual(['session2/0']);
+      // 7200 - (3600 + 1800) = 1800
+      expect(group.totalDurationSeconds).toBe(1800);
+    });
+
+    it('正常系: 該当メンバーの sessionRevisions・totalDurationSeconds が更新される', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(
+        indexForRemove,
+        'group1',
+        'session1/0',
+        sessionData1
+      );
+
+      expect(result.error).toBeUndefined();
+      const member1 = result.index.members.find((m) => m.id === 'member1');
+      expect(member1.sessionRevisions).toEqual(['session2/0']);
+      expect(member1.totalDurationSeconds).toBe(1800);
+
+      const member2 = result.index.members.find((m) => m.id === 'member2');
+      expect(member2.sessionRevisions).toEqual([]);
+      expect(member2.totalDurationSeconds).toBe(0);
+    });
+
+    it('正常系: 関係ないグループ・メンバーは変更されない', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(
+        indexForRemove,
+        'group1',
+        'session1/0',
+        sessionData1
+      );
+
+      const group2 = result.index.groups.find((g) => g.id === 'group2');
+      expect(group2.sessionRevisions).toEqual(['session3/0']);
+      expect(group2.totalDurationSeconds).toBe(1800);
+
+      const member3 = result.index.members.find((m) => m.id === 'member3');
+      expect(member3.sessionRevisions).toEqual(['session3/0']);
+      expect(member3.totalDurationSeconds).toBe(3600);
+    });
+
+    it('正常系: 入力オブジェクトが変更されないこと（イミュータブル性）', () => {
+      const editor = new IndexEditor();
+      const before = JSON.parse(JSON.stringify(indexForRemove));
+      editor.removeSessionFromGroup(indexForRemove, 'group1', 'session1/0', sessionData1);
+
+      expect(indexForRemove).toEqual(before);
+    });
+
+    it('正常系: 最後のセッション削除で空配列・0秒になる', () => {
+      const editor = new IndexEditor();
+      const singleSessionIndex = {
+        ...indexForRemove,
+        groups: [
+          {
+            id: 'group2',
+            name: 'グループB',
+            totalDurationSeconds: 1800,
+            sessionRevisions: ['session3/0'],
+          },
+        ],
+        members: [
+          {
+            id: 'member3',
+            name: 'メンバー3',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['session3/0'],
+          },
+        ],
+      };
+      const sessionData3 = {
+        attendances: [{ memberId: 'member3', durationSeconds: 1800 }],
+      };
+      const result = editor.removeSessionFromGroup(
+        singleSessionIndex,
+        'group2',
+        'session3/0',
+        sessionData3
+      );
+
+      expect(result.error).toBeUndefined();
+      const group = result.index.groups.find((g) => g.id === 'group2');
+      expect(group.sessionRevisions).toEqual([]);
+      expect(group.totalDurationSeconds).toBe(0);
+
+      const member = result.index.members.find((m) => m.id === 'member3');
+      expect(member.sessionRevisions).toEqual([]);
+      expect(member.totalDurationSeconds).toBe(1800);
+    });
+
+    it('正常系: version がインクリメントされる', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(
+        indexForRemove,
+        'group1',
+        'session1/0',
+        sessionData1
+      );
+
+      expect(result.index.version).toBe(4);
+      expect(result.index.updatedAt).not.toBe('2026-01-01T00:00:00.000Z');
+    });
+
+    it('エラー系: 存在しない groupId', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(
+        indexForRemove,
+        'nonexistent',
+        'session1/0',
+        sessionData1
+      );
+
+      expect(result.error).toBe('グループID nonexistent が見つかりません');
+      expect(result.index).toBe(indexForRemove);
+    });
+
+    it('エラー系: グループに属さない sessionRef', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeSessionFromGroup(
+        indexForRemove,
+        'group1',
+        'session3/0',
+        { attendances: [{ memberId: 'member3', durationSeconds: 1800 }] }
+      );
+
+      expect(result.error).toBe('セッション session3/0 はこのグループに属していません');
+      expect(result.index).toBe(indexForRemove);
+    });
+  });
+
   describe('validateMergeGroupsInput', () => {
     it('異常系: selectedGroupIds が配列でない場合はエラーを返す', () => {
       const editor = new IndexEditor();
