@@ -1,0 +1,172 @@
+/* @theme teams-board */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+:root {
+    --color-primary-500: #2a9d8f;
+    --color-primary-600: #207d72;
+    --color-accent-500: #e76f51;
+    --color-page-bg: #f5f7f6;
+    --color-surface: #ffffff;
+    --color-text-primary: #1a2e2a;
+    --color-text-secondary: #4a6560;
+    --color-border: #e2e8e6;
+}
+
+section {
+    font-family: 'Noto Sans JP', 'Inter', system-ui, sans-serif;
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    padding: 40px 60px;
+    line-height: 1.7;
+}
+
+section::after {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+h1 {
+    color: var(--color-primary-600);
+    font-weight: 700;
+    border-bottom: 3px solid var(--color-primary-500);
+    padding-bottom: 8px;
+    margin-bottom: 24px;
+}
+
+h2 {
+    color: var(--color-primary-600);
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+h3 {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+a {
+    color: var(--color-primary-500);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+strong {
+    color: var(--color-accent-500);
+    font-weight: 700;
+}
+
+code {
+    font-family: 'Inter', 'Consolas', monospace;
+    background-color: var(--color-page-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+}
+
+th {
+    background-color: var(--color-primary-500);
+    color: white;
+    font-weight: 600;
+    padding: 10px 16px;
+    text-align: left;
+}
+
+td {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+tr:nth-child(even) td {
+    background-color: var(--color-page-bg);
+}
+
+ul, ol {
+    margin: 12px 0;
+}
+
+li {
+    margin: 6px 0;
+}
+
+img {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+blockquote {
+    border-left: 4px solid var(--color-primary-500);
+    padding-left: 16px;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* タイトルスライド */
+section.lead {
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+section.lead h1 {
+    color: white;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.4);
+    font-size: 2.4em;
+}
+
+section.lead h2 {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    font-size: 1.3em;
+}
+
+section.lead p {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+section.lead a {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* エンディングスライド */
+section.ending {
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+section.ending h1 {
+    color: white;
+    border-bottom: none;
+    font-size: 2.2em;
+}
+
+section.ending h2 {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+section.ending p {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+section.ending a {
+    color: rgba(255, 255, 255, 0.9);
+}
