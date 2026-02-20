@@ -65,13 +65,6 @@ jobs:
       - name: 依存関係のインストール（Node.js 側）
         run: pnpm install --frozen-lockfile
 
-      - name: Mermaid CLI のインストール
-        if: env.IS_PRODUCTION == 'true'
-        run: pnpm add -g @mermaid-js/mermaid-cli
-
-      - name: 依存関係の同期
-        run: uv sync
-
       - name: Playwright ブラウザのインストール
         if: env.IS_PRODUCTION == 'true'
         run: uv run python -m playwright install chromium

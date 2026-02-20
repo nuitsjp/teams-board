@@ -58,6 +58,8 @@ jobs:
 
       - name: 依存パッケージのインストール
         run: pnpm install --frozen-lockfile
+        env:
+          SKIP_PYTHON_SETUP: 'true'
 
       - name: lint 実行
         run: pnpm run lint
@@ -75,6 +77,8 @@ jobs:
 
       - name: 依存パッケージのインストール
         run: pnpm install --frozen-lockfile
+        env:
+          SKIP_PYTHON_SETUP: 'true'
 
       - name: test 実行
         run: pnpm test:coverage
@@ -94,6 +98,8 @@ jobs:
 
       - name: 依存パッケージのインストール
         run: pnpm install --frozen-lockfile
+        env:
+          SKIP_PYTHON_SETUP: 'true'
 
       - name: build 実行
         run: pnpm run build
@@ -178,6 +184,8 @@ jobs:
 
       - name: 依存パッケージのインストール
         run: pnpm install --frozen-lockfile
+        env:
+          SKIP_PYTHON_SETUP: 'true'
 
       - name: Playwright ブラウザのキャッシュ復元
         id: playwright-cache

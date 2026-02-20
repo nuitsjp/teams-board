@@ -100,22 +100,7 @@ Microsoft Teams の出席レポート（CSV）を集計・可視化し、
 
 ## アーキテクチャ
 
-```
-┌────────────────────┐
-│   ブラウザ (SPA)    │
-│   React + Vite     │
-└─────┬─────────┬────┘
-      │GET      │PUT (SAS)
-      ▼         ▼
-┌────────────────────┐
-│ Azure Blob Storage │
-│  静的Webサイト      │
-│                    │
-│ data/index.json    │
-│ data/sessions/     │
-│ data/sources/      │
-└────────────────────┘
-```
+![w:400 center](images/architecture.svg)
 
 </div>
 <div>
