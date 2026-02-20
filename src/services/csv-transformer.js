@@ -221,12 +221,18 @@ export class CsvTransformer {
             return hours * 3600 + minutes * 60 + seconds;
         }
 
-        // 「X 分 Y 秒」形式
-        const shortMatch = durationStr.match(/(\d+)\s*分\s*(\d+)\s*秒/);
+        // 「X 分」または「X 分 Y 秒」形式
+        const shortMatch = durationStr.match(/(\d+)\s*分\s*(?:(\d+)\s*秒)?/);
         if (shortMatch) {
             const minutes = parseInt(shortMatch[1], 10);
-            const seconds = parseInt(shortMatch[2], 10);
+            const seconds = parseInt(shortMatch[2] || '0', 10);
             return minutes * 60 + seconds;
+        }
+
+        // 「X 秒」形式（秒のみ）
+        const secMatch = durationStr.match(/(\d+)\s*秒/);
+        if (secMatch) {
+            return parseInt(secMatch[1], 10);
         }
 
         return null;

@@ -725,6 +725,62 @@ describe('CsvTransformer', () => {
     });
   });
 
+  describe('時間パース（分のみ・秒のみ）', () => {
+    it('「X 分」のみ（秒省略）を秒数に変換できること', async () => {
+      const text = createTeamsReportText({
+        participants: [
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '52 分' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '52 分',
+            },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      expect(result.parsedSession.attendances[0].durationSeconds).toBe(3120);
+    });
+
+    it('「X 秒」のみ（分省略）を秒数に変換できること', async () => {
+      const text = createTeamsReportText({
+        participants: [
+          { name: '佐藤 一郎', email: 'ichiro.sato@example.com', duration: '45 秒' },
+        ],
+      });
+      const buffer = createUtf16leBuffer(text);
+      const file = new File([buffer], 'report.csv', { type: 'text/csv' });
+
+      Papa.parse.mockImplementation((input, config) => {
+        config.complete({
+          data: [
+            {
+              名前: '佐藤 一郎',
+              'メール アドレス': 'ichiro.sato@example.com',
+              会議の長さ: '45 秒',
+            },
+          ],
+          errors: [],
+        });
+      });
+
+      const result = await transformer.parse(file);
+      expect(result.ok).toBe(true);
+      expect(result.parsedSession.attendances[0].durationSeconds).toBe(45);
+    });
+  });
+
   describe('セクション分割（追加パターン）', () => {
     it('「3. 会議中の」セクションがない場合でも参加者セクションを正しくパースすること', async () => {
       const lines = [
