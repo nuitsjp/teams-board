@@ -148,6 +148,90 @@ export class IndexEditor {
     }
 
     /**
+     * グループからセッションを削除する（紐付け解除）
+     * @param {object} currentIndex - 現在の DashboardIndex（V2）
+     * @param {string} groupId - 対象グループの ID
+     * @param {string} sessionRef - 削除するセッションの ref（例: "sessionId/revision"）
+     * @param {object} sessionData - セッション JSON データ（attendances を含む）
+     * @returns {{ index: object, error?: string }}
+     */
+    removeSessionFromGroup(currentIndex, groupId, sessionRef, sessionData) {
+        // バリデーション
+        if (!groupId || typeof groupId !== 'string') {
+            return { index: currentIndex, error: 'グループIDが指定されていません' };
+        }
+        if (!sessionRef || typeof sessionRef !== 'string') {
+            return { index: currentIndex, error: 'セッションRefが指定されていません' };
+        }
+        if (!sessionData || !Array.isArray(sessionData.attendances)) {
+            return {
+                index: currentIndex,
+                error: 'セッションデータが不正です（attendances が必要です）',
+            };
+        }
+
+        // グループ検索
+        const groups = currentIndex.groups.map((g) => ({
+            ...g,
+            sessionRevisions: [...g.sessionRevisions],
+        }));
+        const targetGroup = groups.find((g) => g.id === groupId);
+        if (!targetGroup) {
+            return { index: currentIndex, error: `グループID ${groupId} が見つかりません` };
+        }
+
+        // セッション所属確認
+        if (!targetGroup.sessionRevisions.includes(sessionRef)) {
+            return {
+                index: currentIndex,
+                error: `セッション ${sessionRef} はこのグループに属していません`,
+            };
+        }
+
+        // グループ更新: sessionRevisions から除去、totalDurationSeconds を再計算
+        const groupSessionDuration = sessionData.attendances.reduce(
+            (sum, a) => sum + a.durationSeconds,
+            0
+        );
+        targetGroup.sessionRevisions = targetGroup.sessionRevisions.filter(
+            (ref) => ref !== sessionRef
+        );
+        targetGroup.totalDurationSeconds = Math.max(
+            0,
+            targetGroup.totalDurationSeconds - groupSessionDuration
+        );
+
+        // メンバー更新（同一 memberId が複数回出現する場合に備えて合算）
+        const memberDurationMap = new Map();
+        for (const a of sessionData.attendances) {
+            memberDurationMap.set(a.memberId, (memberDurationMap.get(a.memberId) ?? 0) + a.durationSeconds);
+        }
+        const members = currentIndex.members.map((m) => {
+            if (!m.sessionRevisions.includes(sessionRef)) {
+                return { ...m, sessionRevisions: [...m.sessionRevisions] };
+            }
+            const duration = memberDurationMap.get(m.id) ?? 0;
+            return {
+                ...m,
+                sessionRevisions: m.sessionRevisions.filter((ref) => ref !== sessionRef),
+                totalDurationSeconds: Math.max(0, m.totalDurationSeconds - duration),
+            };
+        });
+
+        const currentVersion = currentIndex.version ?? 0;
+
+        return {
+            index: {
+                schemaVersion: 2,
+                version: currentVersion + 1,
+                updatedAt: new Date().toISOString(),
+                groups,
+                members,
+            },
+        };
+    }
+
+    /**
      * グループ統合入力をバリデーションする
      * @param {string} targetGroupId - 統合先グループ ID
      * @param {string[]} selectedGroupIds - 選択されたグループ ID 一覧

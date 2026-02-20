@@ -10,7 +10,10 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
   // データ変更テスト後に即座にバックアップから復元
   // eslint-disable-next-line no-empty-pattern
   test.afterEach(async ({}, testInfo) => {
-    if (testInfo.title.includes('グループ名の編集ができること')) {
+    if (
+      testInfo.title.includes('グループ名の編集ができること') ||
+      testInfo.title.includes('セッション削除')
+    ) {
       await restoreIndexJson();
     }
   });
@@ -130,6 +133,32 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
 
     expect(devModeMessage).toBeDefined();
     expect(devModeMessage?.type).toBe('info');
+  });
+
+  test('token=devでグループ詳細画面からセッション削除ができること', async ({ page }) => {
+    // グループ詳細画面にアクセス（フロントエンド勉強会）
+    await navigateTo(page, '/?token=dev#/groups/01KHNHF98M86MWSATH6W4TR205');
+
+    // グループ名の表示を待機
+    await expect(page.getByText('フロントエンド勉強会').first()).toBeVisible();
+
+    // 削除ボタンが表示されること
+    const deleteButtons = page.getByRole('button', { name: /のセッションを削除/ });
+    await expect(deleteButtons.first()).toBeVisible();
+
+    // 最初の削除ボタンをクリック
+    await deleteButtons.first().click();
+
+    // 確認ダイアログが表示されること
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText('セッションの削除')).toBeVisible();
+
+    // 削除実行
+    await dialog.getByRole('button', { name: '削除' }).click();
+
+    // 成功メッセージが表示されること
+    await expect(page.getByText('セッションを削除しました')).toBeVisible();
   });
 
   test('URLからtoken=devが削除されること', async ({ page }) => {
