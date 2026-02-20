@@ -272,6 +272,19 @@ export function GroupDetailPage() {
                 return;
             }
 
+            // indexUpdater が null を返した場合、index.json の PUT はスキップされる
+            // → results に data/index.json が含まれない = 競合 or 編集エラー
+            const indexWritten = result.results.some(
+                (r) => r.path === 'data/index.json'
+            );
+            if (!indexWritten) {
+                setDeleteMessage({
+                    type: 'error',
+                    text: '他のユーザーが同時に編集しています。ページを再読み込みしてください',
+                });
+                return;
+            }
+
             // 成功: キャッシュ無効化 → 再取得
             sharedDataFetcher.invalidateIndexCache();
             setDeleteTarget(null);

@@ -734,7 +734,7 @@ describe('GroupDetailPage', () => {
             // fetchSession がすべて失敗するケースで再現する
         });
 
-        it('indexUpdater 内で version 不一致の場合に null が返ること', async () => {
+        it('version 不一致で indexUpdater が null を返した場合に競合エラーメッセージが表示されること', async () => {
             const user = userEvent.setup();
             mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
             mockFetchSession.mockImplementation((ref) => {
@@ -745,14 +745,16 @@ describe('GroupDetailPage', () => {
                 return Promise.resolve({ ok: false, error: 'not found' });
             });
 
-            // indexUpdater に version が異なる index を渡すことで null パスをカバー
+            // BlobWriter の実際の動作を模倣:
+            // indexUpdater が null を返すと index.json の PUT がスキップされ
+            // results に data/index.json エントリが含まれない
             const conflictIndex = { ...mockIndexData, version: 999 };
             mockExecuteWriteSequence.mockImplementation(async ({ indexUpdater }) => {
                 const result = indexUpdater ? indexUpdater(conflictIndex) : null;
                 expect(result).toBeNull();
                 return {
                     allSucceeded: true,
-                    results: [{ path: 'data/index.json', success: true }],
+                    results: [], // index.json の PUT がスキップされた状態
                 };
             });
 
@@ -769,11 +771,13 @@ describe('GroupDetailPage', () => {
             await user.click(screen.getByText('削除'));
 
             await waitFor(() => {
-                expect(mockExecuteWriteSequence).toHaveBeenCalled();
+                expect(
+                    screen.getByText(/他のユーザーが同時に編集しています/)
+                ).toBeInTheDocument();
             });
         });
 
-        it('indexUpdater 内で editError 発生時に null が返ること', async () => {
+        it('editError で indexUpdater が null を返した場合に競合エラーメッセージが表示されること', async () => {
             const user = userEvent.setup();
             mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
             mockFetchSession.mockImplementation((ref) => {
@@ -794,7 +798,7 @@ describe('GroupDetailPage', () => {
                 expect(result).toBeNull();
                 return {
                     allSucceeded: true,
-                    results: [{ path: 'data/index.json', success: true }],
+                    results: [], // index.json の PUT がスキップされた状態
                 };
             });
 
@@ -811,7 +815,9 @@ describe('GroupDetailPage', () => {
             await user.click(screen.getByText('削除'));
 
             await waitFor(() => {
-                expect(mockRemoveSessionFromGroup).toHaveBeenCalled();
+                expect(
+                    screen.getByText(/他のユーザーが同時に編集しています/)
+                ).toBeInTheDocument();
             });
         });
 
