@@ -356,7 +356,7 @@ export function MemberDetailPage() {
       </div>
 
       {/* 期別2カラムレイアウト */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6" data-section="attendance">
         {/* 左列: 期サマリーリスト */}
         <div className="space-y-2">
           {periodAttendances.map((period) => {
