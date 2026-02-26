@@ -1459,7 +1459,7 @@ describe('AdminPage — セッション名管理', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('セッション名の保存に失敗しました。ストレージエラー')
+        screen.getByText('セッションの保存に失敗しました。ストレージエラー')
       ).toBeInTheDocument();
     });
   });
@@ -1489,7 +1489,7 @@ describe('AdminPage — セッション名管理', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('セッション名の保存に失敗しました。ネットワーク障害')
+        screen.getByText('セッションの保存に失敗しました。ネットワーク障害')
       ).toBeInTheDocument();
     });
   });
@@ -1871,7 +1871,7 @@ describe('AdminPage — セッション名管理', () => {
     await user.click(screen.getByRole('button', { name: '保存' }));
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名を保存しました')).toBeInTheDocument();
+      expect(screen.getByText('セッションを保存しました')).toBeInTheDocument();
     });
   });
 
@@ -1952,14 +1952,14 @@ describe('AdminPage — セッション名管理', () => {
     await user.click(screen.getByRole('button', { name: '保存' }));
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名を保存しました')).toBeInTheDocument();
+      expect(screen.getByText('セッションを保存しました')).toBeInTheDocument();
     });
 
     // 別のセッションに切り替えるとメッセージがクリアされる
     await user.click(await screen.findByRole('button', { name: /2026-02-01/ }));
 
     await waitFor(() => {
-      expect(screen.queryByText('セッション名を保存しました')).not.toBeInTheDocument();
+      expect(screen.queryByText('セッションを保存しました')).not.toBeInTheDocument();
     });
   });
 });

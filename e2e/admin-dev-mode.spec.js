@@ -37,8 +37,8 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
     // ドロップゾーンが表示されること
     await expect(page.getByText('Teams出席レポートCSV')).toBeVisible();
 
-    // グループ管理セクションが表示されること
-    await expect(page.getByRole('heading', { name: 'グループ管理' })).toBeVisible();
+    // グループ・セッション管理セクションが表示されること
+    await expect(page.getByRole('heading', { name: 'グループ・セッション管理' })).toBeVisible();
   });
 
   test('token=devでグループ一覧が表示されること', async ({ page }) => {
@@ -47,12 +47,8 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションまでスクロール
-    await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
-
-    // テーブルヘッダーが表示されること
-    await expect(page.getByRole('columnheader', { name: 'グループID' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'グループ名' })).toBeVisible();
+    // グループ・セッション管理セクションまでスクロール
+    await page.getByRole('heading', { name: 'グループ・セッション管理' }).scrollIntoViewIfNeeded();
 
     // グループが表示されること（dev-fixturesのデータを想定）
     await expect(page.getByText('フロントエンド勉強会').first()).toBeVisible();
@@ -65,8 +61,8 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションまでスクロール
-    await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
+    // グループ・セッション管理セクションまでスクロール
+    await page.getByRole('heading', { name: 'グループ・セッション管理' }).scrollIntoViewIfNeeded();
 
     // 最初の編集ボタンをクリック
     const editButtons = page.getByTitle('グループ名を編集');
