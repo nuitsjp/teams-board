@@ -418,6 +418,8 @@ export function AdminPage() {
   }, []);
 
   const openMergeDialog = useCallback(() => {
+    // ボタンの disabled 属性で制御済みの防御的ガード
+    /* c8 ignore next 3 */
     if (selectedGroupIds.size < 2 || isGroupOperationDisabled) {
       return;
     }
@@ -433,6 +435,8 @@ export function AdminPage() {
 
   // グループ統合処理（V2: version ベース楽観ロック）
   const handleMergeGroups = useCallback(async () => {
+    // ダイアログの disabled 属性で制御済みの防御的ガード
+    /* c8 ignore next 3 */
     if (!mergeTargetGroupId || selectedGroupIds.size < 2) {
       return;
     }
