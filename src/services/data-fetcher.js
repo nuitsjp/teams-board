@@ -11,6 +11,9 @@ const DEFAULT_SESSION_TTL = 30_000;
  * @returns {object} 正規化されたセッションデータ
  */
 function deserializeSession(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return { instructors: [] };
+    }
     return {
         ...data,
         instructors: Array.isArray(data.instructors) ? data.instructors : [],

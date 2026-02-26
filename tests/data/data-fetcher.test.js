@@ -544,6 +544,28 @@ describe('DataFetcher', () => {
             expect(result.data.instructors).toEqual([]);
         });
 
+        it('セッション JSON が null の場合でも TypeError にならず正常に返すこと', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(null),
+            });
+            const result = await fetcher.fetchSession('01DEF/0');
+
+            expect(result.ok).toBe(true);
+            expect(result.data.instructors).toEqual([]);
+        });
+
+        it('セッション JSON が非オブジェクト値の場合でもクラッシュしないこと', async () => {
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(42),
+            });
+            const result = await fetcher.fetchSession('01DEF/0');
+
+            expect(result.ok).toBe(true);
+            expect(result.data.instructors).toEqual([]);
+        });
+
         it('既存フィールドはデシリアライズ後も保持されること', async () => {
             const rawData = {
                 sessionId: '01DEF',
