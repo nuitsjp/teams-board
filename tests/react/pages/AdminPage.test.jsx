@@ -363,7 +363,7 @@ describe('AdminPage — グループ選択による parsedSession 上書き', ()
     );
 
     await waitFor(() => {
-      expect(screen.getByText('グループ管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
 
     const csvContent = new Blob(['dummy csv'], { type: 'text/csv' });
@@ -452,11 +452,9 @@ describe('AdminPage — グループ管理セクション', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('グループ管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
       expect(screen.getByText('テストグループ1')).toBeInTheDocument();
       expect(screen.getByText('テストグループ2')).toBeInTheDocument();
-      expect(screen.getByText('group1')).toBeInTheDocument();
-      expect(screen.getByText('group2')).toBeInTheDocument();
     });
   });
 
@@ -473,7 +471,7 @@ describe('AdminPage — グループ管理セクション', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('グループ管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
       expect(screen.getByText('グループがありません')).toBeInTheDocument();
     });
   });
@@ -1367,7 +1365,7 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
   });
 
@@ -1404,8 +1402,11 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
+
+    // セッションを選択（左カラムでクリック）
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
     await user.type(input, '第3回 React入門');
@@ -1442,8 +1443,11 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
+
+    // セッションを選択
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
     await user.type(input, 'テスト名');
@@ -1467,8 +1471,11 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
+
+    // セッションを選択
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
     await user.type(input, 'テスト名');
@@ -1511,8 +1518,11 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
+
+    // セッションを選択（既存の名前を持つセッション）
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
     await user.clear(input);
@@ -1536,10 +1546,11 @@ describe('AdminPage — セッション名管理', () => {
       </MemoryRouter>
     );
 
-    const accordionButton = await screen.findByRole('button', { name: /テストグループ1/ });
+    const accordionButton = await screen.findByRole('button', { name: /テストグループ1 を展開/ });
     expect(accordionButton).toHaveAttribute('aria-expanded', 'true');
 
-    expect(screen.getByRole('textbox', { name: '2026-02-08 のセッション名' })).toBeInTheDocument();
+    // アコーディオン内にセッション一覧が表示される
+    expect(screen.getByText('（未設定）')).toBeInTheDocument();
 
     await user.click(accordionButton);
     expect(accordionButton).toHaveAttribute('aria-expanded', 'false');
@@ -1558,8 +1569,11 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
+
+    // セッションを選択
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
     const longName = 'あ'.repeat(257);
@@ -1615,8 +1629,11 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
+
+    // セッションを選択
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
     await user.type(input, 'テスト名');
@@ -1661,8 +1678,11 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
+
+    // セッションを選択
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
     await user.type(input, 'テスト名');
@@ -1743,15 +1763,14 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
 
-    // 2つのセッション名入力が表示される
-    const inputs = screen.getAllByRole('textbox');
-    const sessionInputs = inputs.filter((input) =>
-      input.getAttribute('aria-label')?.includes('のセッション名')
+    // アコーディオン内に2つのセッションが表示される
+    const sessionButtons = screen.getAllByRole('button').filter((btn) =>
+      btn.textContent.includes('（未設定）')
     );
-    expect(sessionInputs.length).toBe(2);
+    expect(sessionButtons.length).toBe(2);
   });
 
   it('セッション名保存成功時に他のセッションの _ref は変更されない', async () => {
@@ -1819,15 +1838,16 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('セッション名管理')).toBeInTheDocument();
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
 
-    // 最初のセッションの名前を保存
+    // 最初のセッションを選択
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
+
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
     await user.type(input, 'テスト名');
 
-    const saveButtons = screen.getAllByRole('button', { name: '保存' });
-    await user.click(saveButtons[0]);
+    await user.click(screen.getByRole('button', { name: '保存' }));
 
     await waitFor(() => {
       expect(screen.getByText('セッション名を保存しました')).toBeInTheDocument();
