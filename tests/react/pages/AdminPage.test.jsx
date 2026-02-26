@@ -1406,6 +1406,8 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     // セッションを選択（左カラムでクリック）
+    // アコーディオンを展開してセッションを選択
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
@@ -1447,6 +1449,8 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     // セッションを選択
+    // アコーディオンを展開してセッションを選択
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
@@ -1475,6 +1479,8 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     // セッションを選択
+    // アコーディオンを展開してセッションを選択
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
@@ -1522,6 +1528,8 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     // セッションを選択（既存の名前を持つセッション）
+    // アコーディオンを展開してセッションを選択
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
@@ -1547,6 +1555,10 @@ describe('AdminPage — セッション名管理', () => {
     );
 
     const accordionButton = await screen.findByRole('button', { name: /テストグループ1 を展開/ });
+    // デフォルトは閉じている
+    expect(accordionButton).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(accordionButton);
     expect(accordionButton).toHaveAttribute('aria-expanded', 'true');
 
     // アコーディオン内にセッション一覧が表示される
@@ -1554,9 +1566,6 @@ describe('AdminPage — セッション名管理', () => {
 
     await user.click(accordionButton);
     expect(accordionButton).toHaveAttribute('aria-expanded', 'false');
-
-    await user.click(accordionButton);
-    expect(accordionButton).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('セッション名が256文字を超える場合にバリデーションエラーが表示される', async () => {
@@ -1573,6 +1582,8 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     // セッションを選択
+    // アコーディオンを展開してセッションを選択
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
@@ -1633,6 +1644,8 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     // セッションを選択
+    // アコーディオンを展開してセッションを選択
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
@@ -1682,6 +1695,8 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     // セッションを選択
+    // アコーディオンを展開してセッションを選択
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
@@ -1766,6 +1781,10 @@ describe('AdminPage — セッション名管理', () => {
       expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
     });
 
+    // アコーディオンを展開
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
+
     // アコーディオン内に2つのセッションが表示される
     const sessionButtons = screen.getAllByRole('button').filter((btn) =>
       btn.textContent.includes('（未設定）')
@@ -1842,6 +1861,8 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     // 最初のセッションを選択
+    // アコーディオンを展開してセッションを選択
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });

@@ -131,16 +131,6 @@ export function AdminPage() {
           )
         );
 
-        // 最初のグループを展開状態にする
-        if (loadedSessions.length > 0) {
-          const loadedRefSet = new Set(loadedSessions.map((session) => session._ref));
-          const firstGroupWithSessions = indexResult.data.groups.find((group) =>
-            group.sessionRevisions.some((ref) => loadedRefSet.has(ref))
-          );
-          if (firstGroupWithSessions) {
-            setExpandedGroupIds(new Set([firstGroupWithSessions.id]));
-          }
-        }
       }
     })();
     return () => {
