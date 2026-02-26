@@ -741,7 +741,7 @@ export function AdminPage() {
         {groups.length === 0 ? (
           <p className="text-sm text-text-muted">グループがありません</p>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6">
             {/* 左カラム: グループ一覧（アコーディオン） */}
             <div className="space-y-2">
               {groups.map((group) => {
