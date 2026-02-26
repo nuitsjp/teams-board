@@ -145,6 +145,14 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: 既存アセットのクリーンアップ
+        run: |
+          az storage blob delete-batch \
+            --source '$web' \
+            --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
+            --auth-mode login \
+            --pattern 'assets/*'
+
       - name: Azure Blob Storage に配信
         run: |
           az storage blob upload-batch \
