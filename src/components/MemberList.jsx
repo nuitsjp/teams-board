@@ -1,7 +1,7 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import { formatDuration } from '../utils/format-duration';
-import { User, Clock, ChevronRight, Search } from 'lucide-react';
+import { User, Clock, ChevronRight, Search, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 /** ホバー時にテキストが省略されている場合のみツールチップを有効化 */
@@ -41,13 +41,16 @@ const MemberRow = memo(function MemberRow({ member, onNavigate }) {
                 </div>
             </div>
             <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
-                <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
-                    <span className="font-semibold text-text-primary font-display">
-                        {member.sessionRevisions.length}
-                    </span>{' '}
-                    回参加
-                </span>
-                <span className="flex items-center gap-1.5 w-24 justify-end">
+                {(member.instructorCount ?? 0) > 0 && (
+                    <span className="flex items-center gap-1.5 bg-primary-50 text-primary-700 px-2.5 py-1 rounded-md">
+                        <GraduationCap className="w-4 h-4" />
+                        <span className="font-semibold font-display">
+                            {member.instructorCount}
+                        </span>
+                        回
+                    </span>
+                )}
+                <span className="flex items-center gap-1.5 w-28 justify-end">
                     <Clock className="w-4 h-4 text-text-muted" />
                     <span className="font-display">{formatDuration(member.totalDurationSeconds)}</span>
                 </span>

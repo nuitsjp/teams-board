@@ -223,4 +223,35 @@ describe('MemberList', () => {
       expect(names).toEqual(['佐藤一郎', '佐藤二郎']);
     });
   });
+
+  describe('講師回数の表示', () => {
+    it('instructorCount > 0 のメンバーに講師回数バッジが表示されること', () => {
+      const members = [
+        { id: 'm1', name: '佐藤', totalDurationSeconds: 3600, instructorCount: 3, sessionRevisions: ['s1'] },
+      ];
+      renderMemberList(members);
+
+      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getByText('回')).toBeInTheDocument();
+    });
+
+    it('instructorCount が 0 のメンバーには講師回数バッジが表示されないこと', () => {
+      const members = [
+        { id: 'm1', name: '佐藤', totalDurationSeconds: 3600, instructorCount: 0, sessionRevisions: ['s1'] },
+      ];
+      renderMemberList(members);
+
+      expect(screen.queryByText('回')).not.toBeInTheDocument();
+    });
+
+    it('instructorCount 未設定のメンバー（既存データ互換）でも正常に表示されること', () => {
+      // mockMembers には instructorCount がないが、エラーなく表示される
+      renderMemberList();
+
+      const rows = screen.getAllByTestId('member-row');
+      expect(rows).toHaveLength(4);
+      // 「回」テキストは講師バッジ由来のものが表示されないこと
+      expect(screen.queryByText('回')).not.toBeInTheDocument();
+    });
+  });
 });

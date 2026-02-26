@@ -55,6 +55,7 @@ export class IndexMerger {
                     id: ulid(),
                     name: att.memberName,
                     totalDurationSeconds: 0,
+                    instructorCount: 0,
                     sessionRevisions: [],
                 };
                 members.push(existingMember);

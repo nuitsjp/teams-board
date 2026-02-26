@@ -582,6 +582,12 @@ export function AdminPage() {
             const replaceRef = (refs) =>
               refs.map((r) => (r === sessionRef ? newRef : r));
 
+            // 講師差分の計算（instructorCount の更新）
+            const oldInstructors = new Set(target.instructors ?? []);
+            const newInstructors = new Set(instructors);
+            const added = new Set([...newInstructors].filter((id) => !oldInstructors.has(id)));
+            const removed = new Set([...oldInstructors].filter((id) => !newInstructors.has(id)));
+
             return {
               ...latestIndex,
               schemaVersion: 2,
@@ -591,10 +597,18 @@ export function AdminPage() {
                 ...g,
                 sessionRevisions: replaceRef(g.sessionRevisions),
               })),
-              members: latestIndex.members.map((m) => ({
-                ...m,
-                sessionRevisions: replaceRef(m.sessionRevisions),
-              })),
+              members: latestIndex.members.map((m) => {
+                const updated = {
+                  ...m,
+                  sessionRevisions: replaceRef(m.sessionRevisions),
+                };
+                if (added.has(m.id)) {
+                  updated.instructorCount = (m.instructorCount ?? 0) + 1;
+                } else if (removed.has(m.id)) {
+                  updated.instructorCount = Math.max(0, (m.instructorCount ?? 0) - 1);
+                }
+                return updated;
+              }),
             };
           },
         });
@@ -715,6 +729,7 @@ export function AdminPage() {
                   id: memberId,
                   name,
                   totalDurationSeconds: 0,
+                  instructorCount: 0,
                   sessionRevisions: [],
                 },
               ],

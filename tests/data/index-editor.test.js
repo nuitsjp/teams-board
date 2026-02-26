@@ -535,6 +535,98 @@ describe('IndexEditor', () => {
       expect(member.totalDurationSeconds).toBe(900);
       expect(member.sessionRevisions).toEqual([]);
     });
+
+    it('正常系: セッション削除時に講師メンバーの instructorCount が減算される', () => {
+      const editor = new IndexEditor();
+      const indexWithInstructor = {
+        schemaVersion: 2,
+        version: 1,
+        groups: [
+          {
+            id: 'group1',
+            name: 'グループA',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['session1/0'],
+          },
+        ],
+        members: [
+          {
+            id: 'member1',
+            name: 'メンバー1',
+            totalDurationSeconds: 3600,
+            instructorCount: 2,
+            sessionRevisions: ['session1/0'],
+          },
+          {
+            id: 'member2',
+            name: 'メンバー2',
+            totalDurationSeconds: 1800,
+            instructorCount: 1,
+            sessionRevisions: ['session1/0'],
+          },
+        ],
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+      const sessionDataWithInstructors = {
+        attendances: [
+          { memberId: 'member1', durationSeconds: 3600 },
+          { memberId: 'member2', durationSeconds: 1800 },
+        ],
+        instructors: ['member1'],
+      };
+      const result = editor.removeSessionFromGroup(
+        indexWithInstructor,
+        'group1',
+        'session1/0',
+        sessionDataWithInstructors
+      );
+
+      expect(result.error).toBeUndefined();
+      const member1 = result.index.members.find((m) => m.id === 'member1');
+      expect(member1.instructorCount).toBe(1);
+      // member2 は講師ではないので instructorCount は変わらない
+      const member2 = result.index.members.find((m) => m.id === 'member2');
+      expect(member2.instructorCount).toBe(1);
+    });
+
+    it('正常系: instructorCount 未設定のメンバーでも講師削除時にエラーにならない（0 フォールバック）', () => {
+      const editor = new IndexEditor();
+      const indexWithoutInstructorCount = {
+        schemaVersion: 2,
+        version: 1,
+        groups: [
+          {
+            id: 'group1',
+            name: 'グループA',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['session1/0'],
+          },
+        ],
+        members: [
+          {
+            id: 'member1',
+            name: 'メンバー1',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['session1/0'],
+          },
+        ],
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+      const sessionDataWithInstructors = {
+        attendances: [{ memberId: 'member1', durationSeconds: 3600 }],
+        instructors: ['member1'],
+      };
+      const result = editor.removeSessionFromGroup(
+        indexWithoutInstructorCount,
+        'group1',
+        'session1/0',
+        sessionDataWithInstructors
+      );
+
+      expect(result.error).toBeUndefined();
+      const member1 = result.index.members.find((m) => m.id === 'member1');
+      expect(member1.instructorCount).toBe(0);
+    });
   });
 
   describe('validateMergeGroupsInput', () => {
@@ -661,6 +753,7 @@ describe('IndexEditor', () => {
       const newMember = result.index.members.find((m) => m.id === result.memberId);
       expect(newMember.name).toBe('新しいメンバー');
       expect(newMember.totalDurationSeconds).toBe(0);
+      expect(newMember.instructorCount).toBe(0);
       expect(newMember.sessionRevisions).toEqual([]);
     });
 
