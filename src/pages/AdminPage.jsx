@@ -611,6 +611,24 @@ export function AdminPage() {
           return;
         }
 
+        // indexUpdater が null を返した場合、index.json の書き込みがスキップされる（楽観ロック競合）
+        const indexWritten = result.results.some(
+          (r) => r.path === 'data/index.json' && r.success
+        );
+        if (!indexWritten) {
+          setSessionMessage({
+            type: 'error',
+            text: 'データの競合が発生しました。再度お試しください。',
+          });
+          dataFetcher.invalidateIndexCache();
+          const refreshed = await dataFetcher.fetchIndex();
+          if (refreshed.ok) {
+            setGroups(refreshed.data.groups);
+            setCachedIndex(refreshed.data);
+          }
+          return;
+        }
+
         // ローカル状態を更新
         setSessions((prev) =>
           prev.map((session) => {
@@ -706,6 +724,23 @@ export function AdminPage() {
 
         if (!result.allSucceeded) {
           setSessionMessage({ type: 'error', text: 'メンバーの追加に失敗しました' });
+          return null;
+        }
+
+        // indexUpdater が null を返した場合、index.json の書き込みがスキップされる（楽観ロック競合）
+        const indexWritten = result.results.some(
+          (r) => r.path === 'data/index.json' && r.success
+        );
+        if (!indexWritten) {
+          setSessionMessage({
+            type: 'error',
+            text: 'データの競合が発生しました。再度お試しください。',
+          });
+          dataFetcher.invalidateIndexCache();
+          const refreshed = await dataFetcher.fetchIndex();
+          if (refreshed.ok) {
+            setCachedIndex(refreshed.data);
+          }
           return null;
         }
 

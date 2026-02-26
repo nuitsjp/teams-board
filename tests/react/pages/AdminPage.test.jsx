@@ -1711,11 +1711,11 @@ describe('AdminPage — セッション名管理', () => {
         const conflictIndex = createV2Index({ version: 999 });
         indexUpdaterResult = options.indexUpdater(conflictIndex);
       }
+      // indexUpdater が null を返した場合、index.json の書き込みはスキップされる
       return {
         allSucceeded: true,
         results: [
           { path: `data/sessions/${sessionId}/1.json`, success: true },
-          { path: 'data/index.json', success: true },
         ],
       };
     });
@@ -1744,6 +1744,14 @@ describe('AdminPage — セッション名管理', () => {
     });
 
     expect(indexUpdaterResult).toBeNull();
+
+    // 競合時のエラーメッセージが表示される
+    await waitFor(() => {
+      expect(screen.getByText('データの競合が発生しました。再度お試しください。')).toBeInTheDocument();
+    });
+
+    // index が再取得される
+    expect(mockFetchIndex).toHaveBeenCalledTimes(2);
   });
 
   it('未設定バッジがセッション名未設定のグループに表示される', async () => {
@@ -2208,7 +2216,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
         };
         indexUpdaterResult = options.indexUpdater(latestIndex);
       }
-      return { allSucceeded: true, results: [] };
+      return { allSucceeded: true, results: [{ path: 'data/index.json', success: true }] };
     });
 
     render(
@@ -2256,6 +2264,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
         });
         indexUpdaterResult = options.indexUpdater(conflictIndex);
       }
+      // indexUpdater が null を返した場合、index.json の書き込みはスキップされる
       return { allSucceeded: true, results: [] };
     });
 
@@ -2281,5 +2290,13 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     });
 
     expect(indexUpdaterResult).toBeNull();
+
+    // 競合時のエラーメッセージが表示される
+    await waitFor(() => {
+      expect(screen.getByText('データの競合が発生しました。再度お試しください。')).toBeInTheDocument();
+    });
+
+    // index が再取得される
+    expect(mockFetchIndex).toHaveBeenCalledTimes(2);
   });
 });
