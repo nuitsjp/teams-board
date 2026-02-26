@@ -255,7 +255,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     await expect(expandedTables).toHaveCount(0);
   });
 
-  test('グループが1つのみのメンバーではデフォルトで展開されること', async ({ page }) => {
+  test('グループが1つのみのメンバーでも初期状態でアコーディオンが閉じていること', async ({ page }) => {
     const index = await fetchIndex();
     const member = index.members.find(
       (candidate) => getMemberGroups(index, candidate).length === 1
@@ -269,9 +269,8 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
     // グループ名が表示される（画面準備完了を確認）
     await expect(page.getByRole('heading', { name: memberGroups[0].name, level: 3 })).toBeVisible();
 
-    // 単一グループのメンバーでは初期状態でテーブルが表示されている
-    await expect(page.getByRole('heading', { name: memberGroups[0].name, level: 3 })).toBeVisible();
-    await expect(page.locator('[data-section="attendance"] .accordion-panel[data-expanded="true"] table')).toHaveCount(1);
+    // 全アコーディオンがデフォルトで閉じている
+    await expect(page.locator('[data-section="attendance"] .accordion-panel[data-expanded="true"] table')).toHaveCount(0);
   });
 
   test('複数のグループカードを同時に展開できること', async ({ page }) => {

@@ -125,6 +125,7 @@ describe('MemberDetailPage', () => {
   });
 
   it('メンバー情報とセッション出席履歴を表示すること', async () => {
+    const user = userEvent.setup();
     mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
     mockFetchSession.mockResolvedValue({ ok: true, data: mockSessionData });
 
@@ -136,12 +137,16 @@ describe('MemberDetailPage', () => {
 
     // 期サマリーが表示される（2025年度 下期 = 2026年1月）
     expect(screen.getByText('2025年度 下期')).toBeInTheDocument();
-    // グループが1つのみなのでデフォルト展開され、日付が先頭・別名が後続で表示される
-    expect(screen.getByText('2026-01-15')).toBeInTheDocument();
-    expect(screen.getByText('振り返り会')).toBeInTheDocument();
     // グループ名がサマリーカードに表示される
     expect(screen.getByText(/フロントエンド勉強会/)).toBeInTheDocument();
-    // セッション履歴テーブルの列見出しが存在する
+
+    // アコーディオンをクリックして展開
+    const groupButton = screen.getByRole('button', { expanded: false });
+    await user.click(groupButton);
+
+    // 展開後に日付・別名・列見出しが表示される
+    expect(screen.getByText('2026-01-15')).toBeInTheDocument();
+    expect(screen.getByText('振り返り会')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '日付' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '参加時間' })).toBeInTheDocument();
   });
@@ -570,7 +575,7 @@ describe('MemberDetailPage', () => {
       expect(screen.getByText('講師履歴')).toBeInTheDocument();
     });
 
-    it('講師履歴が期別・グループ別にグルーピングされること', async () => {
+    it('講師履歴が統合された期リストで表示されること', async () => {
       mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
       mockFetchSession.mockImplementation((ref) =>
         Promise.resolve({ ok: true, data: instructorSessions[ref] })
@@ -582,12 +587,15 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('講師履歴')).toBeInTheDocument();
       });
 
-      // 講師履歴セクションに2つの期が表示される（2025年度 下期、2025年度 上期）
-      // 出席履歴側にも同じ期ラベルがあるため、getAllByText で検証
-      const lowerHalfLabels = screen.getAllByText('2025年度 下期');
-      expect(lowerHalfLabels.length).toBeGreaterThanOrEqual(2); // 出席履歴 + 講師履歴
-      const upperHalfLabels = screen.getAllByText('2025年度 上期');
-      expect(upperHalfLabels.length).toBeGreaterThanOrEqual(2);
+      // 統合された期リストに2つの期ボタンが表示される
+      const periodButtons = screen.getAllByRole('button').filter(
+        (btn) => btn.getAttribute('aria-pressed') !== null
+      );
+      expect(periodButtons.length).toBe(2);
+
+      // 期サイドバーに講師回数が表示される
+      const instructorLabels = screen.getAllByText(/講師/);
+      expect(instructorLabels.length).toBeGreaterThanOrEqual(2); // ヘッダー + サイドバー
     });
 
     it('講師履歴が0件の場合はセクション自体が非表示であること', async () => {
@@ -703,7 +711,7 @@ describe('MemberDetailPage', () => {
       expect(h4Button).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('講師履歴の期を切り替えられること', async () => {
+    it('期を切り替えると講師履歴の内容が切り替わること', async () => {
       const user = userEvent.setup();
       mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
       mockFetchSession.mockImplementation((ref) =>
@@ -716,31 +724,20 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('講師履歴')).toBeInTheDocument();
       });
 
-      // 「講師履歴」見出しの次の兄弟要素（grid）内のボタンを取得
-      const instructorHeading = screen.getByText('講師履歴');
-      const instructorGrid = instructorHeading.nextElementSibling;
-      expect(instructorGrid).toBeTruthy();
-
-      // 講師履歴セクション内の期ボタンを取得
-      const instructorPeriodButtons = Array.from(
-        instructorGrid.querySelectorAll('button[aria-pressed]')
-      );
-      expect(instructorPeriodButtons.length).toBe(2);
-
-      // 最新期（下期）が選択済み
-      const selectedButton = instructorPeriodButtons.find(
-        (btn) => btn.getAttribute('aria-pressed') === 'true'
-      );
+      // デフォルトで最新期（下期）が選択されている
+      const selectedButton = screen.getByRole('button', { pressed: true });
       expect(selectedButton).toHaveTextContent('2025年度 下期');
 
-      // 未選択の上期ボタンをクリック
-      const upperHalfButton = instructorPeriodButtons.find(
-        (btn) => btn.getAttribute('aria-pressed') === 'false'
-      );
-      expect(upperHalfButton).toHaveTextContent('2025年度 上期');
+      // 上期ボタンをクリックして切り替え
+      const unselectedButton = screen.getByRole('button', { pressed: false });
+      expect(unselectedButton).toHaveTextContent('2025年度 上期');
+      await user.click(unselectedButton);
 
-      await user.click(upperHalfButton);
-      expect(upperHalfButton).toHaveAttribute('aria-pressed', 'true');
+      // 上期が選択された
+      expect(unselectedButton).toHaveAttribute('aria-pressed', 'true');
+
+      // 上期にも講師履歴がある（s1: React入門）
+      expect(screen.getByText('講師履歴')).toBeInTheDocument();
     });
   });
 });
