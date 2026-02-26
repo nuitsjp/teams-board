@@ -621,5 +621,126 @@ describe('MemberDetailPage', () => {
       // ヘッダーに講師回数が表示されない
       expect(screen.queryByText(/講師/)).not.toBeInTheDocument();
     });
+
+    it('講師履歴のグループアコーディオンを展開・折りたたみできること', async () => {
+      const user = userEvent.setup();
+      // 上期に2グループの講師履歴があるデータ
+      const multiGroupInstructorIndex = {
+        schemaVersion: 2,
+        version: 1,
+        groups: [
+          {
+            id: 'g1',
+            name: 'フロントエンド勉強会',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['s1/0'],
+          },
+          {
+            id: 'g2',
+            name: 'TypeScript読書会',
+            totalDurationSeconds: 1800,
+            sessionRevisions: ['s3/0'],
+          },
+        ],
+        members: [
+          {
+            id: 'm1',
+            name: '佐藤 一郎',
+            totalDurationSeconds: 5400,
+            sessionRevisions: ['s1/0', 's3/0'],
+          },
+        ],
+        updatedAt: '2026-01-01T00:00:00Z',
+      };
+      const multiGroupInstructorSessions = {
+        's1/0': {
+          sessionId: 's1',
+          revision: 0,
+          title: 'React入門',
+          startedAt: '2025-06-15T19:00:00',
+          endedAt: null,
+          attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
+          instructors: ['m1'],
+          createdAt: '2025-06-15T00:00:00.000Z',
+        },
+        's3/0': {
+          sessionId: 's3',
+          revision: 0,
+          title: 'TS基礎',
+          startedAt: '2025-05-10T19:00:00',
+          endedAt: null,
+          attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+          instructors: ['m1'],
+          createdAt: '2025-05-10T00:00:00.000Z',
+        },
+      };
+
+      mockFetchIndex.mockResolvedValue({ ok: true, data: multiGroupInstructorIndex });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: multiGroupInstructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('講師履歴')).toBeInTheDocument();
+      });
+
+      // 講師履歴セクションのグループアコーディオンボタン（h4）を取得
+      const instructorGroupButtons = screen.getAllByRole('button', { expanded: false });
+      const h4Button = instructorGroupButtons.find((btn) => {
+        const h4 = btn.querySelector('h4');
+        return h4 && h4.textContent === 'フロントエンド勉強会';
+      });
+      expect(h4Button).toBeTruthy();
+
+      // クリックして展開
+      await user.click(h4Button);
+      expect(h4Button).toHaveAttribute('aria-expanded', 'true');
+
+      // 再クリックで折りたたみ
+      await user.click(h4Button);
+      expect(h4Button).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('講師履歴の期を切り替えられること', async () => {
+      const user = userEvent.setup();
+      mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: instructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('講師履歴')).toBeInTheDocument();
+      });
+
+      // 「講師履歴」見出しの次の兄弟要素（grid）内のボタンを取得
+      const instructorHeading = screen.getByText('講師履歴');
+      const instructorGrid = instructorHeading.nextElementSibling;
+      expect(instructorGrid).toBeTruthy();
+
+      // 講師履歴セクション内の期ボタンを取得
+      const instructorPeriodButtons = Array.from(
+        instructorGrid.querySelectorAll('button[aria-pressed]')
+      );
+      expect(instructorPeriodButtons.length).toBe(2);
+
+      // 最新期（下期）が選択済み
+      const selectedButton = instructorPeriodButtons.find(
+        (btn) => btn.getAttribute('aria-pressed') === 'true'
+      );
+      expect(selectedButton).toHaveTextContent('2025年度 下期');
+
+      // 未選択の上期ボタンをクリック
+      const upperHalfButton = instructorPeriodButtons.find(
+        (btn) => btn.getAttribute('aria-pressed') === 'false'
+      );
+      expect(upperHalfButton).toHaveTextContent('2025年度 上期');
+
+      await user.click(upperHalfButton);
+      expect(upperHalfButton).toHaveAttribute('aria-pressed', 'true');
+    });
   });
 });
