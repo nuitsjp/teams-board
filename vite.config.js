@@ -126,6 +126,12 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
+  server: {
+    watch: {
+      // dev-fixtures/data/ への書き込みで Vite がフルリロードしないよう除外
+      ignored: ['**/dev-fixtures/data/**'],
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
