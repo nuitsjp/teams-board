@@ -487,4 +487,139 @@ describe('MemberDetailPage', () => {
     expect(screen.getByText('統合先グループ')).toBeInTheDocument();
     expect(screen.queryByText('不明')).not.toBeInTheDocument();
   });
+
+  describe('講師履歴', () => {
+    const instructorIndexData = {
+      schemaVersion: 2,
+      version: 1,
+      groups: [
+        {
+          id: 'g1',
+          name: 'フロントエンド勉強会',
+          totalDurationSeconds: 7200,
+          sessionRevisions: ['s1/0', 's2/0'],
+        },
+        {
+          id: 'g2',
+          name: 'TypeScript読書会',
+          totalDurationSeconds: 3600,
+          sessionRevisions: ['s3/0'],
+        },
+      ],
+      members: [
+        {
+          id: 'm1',
+          name: '佐藤 一郎',
+          totalDurationSeconds: 9000,
+          sessionRevisions: ['s1/0', 's2/0', 's3/0'],
+        },
+      ],
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+
+    const instructorSessions = {
+      's1/0': {
+        sessionId: 's1',
+        revision: 0,
+        title: 'React入門',
+        startedAt: '2025-06-15T19:00:00',
+        endedAt: null,
+        attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
+        instructors: ['m1'],
+        createdAt: '2025-06-15T00:00:00.000Z',
+      },
+      's2/0': {
+        sessionId: 's2',
+        revision: 0,
+        title: '',
+        startedAt: '2026-01-20T19:00:00',
+        endedAt: null,
+        attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
+        instructors: ['m1'],
+        createdAt: '2026-01-20T00:00:00.000Z',
+      },
+      's3/0': {
+        sessionId: 's3',
+        revision: 0,
+        title: '',
+        startedAt: '2025-05-10T19:00:00',
+        endedAt: null,
+        attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+        instructors: [],
+        createdAt: '2025-05-10T00:00:00.000Z',
+      },
+    };
+
+    it('講師履歴セクションとヘッダーの講師回数が表示されること', async () => {
+      mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: instructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+      });
+
+      // ヘッダーカードに講師回数が表示される
+      const instructorCountElements = screen.getAllByText(/講師/);
+      expect(instructorCountElements.length).toBeGreaterThanOrEqual(1);
+
+      // 講師履歴セクション見出しが表示される
+      expect(screen.getByText('講師履歴')).toBeInTheDocument();
+    });
+
+    it('講師履歴が期別・グループ別にグルーピングされること', async () => {
+      mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: instructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('講師履歴')).toBeInTheDocument();
+      });
+
+      // 講師履歴セクションに2つの期が表示される（2025年度 下期、2025年度 上期）
+      // 出席履歴側にも同じ期ラベルがあるため、getAllByText で検証
+      const lowerHalfLabels = screen.getAllByText('2025年度 下期');
+      expect(lowerHalfLabels.length).toBeGreaterThanOrEqual(2); // 出席履歴 + 講師履歴
+      const upperHalfLabels = screen.getAllByText('2025年度 上期');
+      expect(upperHalfLabels.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('講師履歴が0件の場合はセクション自体が非表示であること', async () => {
+      const noInstructorSessions = {
+        's1/0': {
+          ...instructorSessions['s1/0'],
+          instructors: [],
+        },
+        's2/0': {
+          ...instructorSessions['s2/0'],
+          instructors: [],
+        },
+        's3/0': {
+          ...instructorSessions['s3/0'],
+          instructors: [],
+        },
+      };
+      mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: noInstructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+      });
+
+      // 講師履歴セクションが表示されない
+      expect(screen.queryByText('講師履歴')).not.toBeInTheDocument();
+      // ヘッダーに講師回数が表示されない
+      expect(screen.queryByText(/講師/)).not.toBeInTheDocument();
+    });
+  });
 });
