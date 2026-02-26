@@ -531,6 +531,7 @@ export function AdminPage() {
 
   // セッション保存処理（V2: 新リビジョンを作成しセッションファイルを追記）
   const handleSaveSession = useCallback(
+    /* v8 ignore next -- SessionEditorPanel が常に3引数で呼ぶためデフォルト値には到達しない */
     async (sessionRef, name, instructors = []) => {
       const target = sessions.find((session) => session._ref === sessionRef);
       if (!target) return;
@@ -657,6 +658,7 @@ export function AdminPage() {
   // 新規メンバー追加ハンドラ（講師の手入力用）
   const handleAddNewMember = useCallback(
     async (name) => {
+      /* v8 ignore next -- groups ロード後にのみ UI から呼ばれるため cachedIndex は常に存在 */
       if (!cachedIndex) return null;
 
       const { index: newIndex, memberId, error } = indexEditor.addMember(cachedIndex, name);
@@ -938,6 +940,7 @@ export function AdminPage() {
                 onSave={handleSaveSession}
                 saving={isSessionOperationDisabled}
                 message={sessionMessage}
+                /* v8 ignore next 4 -- groups ロード後にのみ到達するため cachedIndex は常に存在 */
                 members={cachedIndex?.members ?? []}
                 instructorIds={
                   selectedSessionRef ? (instructorInputs[selectedSessionRef] ?? []) : []

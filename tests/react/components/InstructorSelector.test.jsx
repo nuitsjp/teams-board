@@ -242,4 +242,83 @@ describe('InstructorSelector', () => {
 
         expect(screen.getByText('該当するメンバーがありません')).toBeInTheDocument();
     });
+
+    it('IME 入力中は Escape キーが無視される', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <InstructorSelector
+                members={defaultMembers}
+                selectedInstructorIds={[]}
+                onInstructorChange={vi.fn()}
+                onAddNewMember={vi.fn()}
+            />
+        );
+
+        const combobox = screen.getByRole('combobox');
+        await user.click(combobox);
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+        // IME 入力中の Escape はドロップダウンを閉じない
+        combobox.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, isComposing: true })
+        );
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
+
+    it('ドロップダウンが既に開いている状態で入力しても正常に動作する', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <InstructorSelector
+                members={defaultMembers}
+                selectedInstructorIds={[]}
+                onInstructorChange={vi.fn()}
+                onAddNewMember={vi.fn()}
+            />
+        );
+
+        await user.click(screen.getByRole('combobox'));
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+        // ドロップダウンが開いている状態で入力
+        await user.type(screen.getByRole('combobox'), 'Suzuki');
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+        expect(screen.getByText('Suzuki Taro')).toBeInTheDocument();
+    });
+
+    it('選択済み講師の ID がメンバーに見つからない場合 ID がそのまま表示される', () => {
+        render(
+            <InstructorSelector
+                members={defaultMembers}
+                selectedInstructorIds={['unknown-id']}
+                onInstructorChange={vi.fn()}
+                onAddNewMember={vi.fn()}
+            />
+        );
+
+        expect(screen.getByText('unknown-id')).toBeInTheDocument();
+        expect(screen.getByLabelText('unknown-id を削除')).toBeInTheDocument();
+    });
+
+    it('onAddNewMember が null を返した場合に onInstructorChange が呼ばれない', async () => {
+        const user = userEvent.setup();
+        const onAddNewMember = vi.fn().mockResolvedValue(null);
+        const onInstructorChange = vi.fn();
+
+        render(
+            <InstructorSelector
+                members={defaultMembers}
+                selectedInstructorIds={[]}
+                onInstructorChange={onInstructorChange}
+                onAddNewMember={onAddNewMember}
+            />
+        );
+
+        await user.type(screen.getByRole('combobox'), '新しい講師');
+        await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
+
+        expect(onAddNewMember).toHaveBeenCalledWith('新しい講師');
+        expect(onInstructorChange).not.toHaveBeenCalled();
+    });
 });
