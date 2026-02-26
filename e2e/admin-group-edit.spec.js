@@ -16,12 +16,12 @@ test.describe('管理者パネル — グループ名編集', () => {
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションの見出しが表示されること
-    await expect(page.getByRole('heading', { name: 'グループ管理' })).toBeVisible();
+    // グループ・セッション管理セクションの見出しが表示されること
+    await expect(page.getByRole('heading', { name: 'グループ・セッション管理' })).toBeVisible();
 
     // 説明文が表示されること
     await expect(
-      page.getByText('グループ名編集と複数グループ統合ができます（グループIDは変更されません）')
+      page.getByText('グループの編集・統合と、セッション名の管理ができます')
     ).toBeVisible();
   });
 
@@ -31,15 +31,10 @@ test.describe('管理者パネル — グループ名編集', () => {
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションまでスクロール
-    await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
+    // グループ・セッション管理セクションまでスクロール
+    await page.getByRole('heading', { name: 'グループ・セッション管理' }).scrollIntoViewIfNeeded();
 
-    // テーブルヘッダーが表示されること
-    await expect(page.getByRole('columnheader', { name: 'グループID' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'グループ名' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: '総学習時間' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'セッション数' })).toBeVisible();
-
+    // グループ名が表示されていること
     const index = await fetchIndex();
     const groupNames = index.groups.map((group) => group.name).slice(0, 2);
     for (const name of groupNames) {
@@ -53,8 +48,8 @@ test.describe('管理者パネル — グループ名編集', () => {
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションまでスクロール
-    await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
+    // グループ・セッション管理セクションまでスクロール
+    await page.getByRole('heading', { name: 'グループ・セッション管理' }).scrollIntoViewIfNeeded();
 
     // 編集ボタンが存在すること（少なくとも1つ）
     const editButtons = page.getByTitle('グループ名を編集');
@@ -67,8 +62,8 @@ test.describe('管理者パネル — グループ名編集', () => {
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションまでスクロール
-    await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
+    // グループ・セッション管理セクションまでスクロール
+    await page.getByRole('heading', { name: 'グループ・セッション管理' }).scrollIntoViewIfNeeded();
 
     // 最初の編集ボタンをクリック
     const editButtons = page.getByTitle('グループ名を編集');
@@ -90,8 +85,8 @@ test.describe('管理者パネル — グループ名編集', () => {
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションまでスクロール
-    await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
+    // グループ・セッション管理セクションまでスクロール
+    await page.getByRole('heading', { name: 'グループ・セッション管理' }).scrollIntoViewIfNeeded();
 
     // 編集ボタンをクリック
     const editButtons = page.getByTitle('グループ名を編集');
@@ -114,8 +109,8 @@ test.describe('管理者パネル — グループ名編集', () => {
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションまでスクロール
-    await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
+    // グループ・セッション管理セクションまでスクロール
+    await page.getByRole('heading', { name: 'グループ・セッション管理' }).scrollIntoViewIfNeeded();
 
     // 編集ボタンをクリック
     const editButtons = page.getByTitle('グループ名を編集');
@@ -138,8 +133,8 @@ test.describe('管理者パネル — グループ名編集', () => {
     // 管理者パネル見出しで画面準備完了を確認
     await expect(page.getByRole('heading', { name: '管理者パネル' })).toBeVisible();
 
-    // グループ管理セクションまでスクロール
-    await page.getByRole('heading', { name: 'グループ管理' }).scrollIntoViewIfNeeded();
+    // グループ・セッション管理セクションまでスクロール
+    await page.getByRole('heading', { name: 'グループ・セッション管理' }).scrollIntoViewIfNeeded();
 
     // 編集ボタンをクリック
     const editButtons = page.getByTitle('グループ名を編集');

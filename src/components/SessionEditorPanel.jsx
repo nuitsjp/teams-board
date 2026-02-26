@@ -1,9 +1,10 @@
-import { Save, AlertCircle, CheckCircle, MousePointerClick, GraduationCap } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, MousePointerClick } from 'lucide-react';
+import { InstructorSelector } from './InstructorSelector.jsx';
 
 const MAX_SESSION_NAME_LENGTH = 256;
 
 /**
- * セッション編集パネル — 選択されたセッションの名前編集・講師編集（将来）を行うパネル
+ * セッション編集パネル — 選択されたセッションの名前編集・講師編集を行うパネル
  */
 export function SessionEditorPanel({
     session,
@@ -12,6 +13,10 @@ export function SessionEditorPanel({
     onSave,
     saving,
     message,
+    members = [],
+    instructorIds = [],
+    onInstructorChange,
+    onAddNewMember,
 }) {
     // 未選択時のプレースホルダ
     if (!session) {
@@ -29,7 +34,7 @@ export function SessionEditorPanel({
     }
 
     const handleSave = () => {
-        onSave(session._ref, sessionName);
+        onSave(session._ref, sessionName, instructorIds);
     };
 
     const handleKeyDown = (event) => {
@@ -102,16 +107,14 @@ export function SessionEditorPanel({
                 </div>
             </div>
 
-            {/* 講師編集（将来実装の枠） */}
-            <div className="pt-4 border-t border-border-light">
-                <div className="flex items-center gap-2 mb-2">
-                    <GraduationCap className="w-4 h-4 text-text-muted" aria-hidden="true" />
-                    <span className="text-sm font-medium text-text-primary">講師</span>
-                </div>
-                <p className="text-xs text-text-muted">
-                    この機能は今後のアップデートで実装予定です
-                </p>
-            </div>
+            {/* 講師編集 */}
+            <InstructorSelector
+                members={members}
+                selectedInstructorIds={instructorIds}
+                onInstructorChange={onInstructorChange}
+                onAddNewMember={onAddNewMember}
+                disabled={saving}
+            />
         </div>
     );
 }

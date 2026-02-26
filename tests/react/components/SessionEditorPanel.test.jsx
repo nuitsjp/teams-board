@@ -7,17 +7,31 @@ describe('SessionEditorPanel', () => {
         _ref: 'session1/0',
         startedAt: '2026-02-08T19:00:00',
         title: 'テストセッション',
+        instructors: ['member-1'],
+    };
+
+    const defaultMembers = [
+        { id: 'member-1', name: 'Suzuki Taro' },
+        { id: 'member-2', name: 'Tanaka Koji' },
+    ];
+
+    const defaultProps = {
+        sessionName: '',
+        onSessionNameChange: vi.fn(),
+        onSave: vi.fn(),
+        saving: false,
+        message: { type: '', text: '' },
+        members: defaultMembers,
+        instructorIds: [],
+        onInstructorChange: vi.fn(),
+        onAddNewMember: vi.fn(),
     };
 
     it('セッション未選択時にプレースホルダが表示される', () => {
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={null}
-                sessionName=""
-                onSessionNameChange={vi.fn()}
-                onSave={vi.fn()}
-                saving={false}
-                message={{ type: '', text: '' }}
             />
         );
 
@@ -29,12 +43,9 @@ describe('SessionEditorPanel', () => {
     it('セッション選択時に編集フォームが表示される', () => {
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
                 sessionName="テスト名"
-                onSessionNameChange={vi.fn()}
-                onSave={vi.fn()}
-                saving={false}
-                message={{ type: '', text: '' }}
             />
         );
 
@@ -42,17 +53,13 @@ describe('SessionEditorPanel', () => {
         expect(screen.getByText('2026-02-08')).toBeInTheDocument();
         expect(screen.getByDisplayValue('テスト名')).toBeInTheDocument();
         expect(screen.getByText('講師')).toBeInTheDocument();
-        expect(screen.getByText('この機能は今後のアップデートで実装予定です')).toBeInTheDocument();
     });
 
     it('startedAt が null の場合「日付なし」が表示される', () => {
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={{ _ref: 'session1/0', startedAt: null }}
-                sessionName=""
-                onSessionNameChange={vi.fn()}
-                onSave={vi.fn()}
-                saving={false}
                 message={null}
             />
         );
@@ -66,17 +73,16 @@ describe('SessionEditorPanel', () => {
 
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
                 sessionName="新しい名前"
-                onSessionNameChange={vi.fn()}
                 onSave={onSave}
-                saving={false}
-                message={{ type: '', text: '' }}
+                instructorIds={['member-1']}
             />
         );
 
         await user.click(screen.getByRole('button', { name: '保存' }));
-        expect(onSave).toHaveBeenCalledWith('session1/0', '新しい名前');
+        expect(onSave).toHaveBeenCalledWith('session1/0', '新しい名前', ['member-1']);
     });
 
     it('Enter キーで onSave が呼ばれる', async () => {
@@ -85,19 +91,18 @@ describe('SessionEditorPanel', () => {
 
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
                 sessionName="テスト"
-                onSessionNameChange={vi.fn()}
                 onSave={onSave}
-                saving={false}
-                message={{ type: '', text: '' }}
+                instructorIds={[]}
             />
         );
 
-        const input = screen.getByRole('textbox');
+        const input = screen.getByLabelText(/のセッション名/);
         await user.click(input);
         await user.keyboard('{Enter}');
-        expect(onSave).toHaveBeenCalledWith('session1/0', 'テスト');
+        expect(onSave).toHaveBeenCalledWith('session1/0', 'テスト', []);
     });
 
     it('Enter 以外のキーでは onSave が呼ばれない', async () => {
@@ -106,16 +111,14 @@ describe('SessionEditorPanel', () => {
 
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
                 sessionName="テスト"
-                onSessionNameChange={vi.fn()}
                 onSave={onSave}
-                saving={false}
-                message={{ type: '', text: '' }}
             />
         );
 
-        const input = screen.getByRole('textbox');
+        const input = screen.getByLabelText(/のセッション名/);
         await user.click(input);
         await user.keyboard('a');
         expect(onSave).not.toHaveBeenCalled();
@@ -127,16 +130,14 @@ describe('SessionEditorPanel', () => {
 
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
                 sessionName="テスト"
-                onSessionNameChange={vi.fn()}
                 onSave={onSave}
-                saving={false}
-                message={{ type: '', text: '' }}
             />
         );
 
-        const input = screen.getByRole('textbox');
+        const input = screen.getByLabelText(/のセッション名/);
         fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
         expect(onSave).not.toHaveBeenCalled();
     });
@@ -144,11 +145,8 @@ describe('SessionEditorPanel', () => {
     it('成功メッセージが表示される', () => {
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
-                sessionName=""
-                onSessionNameChange={vi.fn()}
-                onSave={vi.fn()}
-                saving={false}
                 message={{ type: 'success', text: '保存しました' }}
             />
         );
@@ -159,11 +157,8 @@ describe('SessionEditorPanel', () => {
     it('エラーメッセージが表示される', () => {
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
-                sessionName=""
-                onSessionNameChange={vi.fn()}
-                onSave={vi.fn()}
-                saving={false}
                 message={{ type: 'error', text: '保存に失敗しました' }}
             />
         );
@@ -174,16 +169,14 @@ describe('SessionEditorPanel', () => {
     it('saving 中は入力とボタンが無効になる', () => {
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
                 sessionName="テスト"
-                onSessionNameChange={vi.fn()}
-                onSave={vi.fn()}
                 saving={true}
-                message={{ type: '', text: '' }}
             />
         );
 
-        expect(screen.getByRole('textbox')).toBeDisabled();
+        expect(screen.getByLabelText(/のセッション名/)).toBeDisabled();
         expect(screen.getByRole('button', { name: '保存' })).toBeDisabled();
     });
 
@@ -193,16 +186,28 @@ describe('SessionEditorPanel', () => {
 
         render(
             <SessionEditorPanel
+                {...defaultProps}
                 session={defaultSession}
-                sessionName=""
                 onSessionNameChange={onChange}
-                onSave={vi.fn()}
-                saving={false}
-                message={{ type: '', text: '' }}
             />
         );
 
-        await user.type(screen.getByRole('textbox'), 'A');
+        await user.type(screen.getByLabelText(/のセッション名/), 'A');
         expect(onChange).toHaveBeenCalledWith('A');
+    });
+
+    it('講師セクションに InstructorSelector が表示される', () => {
+        render(
+            <SessionEditorPanel
+                {...defaultProps}
+                session={defaultSession}
+                members={[{ id: 'member-1', name: 'Suzuki Taro' }]}
+                instructorIds={['member-1']}
+            />
+        );
+
+        expect(screen.getByText('講師')).toBeInTheDocument();
+        expect(screen.getByText('Suzuki Taro')).toBeInTheDocument();
+        expect(screen.getByLabelText('講師を検索')).toBeInTheDocument();
     });
 });
