@@ -14,6 +14,7 @@ import {
     Clock,
     Calendar,
     Users,
+    GraduationCap,
     ChevronDown,
     ChevronRight,
     Trash2,
@@ -164,6 +165,11 @@ export function GroupDetailPage() {
                 const periodEntry = periodMap.get(period.label);
                 periodEntry.totalSessions += 1;
                 periodEntry.totalDurationSeconds += totalDurationSeconds;
+                // 講師 ULID 配列からメンバー名を解決
+                const instructorNames = (session.instructors || [])
+                    .map((id) => memberNameMap.get(id))
+                    .filter(Boolean);
+
                 periodEntry.sessions.push({
                     sessionId: session.sessionId,
                     sessionRef,
@@ -172,6 +178,7 @@ export function GroupDetailPage() {
                     attendeeCount: attendees.length,
                     totalDurationSeconds,
                     attendees,
+                    instructorNames,
                 });
             }
 
@@ -502,6 +509,19 @@ export function GroupDetailPage() {
                                                             );
                                                         })()}
                                                     </h3>
+                                                    {session.instructorNames.length > 0 && (
+                                                        <div className="flex items-center gap-1.5 mt-0.5 text-sm text-text-secondary">
+                                                            <GraduationCap
+                                                                className="w-3.5 h-3.5 text-text-muted"
+                                                                aria-hidden="true"
+                                                            />
+                                                            <span>
+                                                                {session.instructorNames.join(
+                                                                    '、'
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                                                         <span className="flex items-center gap-1.5">
                                                             <Users
