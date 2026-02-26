@@ -125,6 +125,7 @@ describe('MemberDetailPage', () => {
   });
 
   it('メンバー情報とセッション出席履歴を表示すること', async () => {
+    const user = userEvent.setup();
     mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
     mockFetchSession.mockResolvedValue({ ok: true, data: mockSessionData });
 
@@ -136,12 +137,16 @@ describe('MemberDetailPage', () => {
 
     // 期サマリーが表示される（2025年度 下期 = 2026年1月）
     expect(screen.getByText('2025年度 下期')).toBeInTheDocument();
-    // グループが1つのみなのでデフォルト展開され、日付が先頭・別名が後続で表示される
-    expect(screen.getByText('2026-01-15')).toBeInTheDocument();
-    expect(screen.getByText('振り返り会')).toBeInTheDocument();
     // グループ名がサマリーカードに表示される
     expect(screen.getByText(/フロントエンド勉強会/)).toBeInTheDocument();
-    // セッション履歴テーブルの列見出しが存在する
+
+    // アコーディオンをクリックして展開
+    const groupButton = screen.getByRole('button', { expanded: false });
+    await user.click(groupButton);
+
+    // 展開後に日付・別名・列見出しが表示される
+    expect(screen.getByText('2026-01-15')).toBeInTheDocument();
+    expect(screen.getByText('振り返り会')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '日付' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '参加時間' })).toBeInTheDocument();
   });
@@ -486,5 +491,253 @@ describe('MemberDetailPage', () => {
 
     expect(screen.getByText('統合先グループ')).toBeInTheDocument();
     expect(screen.queryByText('不明')).not.toBeInTheDocument();
+  });
+
+  describe('講師履歴', () => {
+    const instructorIndexData = {
+      schemaVersion: 2,
+      version: 1,
+      groups: [
+        {
+          id: 'g1',
+          name: 'フロントエンド勉強会',
+          totalDurationSeconds: 7200,
+          sessionRevisions: ['s1/0', 's2/0'],
+        },
+        {
+          id: 'g2',
+          name: 'TypeScript読書会',
+          totalDurationSeconds: 3600,
+          sessionRevisions: ['s3/0'],
+        },
+      ],
+      members: [
+        {
+          id: 'm1',
+          name: '佐藤 一郎',
+          totalDurationSeconds: 9000,
+          sessionRevisions: ['s1/0', 's2/0', 's3/0'],
+        },
+      ],
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+
+    const instructorSessions = {
+      's1/0': {
+        sessionId: 's1',
+        revision: 0,
+        title: 'React入門',
+        startedAt: '2025-06-15T19:00:00',
+        endedAt: null,
+        attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
+        instructors: ['m1'],
+        createdAt: '2025-06-15T00:00:00.000Z',
+      },
+      's2/0': {
+        sessionId: 's2',
+        revision: 0,
+        title: '',
+        startedAt: '2026-01-20T19:00:00',
+        endedAt: null,
+        attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
+        instructors: ['m1'],
+        createdAt: '2026-01-20T00:00:00.000Z',
+      },
+      's3/0': {
+        sessionId: 's3',
+        revision: 0,
+        title: '',
+        startedAt: '2025-05-10T19:00:00',
+        endedAt: null,
+        attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+        instructors: [],
+        createdAt: '2025-05-10T00:00:00.000Z',
+      },
+    };
+
+    it('講師履歴セクションとヘッダーの講師回数が表示されること', async () => {
+      mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: instructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+      });
+
+      // ヘッダーカードに講師回数が表示される
+      const instructorCountElements = screen.getAllByText(/講師/);
+      expect(instructorCountElements.length).toBeGreaterThanOrEqual(1);
+
+      // 講師履歴セクション見出しが表示される
+      expect(screen.getByText('講師履歴')).toBeInTheDocument();
+    });
+
+    it('講師履歴が統合された期リストで表示されること', async () => {
+      mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: instructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('講師履歴')).toBeInTheDocument();
+      });
+
+      // 統合された期リストに2つの期ボタンが表示される
+      const periodButtons = screen.getAllByRole('button').filter(
+        (btn) => btn.getAttribute('aria-pressed') !== null
+      );
+      expect(periodButtons.length).toBe(2);
+
+      // 期サイドバーに講師回数が表示される
+      const instructorLabels = screen.getAllByText(/講師/);
+      expect(instructorLabels.length).toBeGreaterThanOrEqual(2); // ヘッダー + サイドバー
+    });
+
+    it('講師履歴が0件の場合はセクション自体が非表示であること', async () => {
+      const noInstructorSessions = {
+        's1/0': {
+          ...instructorSessions['s1/0'],
+          instructors: [],
+        },
+        's2/0': {
+          ...instructorSessions['s2/0'],
+          instructors: [],
+        },
+        's3/0': {
+          ...instructorSessions['s3/0'],
+          instructors: [],
+        },
+      };
+      mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: noInstructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+      });
+
+      // 講師履歴セクションが表示されない
+      expect(screen.queryByText('講師履歴')).not.toBeInTheDocument();
+      // ヘッダーに講師回数が表示されない
+      expect(screen.queryByText(/講師/)).not.toBeInTheDocument();
+    });
+
+    it('講師履歴のグループアコーディオンを展開・折りたたみできること', async () => {
+      const user = userEvent.setup();
+      // 上期に2グループの講師履歴があるデータ
+      const multiGroupInstructorIndex = {
+        schemaVersion: 2,
+        version: 1,
+        groups: [
+          {
+            id: 'g1',
+            name: 'フロントエンド勉強会',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['s1/0'],
+          },
+          {
+            id: 'g2',
+            name: 'TypeScript読書会',
+            totalDurationSeconds: 1800,
+            sessionRevisions: ['s3/0'],
+          },
+        ],
+        members: [
+          {
+            id: 'm1',
+            name: '佐藤 一郎',
+            totalDurationSeconds: 5400,
+            sessionRevisions: ['s1/0', 's3/0'],
+          },
+        ],
+        updatedAt: '2026-01-01T00:00:00Z',
+      };
+      const multiGroupInstructorSessions = {
+        's1/0': {
+          sessionId: 's1',
+          revision: 0,
+          title: 'React入門',
+          startedAt: '2025-06-15T19:00:00',
+          endedAt: null,
+          attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
+          instructors: ['m1'],
+          createdAt: '2025-06-15T00:00:00.000Z',
+        },
+        's3/0': {
+          sessionId: 's3',
+          revision: 0,
+          title: 'TS基礎',
+          startedAt: '2025-05-10T19:00:00',
+          endedAt: null,
+          attendances: [{ memberId: 'm1', durationSeconds: 1800 }],
+          instructors: ['m1'],
+          createdAt: '2025-05-10T00:00:00.000Z',
+        },
+      };
+
+      mockFetchIndex.mockResolvedValue({ ok: true, data: multiGroupInstructorIndex });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: multiGroupInstructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('講師履歴')).toBeInTheDocument();
+      });
+
+      // 講師履歴セクションのグループアコーディオンボタン（h4）を取得
+      const instructorGroupButtons = screen.getAllByRole('button', { expanded: false });
+      const h4Button = instructorGroupButtons.find((btn) => {
+        const h4 = btn.querySelector('h4');
+        return h4 && h4.textContent === 'フロントエンド勉強会';
+      });
+      expect(h4Button).toBeTruthy();
+
+      // クリックして展開
+      await user.click(h4Button);
+      expect(h4Button).toHaveAttribute('aria-expanded', 'true');
+
+      // 再クリックで折りたたみ
+      await user.click(h4Button);
+      expect(h4Button).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('期を切り替えると講師履歴の内容が切り替わること', async () => {
+      const user = userEvent.setup();
+      mockFetchIndex.mockResolvedValue({ ok: true, data: instructorIndexData });
+      mockFetchSession.mockImplementation((ref) =>
+        Promise.resolve({ ok: true, data: instructorSessions[ref] })
+      );
+
+      renderWithRouter('m1');
+
+      await waitFor(() => {
+        expect(screen.getByText('講師履歴')).toBeInTheDocument();
+      });
+
+      // デフォルトで最新期（下期）が選択されている
+      const selectedButton = screen.getByRole('button', { pressed: true });
+      expect(selectedButton).toHaveTextContent('2025年度 下期');
+
+      // 上期ボタンをクリックして切り替え
+      const unselectedButton = screen.getByRole('button', { pressed: false });
+      expect(unselectedButton).toHaveTextContent('2025年度 上期');
+      await user.click(unselectedButton);
+
+      // 上期が選択された
+      expect(unselectedButton).toHaveAttribute('aria-pressed', 'true');
+
+      // 上期にも講師履歴がある（s1: React入門）
+      expect(screen.getByText('講師履歴')).toBeInTheDocument();
+    });
   });
 });
