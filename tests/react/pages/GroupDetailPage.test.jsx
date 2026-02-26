@@ -96,6 +96,7 @@ const mockSessionData1 = {
     title: '',
     startedAt: '2026-01-15T19:00:00',
     endedAt: null,
+    instructors: ['m1', 'm2'],
     attendances: [
         { memberId: 'm1', durationSeconds: 1800 },
         { memberId: 'm2', durationSeconds: 1200 },
@@ -109,6 +110,7 @@ const mockSessionData2 = {
     title: '第3回 React入門',
     startedAt: '2026-01-20T19:00:00',
     endedAt: null,
+    instructors: [],
     attendances: [{ memberId: 'm2', durationSeconds: 2400 }],
     createdAt: '2026-01-20T00:00:00.000Z',
 };
@@ -119,6 +121,7 @@ const mockSessionDataSingle = {
     title: '',
     startedAt: '2026-01-18T19:00:00',
     endedAt: null,
+    instructors: [],
     attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
     createdAt: '2026-01-18T00:00:00.000Z',
 };
@@ -159,6 +162,7 @@ const mockMultiPeriodSessions = {
         title: '',
         startedAt: '2025-06-15T19:00:00',
         endedAt: null,
+        instructors: [],
         attendances: [
             { memberId: 'm1', durationSeconds: 1800 },
             { memberId: 'm2', durationSeconds: 1200 },
@@ -171,6 +175,7 @@ const mockMultiPeriodSessions = {
         title: '',
         startedAt: '2025-08-20T19:00:00',
         endedAt: null,
+        instructors: [],
         attendances: [{ memberId: 'm1', durationSeconds: 3600 }],
         createdAt: '2025-08-20T00:00:00.000Z',
     },
@@ -180,6 +185,7 @@ const mockMultiPeriodSessions = {
         title: '',
         startedAt: '2026-01-15T19:00:00',
         endedAt: null,
+        instructors: [],
         attendances: [
             { memberId: 'm1', durationSeconds: 1800 },
             { memberId: 'm2', durationSeconds: 2400 },
@@ -338,6 +344,45 @@ describe('GroupDetailPage', () => {
         await waitFor(() => {
             expect(screen.getByText('一覧へ戻る')).toBeInTheDocument();
         });
+    });
+
+    it('講師がいるセッションに講師名がカンマ区切りで表示されること', async () => {
+        mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+        mockFetchSession.mockImplementation((ref) => {
+            if (ref === 'g1-2026-01-15/0')
+                return Promise.resolve({ ok: true, data: mockSessionData1 });
+            if (ref === 'g1-2026-01-20/0')
+                return Promise.resolve({ ok: true, data: mockSessionData2 });
+            return Promise.resolve({ ok: false, error: 'not found' });
+        });
+
+        renderWithRouter('g1');
+
+        await waitFor(() => {
+            // mockSessionData1 の講師: m1=佐藤 一郎, m2=高橋 美咲
+            expect(screen.getByText('佐藤 一郎、高橋 美咲')).toBeInTheDocument();
+        });
+    });
+
+    it('講師がいないセッションには講師名が表示されないこと', async () => {
+        mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+        mockFetchSession.mockImplementation((ref) => {
+            if (ref === 'g1-2026-01-15/0')
+                return Promise.resolve({ ok: true, data: mockSessionData1 });
+            if (ref === 'g1-2026-01-20/0')
+                return Promise.resolve({ ok: true, data: mockSessionData2 });
+            return Promise.resolve({ ok: false, error: 'not found' });
+        });
+
+        renderWithRouter('g1');
+
+        await waitFor(() => {
+            expect(screen.getByText('2026-01-20')).toBeInTheDocument();
+        });
+
+        // mockSessionData2 は講師なし — 講師名テキストは1箇所のみ（mockSessionData1 分）
+        const instructorTexts = screen.queryAllByText('佐藤 一郎、高橋 美咲');
+        expect(instructorTexts).toHaveLength(1);
     });
 
     describe('期別表示', () => {
