@@ -87,6 +87,7 @@ export class IndexMerger {
             startedAt: parsedSession.startedAt,
             endedAt: parsedSession.endedAt,
             attendances: sessionAttendances,
+            instructors: [],
             createdAt: new Date().toISOString(),
         };
 

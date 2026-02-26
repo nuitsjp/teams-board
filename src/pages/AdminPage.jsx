@@ -13,7 +13,7 @@ import { IndexMerger } from '../services/index-merger.js';
 import { IndexEditor } from '../services/index-editor.js';
 import { sharedDataFetcher } from '../services/shared-data-fetcher.js';
 import { APP_CONFIG } from '../config/app-config.js';
-import { createSessionRef, parseSessionRef, sessionRefToPath } from '../services/session-ref.js';
+import { createSessionRef, sessionRefToPath } from '../services/session-ref.js';
 import {
   ArrowLeft,
   Upload,
@@ -539,22 +539,8 @@ export function AdminPage() {
       }
 
       // 新リビジョンを構築
-      const { revision } = parseSessionRef(sessionRef);
-      const newRevision = revision + 1;
-      const newRef = createSessionRef(target.sessionId, newRevision);
-      const newPath = sessionRefToPath(newRef);
-
-      const newSessionRecord = {
-        sessionId: target.sessionId,
-        revision: newRevision,
-        startedAt: target.startedAt,
-        endedAt: target.endedAt,
-        attendances: target.attendances,
-        createdAt: target.createdAt,
-      };
-      if (normalizedName.length > 0) {
-        newSessionRecord.title = normalizedName;
-      }
+      const { sessionRecord: newSessionRecord, newRef, newPath } =
+        indexEditor.createSessionRevision(sessionRef, target, { title: normalizedName });
 
       setSavingSessionId(sessionRef);
       setSessionMessage({ type: '', text: '' });

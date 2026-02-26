@@ -1,4 +1,7 @@
 // IndexEditor — DashboardIndex V2 の編集ロジック
+import { ulid } from 'ulidx';
+import { parseSessionRef, createSessionRef, sessionRefToPath } from './session-ref.js';
+
 export class IndexEditor {
     /**
      * グループ名を更新する
@@ -251,5 +254,105 @@ export class IndexEditor {
         }
 
         return null;
+    }
+
+    /**
+     * セッションの新リビジョンを作成する
+     * @param {string} sessionRef - 現在のセッション ref（例: "sessionId/revision"）
+     * @param {object} sessionData - 現在のセッションデータ
+     * @param {object} updates - 更新フィールド
+     * @param {string} [updates.title] - 新しいタイトル
+     * @param {string[]} [updates.instructors] - 講師 ID（ULID）の配列
+     * @returns {{ sessionRecord: object, newRef: string, newPath: string, error?: string }}
+     */
+    createSessionRevision(sessionRef, sessionData, updates = {}) {
+        // instructors バリデーション
+        if (updates.instructors !== undefined) {
+            if (!Array.isArray(updates.instructors)) {
+                return { sessionRecord: null, newRef: null, newPath: null, error: '講師は配列である必要があります' };
+            }
+            for (const id of updates.instructors) {
+                if (typeof id !== 'string') {
+                    return { sessionRecord: null, newRef: null, newPath: null, error: '講師IDは文字列である必要があります' };
+                }
+            }
+        }
+
+        // 新リビジョンを構築
+        const { revision } = parseSessionRef(sessionRef);
+        const newRevision = revision + 1;
+        const newRef = createSessionRef(sessionData.sessionId, newRevision);
+        const newPath = sessionRefToPath(newRef);
+
+        const sessionRecord = {
+            sessionId: sessionData.sessionId,
+            revision: newRevision,
+            startedAt: sessionData.startedAt,
+            endedAt: sessionData.endedAt,
+            attendances: sessionData.attendances,
+            instructors: sessionData.instructors ?? [],
+            createdAt: sessionData.createdAt,
+        };
+
+        // updates の適用
+        if (updates.title !== undefined) {
+            if (updates.title.length > 0) {
+                sessionRecord.title = updates.title;
+            }
+        } else if (sessionData.title) {
+            sessionRecord.title = sessionData.title;
+        }
+
+        if (updates.instructors !== undefined) {
+            sessionRecord.instructors = updates.instructors;
+        }
+
+        return { sessionRecord, newRef, newPath };
+    }
+
+    /**
+     * 新規メンバーを追加する（講師の手入力用）
+     * @param {object} currentIndex - 現在の DashboardIndex（V2）
+     * @param {string} name - メンバー名
+     * @returns {{ index: object, memberId: string, error?: string }}
+     */
+    addMember(currentIndex, name) {
+        // バリデーション
+        if (typeof name !== 'string') {
+            return { index: currentIndex, memberId: null, error: 'メンバー名は文字列である必要があります' };
+        }
+        if (name.length === 0 || name.trim().length === 0) {
+            return { index: currentIndex, memberId: null, error: 'メンバー名を入力してください' };
+        }
+        if (name.length > 256) {
+            return { index: currentIndex, memberId: null, error: 'メンバー名は256文字以内で入力してください' };
+        }
+
+        const memberId = ulid();
+        const currentVersion = currentIndex.version ?? 0;
+
+        const index = {
+            schemaVersion: 2,
+            version: currentVersion + 1,
+            updatedAt: new Date().toISOString(),
+            groups: currentIndex.groups.map((g) => ({
+                ...g,
+                sessionRevisions: [...g.sessionRevisions],
+            })),
+            members: [
+                ...currentIndex.members.map((m) => ({
+                    ...m,
+                    sessionRevisions: [...m.sessionRevisions],
+                })),
+                {
+                    id: memberId,
+                    name,
+                    totalDurationSeconds: 0,
+                    sessionRevisions: [],
+                },
+            ],
+        };
+
+        return { index, memberId };
     }
 }

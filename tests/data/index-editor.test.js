@@ -545,4 +545,182 @@ describe('IndexEditor', () => {
       );
     });
   });
+
+  describe('createSessionRevision', () => {
+    const sessionData = {
+      sessionId: 'session1',
+      startedAt: '2026-01-15T19:00:00',
+      endedAt: '2026-01-15T20:00:00',
+      attendances: [{ memberId: 'member1', durationSeconds: 3600 }],
+      instructors: ['member1'],
+      createdAt: '2026-01-15T19:00:00.000Z',
+      title: '元のタイトル',
+    };
+
+    it('正常系: title を更新して新リビジョンを作成する', () => {
+      const editor = new IndexEditor();
+      const result = editor.createSessionRevision('session1/0', sessionData, {
+        title: '新しいタイトル',
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.sessionId).toBe('session1');
+      expect(result.sessionRecord.revision).toBe(1);
+      expect(result.sessionRecord.title).toBe('新しいタイトル');
+      expect(result.sessionRecord.instructors).toEqual(['member1']);
+      expect(result.sessionRecord.attendances).toEqual(sessionData.attendances);
+      expect(result.newRef).toBe('session1/1');
+      expect(result.newPath).toBe('data/sessions/session1/1.json');
+    });
+
+    it('正常系: instructors を更新して新リビジョンを作成する', () => {
+      const editor = new IndexEditor();
+      const result = editor.createSessionRevision('session1/0', sessionData, {
+        instructors: ['member1', 'member2'],
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.instructors).toEqual(['member1', 'member2']);
+      expect(result.sessionRecord.title).toBe('元のタイトル');
+    });
+
+    it('正常系: title と instructors を同時に更新する', () => {
+      const editor = new IndexEditor();
+      const result = editor.createSessionRevision('session1/0', sessionData, {
+        title: '更新タイトル',
+        instructors: ['member2'],
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.title).toBe('更新タイトル');
+      expect(result.sessionRecord.instructors).toEqual(['member2']);
+    });
+
+    it('正常系: title を空文字にするとタイトルなしになる', () => {
+      const editor = new IndexEditor();
+      const result = editor.createSessionRevision('session1/0', sessionData, {
+        title: '',
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.title).toBeUndefined();
+    });
+
+    it('正常系: revision が正しくインクリメントされる', () => {
+      const editor = new IndexEditor();
+      const result = editor.createSessionRevision('session1/2', sessionData, {
+        title: 'テスト',
+      });
+
+      expect(result.sessionRecord.revision).toBe(3);
+      expect(result.newRef).toBe('session1/3');
+    });
+
+    it('正常系: instructors がない sessionData でもデフォルト空配列が設定される', () => {
+      const editor = new IndexEditor();
+      const dataWithoutInstructors = { ...sessionData };
+      delete dataWithoutInstructors.instructors;
+
+      const result = editor.createSessionRevision('session1/0', dataWithoutInstructors, {
+        title: 'テスト',
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.instructors).toEqual([]);
+    });
+
+    it('異常系: instructors が配列でない場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.createSessionRevision('session1/0', sessionData, {
+        instructors: 'not-array',
+      });
+
+      expect(result.error).toBe('講師は配列である必要があります');
+      expect(result.sessionRecord).toBeNull();
+    });
+
+    it('異常系: instructors の要素が文字列でない場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.createSessionRevision('session1/0', sessionData, {
+        instructors: ['member1', 123],
+      });
+
+      expect(result.error).toBe('講師IDは文字列である必要があります');
+      expect(result.sessionRecord).toBeNull();
+    });
+  });
+
+  describe('addMember', () => {
+    it('正常系: 新規メンバーを追加し、memberId を返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addMember(sampleIndex, '新しいメンバー');
+
+      expect(result.error).toBeUndefined();
+      expect(result.memberId).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+      expect(result.index.members).toHaveLength(2);
+      const newMember = result.index.members.find((m) => m.id === result.memberId);
+      expect(newMember.name).toBe('新しいメンバー');
+      expect(newMember.totalDurationSeconds).toBe(0);
+      expect(newMember.sessionRevisions).toEqual([]);
+    });
+
+    it('正常系: version がインクリメントされる', () => {
+      const editor = new IndexEditor();
+      const result = editor.addMember(sampleIndex, '新しいメンバー');
+
+      expect(result.index.version).toBe(2);
+      expect(result.index.updatedAt).not.toBe(sampleIndex.updatedAt);
+    });
+
+    it('正常系: 既存メンバーは変更されない', () => {
+      const editor = new IndexEditor();
+      const result = editor.addMember(sampleIndex, '新しいメンバー');
+
+      expect(result.index.members[0].id).toBe('member1');
+      expect(result.index.members[0].name).toBe('メンバー1');
+      expect(result.index.members[0].totalDurationSeconds).toBe(3600);
+    });
+
+    it('正常系: 入力オブジェクトは変更されない（イミュータブル性）', () => {
+      const editor = new IndexEditor();
+      const before = JSON.parse(JSON.stringify(sampleIndex));
+      editor.addMember(sampleIndex, '新しいメンバー');
+
+      expect(sampleIndex).toEqual(before);
+    });
+
+    it('異常系: 空文字の場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addMember(sampleIndex, '');
+
+      expect(result.error).toBe('メンバー名を入力してください');
+      expect(result.index).toBe(sampleIndex);
+      expect(result.memberId).toBeNull();
+    });
+
+    it('異常系: 空白のみの場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addMember(sampleIndex, '   ');
+
+      expect(result.error).toBe('メンバー名を入力してください');
+      expect(result.index).toBe(sampleIndex);
+    });
+
+    it('異常系: 256文字超過の場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const longName = 'あ'.repeat(257);
+      const result = editor.addMember(sampleIndex, longName);
+
+      expect(result.error).toBe('メンバー名は256文字以内で入力してください');
+      expect(result.index).toBe(sampleIndex);
+    });
+
+    it('異常系: 文字列でない場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addMember(sampleIndex, 123);
+
+      expect(result.error).toBe('メンバー名は文字列である必要があります');
+      expect(result.index).toBe(sampleIndex);
+    });
+  });
 });

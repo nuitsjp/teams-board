@@ -4,6 +4,22 @@ import { sessionRefToPath } from './session-ref.js';
 const DEFAULT_INDEX_TTL = 30_000;
 const DEFAULT_SESSION_TTL = 30_000;
 
+/**
+ * セッション JSON のデシリアライズ処理
+ * 存在しないフィールドにデフォルト値をセットする
+ * @param {object} data - 生のセッション JSON データ
+ * @returns {object} 正規化されたセッションデータ
+ */
+function deserializeSession(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        return { instructors: [] };
+    }
+    return {
+        ...data,
+        instructors: Array.isArray(data.instructors) ? data.instructors : [],
+    };
+}
+
 export class DataFetcher {
     /** @type {number} index.json キャッシュの TTL（ミリ秒） */
     #indexTtl;
@@ -89,9 +105,11 @@ export class DataFetcher {
         // V2 セッションは不変のためキャッシュバスター不要
         const result = await this.#fetchJsonWithDedup(cacheKey);
 
-        // 成功時のみキャッシュに保存
+        // 成功時のみキャッシュに保存（デシリアライズ処理を適用）
         if (result.ok) {
-            this.#sessionCache.set(cacheKey, { data: result, timestamp: Date.now() });
+            const deserialized = { ok: true, data: deserializeSession(result.data) };
+            this.#sessionCache.set(cacheKey, { data: deserialized, timestamp: Date.now() });
+            return deserialized;
         }
 
         return result;
