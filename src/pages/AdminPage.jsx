@@ -81,6 +81,7 @@ export function AdminPage() {
   const [groups, setGroups] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [sessionNameInputs, setSessionNameInputs] = useState({});
+  const [instructorInputs, setInstructorInputs] = useState({});
   const [savingGroupId, setSavingGroupId] = useState(null);
   const [groupMessage, setGroupMessage] = useState({ type: '', text: '' });
   const [sessionMessage, setSessionMessage] = useState({ type: '', text: '' });
@@ -128,6 +129,11 @@ export function AdminPage() {
         setSessionNameInputs(
           Object.fromEntries(
             loadedSessions.map((session) => [session._ref, session.title || ''])
+          )
+        );
+        setInstructorInputs(
+          Object.fromEntries(
+            loadedSessions.map((session) => [session._ref, session.instructors ?? []])
           )
         );
 
@@ -523,9 +529,9 @@ export function AdminPage() {
     closeMergeDialog,
   ]);
 
-  // セッション名保存処理（V2: 新リビジョンを作成しセッションファイルを追記）
-  const handleSaveSessionName = useCallback(
-    async (sessionRef, name) => {
+  // セッション保存処理（V2: 新リビジョンを作成しセッションファイルを追記）
+  const handleSaveSession = useCallback(
+    async (sessionRef, name, instructors = []) => {
       const target = sessions.find((session) => session._ref === sessionRef);
       if (!target) return;
 
@@ -539,8 +545,16 @@ export function AdminPage() {
       }
 
       // 新リビジョンを構築
-      const { sessionRecord: newSessionRecord, newRef, newPath } =
-        indexEditor.createSessionRevision(sessionRef, target, { title: normalizedName });
+      const { sessionRecord: newSessionRecord, newRef, newPath, error: revisionError } =
+        indexEditor.createSessionRevision(sessionRef, target, {
+          title: normalizedName,
+          instructors,
+        });
+
+      if (revisionError) {
+        setSessionMessage({ type: 'error', text: revisionError });
+        return;
+      }
 
       setSavingSessionId(sessionRef);
       setSessionMessage({ type: '', text: '' });
@@ -591,7 +605,7 @@ export function AdminPage() {
             .join(', ');
           setSessionMessage({
             type: 'error',
-            text: `セッション名の保存に失敗しました。${errorMessages}`,
+            text: `セッションの保存に失敗しました。${errorMessages}`,
           });
           return;
         }
@@ -609,6 +623,12 @@ export function AdminPage() {
           next[newRef] = normalizedName;
           return next;
         });
+        setInstructorInputs((prev) => {
+          const next = { ...prev };
+          delete next[sessionRef];
+          next[newRef] = instructors;
+          return next;
+        });
 
         // 選択中のセッション参照を更新
         setSelectedSessionRef((prev) => (prev === sessionRef ? newRef : prev));
@@ -621,17 +641,90 @@ export function AdminPage() {
           setCachedIndex(refreshed.data);
         }
 
-        setSessionMessage({ type: 'success', text: 'セッション名を保存しました' });
+        setSessionMessage({ type: 'success', text: 'セッションを保存しました' });
       } catch (error) {
         setSessionMessage({
           type: 'error',
-          text: `セッション名の保存に失敗しました。${error.message}`,
+          text: `セッションの保存に失敗しました。${error.message}`,
         });
       } finally {
         setSavingSessionId(null);
       }
     },
     [blobWriter, dataFetcher, sessions, cachedIndex]
+  );
+
+  // 新規メンバー追加ハンドラ（講師の手入力用）
+  const handleAddNewMember = useCallback(
+    async (name) => {
+      if (!cachedIndex) return null;
+
+      const { index: newIndex, memberId, error } = indexEditor.addMember(cachedIndex, name);
+      if (error) {
+        setSessionMessage({ type: 'error', text: error });
+        return null;
+      }
+
+      try {
+        const result = await blobWriter.executeWriteSequence({
+          newItems: [],
+          indexUpdater: (latestIndex) => {
+            if (
+              cachedIndex &&
+              (latestIndex.version ?? 0) !== (cachedIndex.version ?? 0)
+            ) {
+              return null;
+            }
+
+            // 最新の index に新メンバーを追加（同じ memberId を使用）
+            return {
+              ...latestIndex,
+              schemaVersion: 2,
+              version: (latestIndex.version ?? 0) + 1,
+              updatedAt: new Date().toISOString(),
+              groups: latestIndex.groups.map((g) => ({
+                ...g,
+                sessionRevisions: [...g.sessionRevisions],
+              })),
+              members: [
+                ...latestIndex.members.map((m) => ({
+                  ...m,
+                  sessionRevisions: [...m.sessionRevisions],
+                })),
+                {
+                  id: memberId,
+                  name,
+                  totalDurationSeconds: 0,
+                  sessionRevisions: [],
+                },
+              ],
+            };
+          },
+        });
+
+        if (!result.allSucceeded) {
+          setSessionMessage({ type: 'error', text: 'メンバーの追加に失敗しました' });
+          return null;
+        }
+
+        // ローカルキャッシュを更新
+        setCachedIndex(newIndex);
+        dataFetcher.invalidateIndexCache();
+        const refreshed = await dataFetcher.fetchIndex();
+        if (refreshed.ok) {
+          setCachedIndex(refreshed.data);
+        }
+
+        return memberId;
+      } catch (error) {
+        setSessionMessage({
+          type: 'error',
+          text: `メンバーの追加に失敗しました。${error.message}`,
+        });
+        return null;
+      }
+    },
+    [cachedIndex, indexEditor, blobWriter, dataFetcher]
   );
 
   // 非管理者はダッシュボードにリダイレクト
@@ -842,9 +935,20 @@ export function AdminPage() {
                     [selectedSessionRef]: value,
                   }))
                 }
-                onSave={handleSaveSessionName}
+                onSave={handleSaveSession}
                 saving={isSessionOperationDisabled}
                 message={sessionMessage}
+                members={cachedIndex?.members ?? []}
+                instructorIds={
+                  selectedSessionRef ? (instructorInputs[selectedSessionRef] ?? []) : []
+                }
+                onInstructorChange={(ids) =>
+                  setInstructorInputs((prev) => ({
+                    ...prev,
+                    [selectedSessionRef]: ids,
+                  }))
+                }
+                onAddNewMember={handleAddNewMember}
               />
             </div>
           </div>
