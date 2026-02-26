@@ -102,9 +102,11 @@ describe('IndexMerger', () => {
       expect(result.index.members[0].id).toMatch(ULID_PATTERN);
       expect(result.index.members[0].name).toBe('佐藤 一郎');
       expect(result.index.members[0].totalDurationSeconds).toBe(3600);
+      expect(result.index.members[0].instructorCount).toBe(0);
       expect(result.index.members[0].sessionRevisions).toHaveLength(1);
       expect(result.index.members[1].name).toBe('高橋 美咲');
       expect(result.index.members[1].totalDurationSeconds).toBe(1800);
+      expect(result.index.members[1].instructorCount).toBe(0);
     });
   });
 
@@ -146,6 +148,41 @@ describe('IndexMerger', () => {
         '01EXISTSESSION000000000A/0',
         '01NEWSESSION0000000000000/0',
       ]);
+    });
+
+    it('既存メンバーの instructorCount が保持されること', () => {
+      const currentIndex = {
+        schemaVersion: 2,
+        version: 1,
+        groups: [
+          {
+            id: '01EXISTGROUP00000000000A',
+            name: 'フロントエンド勉強会',
+            totalDurationSeconds: 3600,
+            sessionRevisions: ['01EXISTSESSION000000000A/0'],
+          },
+        ],
+        members: [
+          {
+            id: '01EXISTMEMBER00000000000',
+            name: '佐藤 一郎',
+            totalDurationSeconds: 3600,
+            instructorCount: 3,
+            sessionRevisions: ['01EXISTSESSION000000000A/0'],
+          },
+        ],
+        updatedAt: '2026-01-15T00:00:00.000Z',
+      };
+      const parsedSession = createParsedSession({
+        sessionId: '01NEWSESSION0000000000000',
+        attendances: [
+          { memberName: '佐藤 一郎', memberEmail: 'ichiro@example.com', durationSeconds: 2400 },
+        ],
+      });
+
+      const result = merger.merge(currentIndex, parsedSession);
+
+      expect(result.index.members[0].instructorCount).toBe(3);
     });
   });
 

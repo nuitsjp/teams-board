@@ -209,16 +209,27 @@ export class IndexEditor {
         for (const a of sessionData.attendances) {
             memberDurationMap.set(a.memberId, (memberDurationMap.get(a.memberId) ?? 0) + a.durationSeconds);
         }
+        // 講師セット（セッション削除時に instructorCount を減算するため）
+        const instructorSet = new Set(sessionData.instructors ?? []);
         const members = currentIndex.members.map((m) => {
-            if (!m.sessionRevisions.includes(sessionRef)) {
+            const isInstructor = instructorSet.has(m.id);
+            if (!m.sessionRevisions.includes(sessionRef) && !isInstructor) {
                 return { ...m, sessionRevisions: [...m.sessionRevisions] };
             }
             const duration = memberDurationMap.get(m.id) ?? 0;
-            return {
+            const updatedMember = {
                 ...m,
-                sessionRevisions: m.sessionRevisions.filter((ref) => ref !== sessionRef),
-                totalDurationSeconds: Math.max(0, m.totalDurationSeconds - duration),
+                sessionRevisions: m.sessionRevisions.includes(sessionRef)
+                    ? m.sessionRevisions.filter((ref) => ref !== sessionRef)
+                    : [...m.sessionRevisions],
+                totalDurationSeconds: m.sessionRevisions.includes(sessionRef)
+                    ? Math.max(0, m.totalDurationSeconds - duration)
+                    : m.totalDurationSeconds,
             };
+            if (isInstructor) {
+                updatedMember.instructorCount = Math.max(0, (m.instructorCount ?? 0) - 1);
+            }
+            return updatedMember;
         });
 
         const currentVersion = currentIndex.version ?? 0;
@@ -348,6 +359,7 @@ export class IndexEditor {
                     id: memberId,
                     name,
                     totalDurationSeconds: 0,
+                    instructorCount: 0,
                     sessionRevisions: [],
                 },
             ],
