@@ -208,6 +208,13 @@ describe('IndexMerger', () => {
       expect(result.sessionRecord.createdAt).toBe('2026-02-06T03:00:00.000Z');
     });
 
+    it('sessionRecord に instructors: [] がデフォルトで含まれること', () => {
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
+      expect(result.sessionRecord.instructors).toEqual([]);
+    });
+
     it('sessionRecord の memberId が index.members の ID と一致すること', () => {
       const parsedSession = createParsedSession();
       const result = merger.merge(emptyIndex, parsedSession);

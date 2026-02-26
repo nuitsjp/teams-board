@@ -8,6 +8,37 @@ import { AdminPage } from '../../../src/pages/AdminPage.jsx';
 const mockExecuteWriteSequence = vi.fn().mockResolvedValue({ results: [], allSucceeded: true });
 const mockUpdateGroupName = vi.fn();
 const mockMergeGroups = vi.fn();
+const mockCreateSessionRevision = vi.fn().mockImplementation((sessionRef, sessionData, updates = {}) => {
+  const parts = sessionRef.split('/');
+  const revision = parseInt(parts[1], 10);
+  const newRevision = revision + 1;
+  const newRef = `${sessionData.sessionId}/${newRevision}`;
+  const newPath = `data/sessions/${sessionData.sessionId}/${newRevision}.json`;
+
+  const sessionRecord = {
+    sessionId: sessionData.sessionId,
+    revision: newRevision,
+    startedAt: sessionData.startedAt,
+    endedAt: sessionData.endedAt,
+    attendances: sessionData.attendances,
+    instructors: sessionData.instructors ?? [],
+    createdAt: sessionData.createdAt,
+  };
+
+  if (updates.title !== undefined) {
+    if (updates.title.length > 0) {
+      sessionRecord.title = updates.title;
+    }
+  } else if (sessionData.title) {
+    sessionRecord.title = sessionData.title;
+  }
+
+  if (updates.instructors !== undefined) {
+    sessionRecord.instructors = updates.instructors;
+  }
+
+  return { sessionRecord, newRef, newPath };
+});
 
 vi.mock('../../../src/services/blob-writer.js', () => ({
   BlobWriter: vi.fn().mockImplementation(() => ({
@@ -36,6 +67,7 @@ vi.mock('../../../src/services/index-editor.js', () => ({
   IndexEditor: vi.fn().mockImplementation(() => ({
     updateGroupName: (...args) => mockUpdateGroupName(...args),
     mergeGroups: (...args) => mockMergeGroups(...args),
+    createSessionRevision: (...args) => mockCreateSessionRevision(...args),
   })),
 }));
 

@@ -108,7 +108,7 @@ describe('DataFetcher', () => {
                 json: () => Promise.resolve(sessionData),
             });
             const result = await fetcher.fetchSession('01DEF/0');
-            expect(result).toEqual({ ok: true, data: sessionData });
+            expect(result).toEqual({ ok: true, data: { ...sessionData, instructors: [] } });
         });
 
         it('HTTPエラー時に { ok: false, error: string } を返すこと', async () => {
@@ -248,8 +248,8 @@ describe('DataFetcher', () => {
             const result2 = await fetcher.fetchSession('01DEF/0');
 
             expect(mockFetch).toHaveBeenCalledTimes(1);
-            expect(result1).toEqual({ ok: true, data: sessionData });
-            expect(result2).toEqual({ ok: true, data: sessionData });
+            expect(result1).toEqual({ ok: true, data: { ...sessionData, instructors: [] } });
+            expect(result2).toEqual({ ok: true, data: { ...sessionData, instructors: [] } });
         });
 
         it('TTL 超過後はネットワークから再取得すること', async () => {
@@ -272,7 +272,7 @@ describe('DataFetcher', () => {
             const result2 = await shortTtlFetcher.fetchSession('01DEF/0');
 
             expect(mockFetch).toHaveBeenCalledTimes(2);
-            expect(result2).toEqual({ ok: true, data: sessionData2 });
+            expect(result2).toEqual({ ok: true, data: { ...sessionData2, instructors: [] } });
         });
 
         it('異なる sessionRef は別々にリクエストすること', async () => {
@@ -327,8 +327,8 @@ describe('DataFetcher', () => {
             fetcher.invalidateSessionCache('01DEF/0');
             const result2 = await fetcher.fetchSession('01DEF/0');
 
-            expect(result1).toEqual({ ok: true, data: { sessionId: '01DEF', title: 'v1' } });
-            expect(result2).toEqual({ ok: true, data: { sessionId: '01DEF', title: 'v2' } });
+            expect(result1).toEqual({ ok: true, data: { sessionId: '01DEF', title: 'v1', instructors: [] } });
+            expect(result2).toEqual({ ok: true, data: { sessionId: '01DEF', title: 'v2', instructors: [] } });
             expect(mockFetch).toHaveBeenCalledTimes(2);
 
             // V2: キャッシュバスターなし
@@ -397,7 +397,7 @@ describe('DataFetcher', () => {
 
             const [result1, result2] = await Promise.all([promise1, promise2]);
             expect(result1).toEqual(result2);
-            expect(result1).toEqual({ ok: true, data: { sessionId: '01DEF' } });
+            expect(result1).toEqual({ ok: true, data: { sessionId: '01DEF', instructors: [] } });
             vi.useRealTimers();
         });
 
@@ -505,6 +505,68 @@ describe('DataFetcher', () => {
         });
     });
 
+    describe('セッションデシリアライズ', () => {
+        it('instructors フィールドがない場合は空配列をセットすること', async () => {
+            const rawData = { sessionId: '01DEF', revision: 0 };
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(rawData),
+            });
+            const result = await fetcher.fetchSession('01DEF/0');
+
+            expect(result.ok).toBe(true);
+            expect(result.data.instructors).toEqual([]);
+        });
+
+        it('instructors フィールドが配列の場合はそのまま保持すること', async () => {
+            const rawData = {
+                sessionId: '01DEF',
+                revision: 0,
+                instructors: ['member1', 'member2'],
+            };
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(rawData),
+            });
+            const result = await fetcher.fetchSession('01DEF/0');
+
+            expect(result.data.instructors).toEqual(['member1', 'member2']);
+        });
+
+        it('instructors フィールドが配列以外の場合は空配列に正規化すること', async () => {
+            const rawData = { sessionId: '01DEF', revision: 0, instructors: 'invalid' };
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(rawData),
+            });
+            const result = await fetcher.fetchSession('01DEF/0');
+
+            expect(result.data.instructors).toEqual([]);
+        });
+
+        it('既存フィールドはデシリアライズ後も保持されること', async () => {
+            const rawData = {
+                sessionId: '01DEF',
+                revision: 0,
+                title: 'テスト',
+                startedAt: '2026-01-15T09:00:00.000Z',
+                endedAt: null,
+                attendances: [{ memberId: 'member1', durationSeconds: 3600 }],
+                createdAt: '2026-01-15T09:00:00.000Z',
+            };
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(rawData),
+            });
+            const result = await fetcher.fetchSession('01DEF/0');
+
+            expect(result.data.sessionId).toBe('01DEF');
+            expect(result.data.title).toBe('テスト');
+            expect(result.data.attendances).toHaveLength(1);
+            expect(result.data.instructors).toEqual([]);
+        });
+    });
+
     describe('公開 API の後方互換性', () => {
         it('fetchIndex の成功時に { ok: true, data } を返すこと', async () => {
             const indexData = { groups: [], members: [], updatedAt: '' };
@@ -537,7 +599,7 @@ describe('DataFetcher', () => {
             });
             const result = await fetcher.fetchSession('test-session/0');
             expect(result).toHaveProperty('ok', true);
-            expect(result).toHaveProperty('data', sessionData);
+            expect(result).toHaveProperty('data', { ...sessionData, instructors: [] });
         });
 
         it('fetchSession の失敗時に { ok: false, error } を返すこと', async () => {
