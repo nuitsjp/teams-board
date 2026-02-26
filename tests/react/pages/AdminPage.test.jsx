@@ -1874,4 +1874,92 @@ describe('AdminPage — セッション名管理', () => {
       expect(screen.getByText('セッション名を保存しました')).toBeInTheDocument();
     });
   });
+
+  it('セッション切替時に前回の保存メッセージがクリアされる', async () => {
+    const user = userEvent.setup();
+    const sessionId2 = '01SESSIONTEST00000000002';
+    const sessionRef2 = `${sessionId2}/0`;
+
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: createV2Index({
+        groups: [
+          {
+            id: 'group1',
+            name: 'テストグループ1',
+            totalDurationSeconds: 7200,
+            sessionRevisions: [sessionRef, sessionRef2],
+          },
+        ],
+      }),
+    });
+    mockFetchSession.mockImplementation((ref) => {
+      if (ref === sessionRef) {
+        return Promise.resolve({
+          ok: true,
+          data: {
+            sessionId,
+            revision: 0,
+            title: '',
+            startedAt: '2026-02-08T19:00:00',
+            endedAt: null,
+            attendances: [],
+            createdAt: '2026-02-08T00:00:00.000Z',
+          },
+        });
+      }
+      if (ref === sessionRef2) {
+        return Promise.resolve({
+          ok: true,
+          data: {
+            sessionId: sessionId2,
+            revision: 0,
+            title: '',
+            startedAt: '2026-02-01T19:00:00',
+            endedAt: null,
+            attendances: [],
+            createdAt: '2026-02-01T00:00:00.000Z',
+          },
+        });
+      }
+      return Promise.resolve({ ok: false, error: 'not found' });
+    });
+
+    mockExecuteWriteSequence.mockResolvedValue({
+      allSucceeded: true,
+      results: [
+        { path: `data/sessions/${sessionId}/1.json`, success: true },
+        { path: 'data/index.json', success: true },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
+    });
+
+    // 最初のセッションを選択して保存
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
+
+    const input = screen.getByRole('textbox', { name: '2026-02-08 のセッション名' });
+    await user.type(input, 'テスト名');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('セッション名を保存しました')).toBeInTheDocument();
+    });
+
+    // 別のセッションに切り替えるとメッセージがクリアされる
+    await user.click(await screen.findByRole('button', { name: /2026-02-01/ }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('セッション名を保存しました')).not.toBeInTheDocument();
+    });
+  });
 });

@@ -33,7 +33,8 @@ export function SessionEditorPanel({
     };
 
     const handleKeyDown = (event) => {
-        if (event.key === 'Enter') {
+        // IME 変換中の Enter は無視（日本語入力の確定操作を保存と誤認しない）
+        if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
             handleSave();
         }
     };

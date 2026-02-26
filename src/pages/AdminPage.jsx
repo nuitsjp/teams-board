@@ -800,7 +800,10 @@ export function AdminPage() {
                                 return (
                                   <button
                                     key={session._ref}
-                                    onClick={() => setSelectedSessionRef(session._ref)}
+                                    onClick={() => {
+                                      setSelectedSessionRef(session._ref);
+                                      setSessionMessage({ type: '', text: '' });
+                                    }}
                                     className={`w-full text-left px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-inset ${
                                       isSelected
                                         ? 'bg-primary-50 border-l-3 border-l-primary-500'

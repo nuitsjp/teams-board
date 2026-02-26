@@ -121,6 +121,26 @@ describe('SessionEditorPanel', () => {
         expect(onSave).not.toHaveBeenCalled();
     });
 
+    it('IME 変換中の Enter では onSave が呼ばれない', async () => {
+        const { fireEvent } = await import('@testing-library/react');
+        const onSave = vi.fn();
+
+        render(
+            <SessionEditorPanel
+                session={defaultSession}
+                sessionName="テスト"
+                onSessionNameChange={vi.fn()}
+                onSave={onSave}
+                saving={false}
+                message={{ type: '', text: '' }}
+            />
+        );
+
+        const input = screen.getByRole('textbox');
+        fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+        expect(onSave).not.toHaveBeenCalled();
+    });
+
     it('成功メッセージが表示される', () => {
         render(
             <SessionEditorPanel
