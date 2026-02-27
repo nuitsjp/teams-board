@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { OrganizerList } from '../../../src/components/OrganizerList.jsx';
@@ -66,5 +66,46 @@ describe('OrganizerList', () => {
         await user.click(rows[0]);
 
         expect(mockNavigate).toHaveBeenCalledWith('/organizers/org1');
+    });
+
+    it('テキストが省略されている場合にツールチップ属性が設定されること', () => {
+        render(
+            <MemoryRouter>
+                <OrganizerList organizers={mockOrganizers} groups={mockGroups} />
+            </MemoryRouter>
+        );
+
+        const rows = screen.getAllByTestId('organizer-row');
+        const truncateWrapper = rows[0].querySelector('.truncate-with-tooltip');
+        const textEl = truncateWrapper.querySelector('.truncate');
+
+        // scrollWidth > clientWidth をシミュレート
+        Object.defineProperty(textEl, 'scrollWidth', { value: 200, configurable: true });
+        Object.defineProperty(textEl, 'clientWidth', { value: 100, configurable: true });
+
+        fireEvent.mouseEnter(truncateWrapper);
+        expect(truncateWrapper).toHaveAttribute('data-truncated');
+
+        fireEvent.mouseLeave(truncateWrapper);
+        expect(truncateWrapper).not.toHaveAttribute('data-truncated');
+    });
+
+    it('テキストが省略されていない場合にツールチップ属性が設定されないこと', () => {
+        render(
+            <MemoryRouter>
+                <OrganizerList organizers={mockOrganizers} groups={mockGroups} />
+            </MemoryRouter>
+        );
+
+        const rows = screen.getAllByTestId('organizer-row');
+        const truncateWrapper = rows[0].querySelector('.truncate-with-tooltip');
+        const textEl = truncateWrapper.querySelector('.truncate');
+
+        // scrollWidth <= clientWidth
+        Object.defineProperty(textEl, 'scrollWidth', { value: 100, configurable: true });
+        Object.defineProperty(textEl, 'clientWidth', { value: 200, configurable: true });
+
+        fireEvent.mouseEnter(truncateWrapper);
+        expect(truncateWrapper).not.toHaveAttribute('data-truncated');
     });
 });

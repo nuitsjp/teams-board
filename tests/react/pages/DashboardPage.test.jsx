@@ -114,6 +114,23 @@ describe('DashboardPage', () => {
     expect(screen.getAllByTestId('organizer-row')).toHaveLength(1);
   });
 
+  it('organizers が undefined の場合でも正常に表示されること', async () => {
+    const dataWithUndefinedOrganizers = { ...mockIndexData, organizers: undefined };
+    mockFetchIndex.mockResolvedValue({ ok: true, data: dataWithUndefinedOrganizers });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('主催者')).not.toBeInTheDocument();
+  });
+
   it('主催者が0件の場合は主催者セクションが表示されないこと', async () => {
     const dataWithoutOrganizers = { ...mockIndexData, organizers: [] };
     mockFetchIndex.mockResolvedValue({ ok: true, data: dataWithoutOrganizers });

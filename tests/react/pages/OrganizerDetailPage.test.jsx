@@ -135,4 +135,40 @@ describe('OrganizerDetailPage', () => {
             expect(screen.getByText('この主催者に紐づくグループはありません')).toBeInTheDocument();
         });
     });
+
+    it('「戻る」ボタンクリックで navigate(-1) が呼ばれること', async () => {
+        const user = userEvent.setup();
+        mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+
+        renderWithRoute('org1');
+
+        await waitFor(() => {
+            expect(screen.getByText('フロントエンド推進室')).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByText('戻る'));
+        expect(mockNavigate).toHaveBeenCalledWith(-1);
+    });
+
+    it('エラー画面の「戻る」ボタンクリックで navigate(-1) が呼ばれること', async () => {
+        const user = userEvent.setup();
+        mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+
+        renderWithRoute('nonexistent');
+
+        await waitFor(() => {
+            expect(screen.getByText('戻る')).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByText('戻る'));
+        expect(mockNavigate).toHaveBeenCalledWith(-1);
+    });
+
+    it('アンマウント時にクリーンアップが実行されること', () => {
+        mockFetchIndex.mockReturnValue(new Promise(() => {}));
+
+        const { unmount } = renderWithRoute('org1');
+        unmount();
+        // クリーンアップ関数が実行されてエラーにならないことを確認
+    });
 });
