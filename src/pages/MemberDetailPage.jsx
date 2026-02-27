@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { getFiscalPeriod } from '../utils/fiscal-period.js';
-import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight, GraduationCap, Building2 } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -46,7 +46,7 @@ export function MemberDetailPage() {
         return;
       }
 
-      const { groups, members } = indexResult.data;
+      const { groups, members, organizers } = indexResult.data;
       const found = members.find((m) => m.id === memberId);
       if (!found) {
         setError('参加者が見つかりません');
@@ -56,11 +56,15 @@ export function MemberDetailPage() {
 
       setMember(found);
 
+      // 主催者名のルックアップマップ
+      const organizerMap = new Map((organizers ?? []).map((o) => [o.id, o.name]));
+
       // sessionRef → グループ情報のマッピング
       const sessionGroupMap = new Map();
       for (const group of groups) {
+        const organizerName = group.organizerId ? organizerMap.get(group.organizerId) ?? null : null;
         for (const ref of group.sessionRevisions) {
-          sessionGroupMap.set(ref, { groupId: group.id, groupName: group.name });
+          sessionGroupMap.set(ref, { groupId: group.id, groupName: group.name, organizerName });
         }
       }
 
@@ -118,6 +122,7 @@ export function MemberDetailPage() {
           sessionId: session.sessionId,
           groupId: resolvedGroup.groupId,
           groupName: resolvedGroup.groupName,
+          organizerName: resolvedGroup.organizerName,
           date,
           title: session.title,
           durationSeconds: attendance.durationSeconds,
@@ -157,6 +162,7 @@ export function MemberDetailPage() {
           sessionId: session.sessionId,
           groupId: resolvedGroup.groupId,
           groupName: resolvedGroup.groupName,
+          organizerName: resolvedGroup.organizerName,
           date,
           title: session.title,
         });
@@ -172,6 +178,7 @@ export function MemberDetailPage() {
             groupMap.set(session.groupId, {
               groupId: session.groupId,
               groupName: session.groupName,
+              organizerName: session.organizerName,
               totalDurationSeconds: 0,
               sessions: [],
             });
@@ -200,6 +207,7 @@ export function MemberDetailPage() {
             instructorGroupMap.set(session.groupId, {
               groupId: session.groupId,
               groupName: session.groupName,
+              organizerName: session.organizerName,
               sessions: [],
             });
           }
@@ -330,9 +338,9 @@ export function MemberDetailPage() {
       </div>
 
       {/* 期別2カラムレイアウト（出席履歴 + 講師履歴 統合） */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-6">
         {/* 左列: 統合期サマリーリスト */}
-        <div className="space-y-2">
+        <div className="space-y-4">
           {unifiedPeriods.map((period) => {
             const isSelected = period.label === selectedPeriodLabel;
             return (
@@ -340,7 +348,7 @@ export function MemberDetailPage() {
                 key={period.label}
                 onClick={() => setSelectedPeriodLabel(period.label)}
                 aria-pressed={isSelected}
-                className={`w-full text-left px-4 py-3 rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+                className={`w-full text-left px-4 py-3 min-h-[73px] rounded-r-2xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
                   isSelected
                     ? 'bg-white shadow-sm border-l-3 border-l-primary-500'
                     : 'hover:bg-surface-muted border-l-3 border-l-transparent'
@@ -388,27 +396,33 @@ export function MemberDetailPage() {
                     <button
                       onClick={() => toggleGroup(group.groupId)}
                       aria-expanded={isExpanded}
-                      className="w-full px-6 py-3.5 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                      className="w-full px-6 py-3 min-h-[73px] flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
                         {isExpanded ? (
-                          <ChevronDown className="w-5 h-5 text-text-muted" aria-hidden="true" />
+                          <ChevronDown className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
                         ) : (
-                          <ChevronRight className="w-5 h-5 text-text-muted" aria-hidden="true" />
+                          <ChevronRight className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
                         )}
-                        <div>
+                        <div className="min-w-0">
                           <h3 className="text-base font-bold text-text-primary">{group.groupName}</h3>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
-                            <span className="flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
-                              <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回参加
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
-                              <span className="font-display">{formatDuration(group.totalDurationSeconds)}</span>
-                            </span>
-                          </div>
+                          {group.organizerName && (
+                            <div className="flex items-center gap-1 text-xs text-text-muted">
+                              <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{group.organizerName}</span>
+                            </div>
+                          )}
                         </div>
+                      </div>
+                      <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+                          <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回参加
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+                          <span className="font-display">{formatDuration(group.totalDurationSeconds)}</span>
+                        </span>
                       </div>
                     </button>
 
@@ -481,23 +495,29 @@ export function MemberDetailPage() {
                     <button
                       onClick={() => toggleGroup(`instructor-${group.groupId}`)}
                       aria-expanded={isExpanded}
-                      className="w-full px-6 py-3.5 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                      className="w-full px-6 py-3 min-h-[73px] flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
                         {isExpanded ? (
-                          <ChevronDown className="w-5 h-5 text-text-muted" aria-hidden="true" />
+                          <ChevronDown className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
                         ) : (
-                          <ChevronRight className="w-5 h-5 text-text-muted" aria-hidden="true" />
+                          <ChevronRight className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
                         )}
-                        <div>
+                        <div className="min-w-0">
                           <h4 className="text-base font-bold text-text-primary">{group.groupName}</h4>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
-                            <span className="flex items-center gap-1.5">
-                              <GraduationCap className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
-                              <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回
-                            </span>
-                          </div>
+                          {group.organizerName && (
+                            <div className="flex items-center gap-1 text-xs text-text-muted">
+                              <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{group.organizerName}</span>
+                            </div>
+                          )}
                         </div>
+                      </div>
+                      <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
+                        <span className="flex items-center gap-1.5">
+                          <GraduationCap className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+                          <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回
+                        </span>
                       </div>
                     </button>
 

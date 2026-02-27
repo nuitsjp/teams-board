@@ -117,4 +117,51 @@ describe('GroupList', () => {
     expect(rows[1]).toHaveTextContent('1');
     expect(rows[1]).toHaveTextContent('回開催');
   });
+
+  it('主催者名が設定されている場合に表示されること', () => {
+    const groupsWithOrganizer = [
+      { id: 'g1', name: 'フロントエンド勉強会', organizerId: 'org1', totalDurationSeconds: 3600, sessionRevisions: ['s1/0'] },
+    ];
+    const organizers = [{ id: 'org1', name: 'フロントエンド推進室' }];
+
+    render(
+      <MemoryRouter>
+        <GroupList groups={groupsWithOrganizer} organizers={organizers} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('フロントエンド推進室')).toBeInTheDocument();
+  });
+
+  it('organizerId が存在するが organizers に見つからない場合は主催者が表示されないこと', () => {
+    const groupsWithUnknownOrganizer = [
+      { id: 'g1', name: 'フロントエンド勉強会', organizerId: 'unknown-org', totalDurationSeconds: 3600, sessionRevisions: ['s1/0'] },
+    ];
+
+    render(
+      <MemoryRouter>
+        <GroupList groups={groupsWithUnknownOrganizer} organizers={[]} />
+      </MemoryRouter>
+    );
+
+    // グループ名は表示されるが、主催者セクション（text-xs text-text-muted の子テキスト）は表示されない
+    expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+    const row = screen.getByTestId('group-row');
+    // organizerName が null/undefined なので主催者表示の div (.text-xs.text-text-muted with Building2) は存在しない
+    expect(row.querySelector('.lucide-building-2')).not.toBeInTheDocument();
+  });
+
+  it('organizerId が null の場合は主催者が表示されないこと', () => {
+    const groupsWithNullOrganizer = [
+      { id: 'g1', name: 'フロントエンド勉強会', organizerId: null, totalDurationSeconds: 3600, sessionRevisions: ['s1/0'] },
+    ];
+
+    render(
+      <MemoryRouter>
+        <GroupList groups={groupsWithNullOrganizer} organizers={[{ id: 'org1', name: 'テスト主催者' }]} />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('テスト主催者')).not.toBeInTheDocument();
+  });
 });

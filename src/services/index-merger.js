@@ -15,6 +15,7 @@ export class IndexMerger {
         const warnings = [];
 
         // グループの名前ベースマッチング
+        const organizers = (currentIndex.organizers ?? []).map((o) => ({ ...o }));
         const groups = currentIndex.groups.map((g) => ({
             ...g,
             sessionRevisions: [...g.sessionRevisions],
@@ -24,6 +25,7 @@ export class IndexMerger {
             targetGroup = {
                 id: ulid(),
                 name: parsedSession.groupName,
+                organizerId: null,
                 totalDurationSeconds: 0,
                 sessionRevisions: [],
             };
@@ -76,6 +78,7 @@ export class IndexMerger {
             schemaVersion: 2,
             version: currentVersion + 1,
             updatedAt: new Date().toISOString(),
+            organizers,
             groups,
             members,
         };

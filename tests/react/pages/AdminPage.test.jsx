@@ -64,12 +64,16 @@ vi.mock('../../../src/services/index-merger.js', () => ({
 
 // IndexEditor のモック
 const mockAddMember = vi.fn();
+const mockAddOrganizer = vi.fn();
+const mockUpdateGroupOrganizer = vi.fn();
 vi.mock('../../../src/services/index-editor.js', () => ({
   IndexEditor: vi.fn().mockImplementation(() => ({
     updateGroupName: (...args) => mockUpdateGroupName(...args),
     mergeGroups: (...args) => mockMergeGroups(...args),
     createSessionRevision: (...args) => mockCreateSessionRevision(...args),
     addMember: (...args) => mockAddMember(...args),
+    addOrganizer: (...args) => mockAddOrganizer(...args),
+    updateGroupOrganizer: (...args) => mockUpdateGroupOrganizer(...args),
   })),
 }));
 
@@ -1701,6 +1705,96 @@ describe('AdminPage — セッション名管理', () => {
     expect(indexUpdaterResult.schemaVersion).toBe(2);
   });
 
+  it('セッション名保存の indexUpdater が講師差分から instructorCount を更新する', async () => {
+    const user = userEvent.setup();
+    let indexUpdaterResult;
+
+    // メンバー付きの index を設定
+    mockFetchIndex.mockResolvedValue({
+      ok: true,
+      data: createV2Index({
+        groups: [
+          { id: 'group1', name: 'テストグループ1', totalDurationSeconds: 3600, sessionRevisions: [sessionRef] },
+        ],
+        members: [
+          { id: 'member1', name: 'メンバー1', totalDurationSeconds: 3600, instructorCount: 2, sessionRevisions: [sessionRef] },
+          { id: 'member2', name: 'メンバー2', totalDurationSeconds: 1800, instructorCount: 0, sessionRevisions: [sessionRef] },
+        ],
+      }),
+    });
+
+    // セッションデータ: 既存講師 member1
+    mockFetchSession.mockResolvedValue({
+      ok: true,
+      data: {
+        sessionId,
+        revision: 0,
+        startedAt: '2026-02-08T19:00:00',
+        endedAt: null,
+        attendances: [{ memberId: 'member1', durationSeconds: 3600 }],
+        instructors: ['member1'],
+        createdAt: '2026-02-08T00:00:00.000Z',
+      },
+    });
+
+    mockExecuteWriteSequence.mockImplementation(async (options) => {
+      if (options.indexUpdater) {
+        const latestIndex = createV2Index({
+          groups: [
+            { id: 'group1', name: 'テスト', totalDurationSeconds: 3600, sessionRevisions: [sessionRef] },
+          ],
+          members: [
+            { id: 'member1', name: 'メンバー1', totalDurationSeconds: 3600, instructorCount: 2, sessionRevisions: [sessionRef] },
+            { id: 'member2', name: 'メンバー2', totalDurationSeconds: 1800, instructorCount: 0, sessionRevisions: [sessionRef] },
+          ],
+        });
+        indexUpdaterResult = options.indexUpdater(latestIndex);
+      }
+      return {
+        allSucceeded: true,
+        results: [
+          { path: `data/sessions/${sessionId}/1.json`, success: true },
+          { path: 'data/index.json', success: true },
+        ],
+      };
+    });
+
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await waitFor(() => {
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
+    });
+
+    await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
+    await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
+
+    // セッションデータがロードされるのを待つ
+    await waitFor(() => {
+      expect(screen.getByRole('combobox', { name: '講師を検索' })).toBeInTheDocument();
+    });
+
+    // member1 を講師から削除
+    await user.click(screen.getByLabelText('メンバー1 を削除'));
+
+    // member2 を講師として追加
+    await user.click(screen.getByRole('combobox', { name: '講師を検索' }));
+    await user.click(screen.getByText('メンバー2'));
+
+    // 保存
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    await waitFor(() => {
+      expect(mockExecuteWriteSequence).toHaveBeenCalled();
+    });
+
+    // indexUpdater が instructorCount を正しく更新
+    expect(indexUpdaterResult).not.toBeNull();
+    // member1: 講師から除外 → instructorCount 2 → 1
+    expect(indexUpdaterResult.members[0].instructorCount).toBe(1);
+    // member2: 講師として追加 → instructorCount 0 → 1
+    expect(indexUpdaterResult.members[1].instructorCount).toBe(1);
+  });
+
   it('セッション名保存の indexUpdater で楽観ロック失敗時に null を返す', async () => {
     const user = userEvent.setup();
     let indexUpdaterResult;
@@ -2079,7 +2173,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     // 講師検索入力に新規名を入力
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
 
     // 新規追加オプションをクリック
@@ -2110,7 +2204,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2136,7 +2230,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2162,7 +2256,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2232,7 +2326,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2281,7 +2375,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2298,5 +2392,318 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
 
     // index が再取得される
     expect(mockFetchIndex).toHaveBeenCalledTimes(2);
+  });
+});
+
+// --- 主催者管理テスト ---
+
+describe('AdminPage — 主催者管理', () => {
+  const GROUP_ID = 'testGroup1';
+  const ORGANIZER_ID = 'organizer-1';
+
+  function createIndexWithGroups() {
+    return createV2Index({
+      groups: [
+        {
+          id: GROUP_ID,
+          name: 'テストグループ1',
+          organizerId: null,
+          totalDurationSeconds: 3600,
+          sessionRevisions: [SESSION_REF_1],
+        },
+      ],
+      members: [{ id: 'member-1', name: '佐藤 一郎', totalDurationSeconds: 3600, instructorCount: 0, sessionRevisions: [SESSION_REF_1] }],
+      organizers: [{ id: ORGANIZER_ID, name: 'フロントエンド推進室' }],
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsAdmin = true;
+    mockSasToken = 'test-sas-token';
+
+    const indexData = createIndexWithGroups();
+    mockFetchIndex.mockResolvedValue({ ok: true, data: indexData });
+    mockFetchSession.mockResolvedValue({ ok: false, error: 'not found' });
+    mockExecuteWriteSequence.mockResolvedValue({ results: [{ path: 'data/index.json', success: true }], allSucceeded: true });
+    mockUpdateGroupName.mockReturnValue({ index: indexData });
+    mockMergeGroups.mockReturnValue({ index: indexData });
+    mockAddOrganizer.mockReturnValue({
+      index: {
+        ...indexData,
+        organizers: [...indexData.organizers, { id: 'new-org-id', name: '新規主催者' }],
+      },
+      organizerId: 'new-org-id',
+    });
+    mockUpdateGroupOrganizer.mockReturnValue({ index: indexData });
+    mockIndexFetcherFetch.mockResolvedValue({ ok: true, data: indexData });
+  });
+
+  async function expandGroup(user) {
+    await waitFor(() => {
+      expect(screen.getByText('グループ・セッション管理')).toBeInTheDocument();
+    });
+    const expandButton = await screen.findByRole('button', { name: /テストグループ1 を展開/ });
+    await user.click(expandButton);
+  }
+
+  it('グループアコーディオン内に主催者セクションが表示されること', async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    expect(screen.getByText('主催者')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '主催者を検索' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '主催者を保存' })).toBeInTheDocument();
+  });
+
+  it('主催者保存が成功するとメッセージが表示されること', async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    // 主催者を選択
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.click(input);
+    await user.click(screen.getByText('フロントエンド推進室'));
+
+    // 保存
+    await user.click(screen.getByRole('button', { name: '主催者を保存' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('主催者を保存しました')).toBeInTheDocument();
+    });
+
+    expect(mockUpdateGroupOrganizer).toHaveBeenCalled();
+    expect(mockExecuteWriteSequence).toHaveBeenCalled();
+  });
+
+  it('新規主催者追加が成功すること', async () => {
+    // indexUpdater コールバックが呼ばれることを検証するため、実際に呼び出す
+    mockExecuteWriteSequence.mockImplementation(async ({ indexUpdater }) => {
+      const latestIndex = createIndexWithGroups();
+      if (indexUpdater) indexUpdater(latestIndex);
+      return {
+        allSucceeded: true,
+        results: [{ path: 'data/index.json', success: true }],
+      };
+    });
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.type(input, '新規主催者');
+    await user.click(screen.getByText(/「新規主催者」を新しい主催者として追加/));
+
+    await waitFor(() => {
+      expect(mockAddOrganizer).toHaveBeenCalled();
+      expect(mockExecuteWriteSequence).toHaveBeenCalled();
+    });
+  });
+
+  it('addOrganizer がエラーを返すとエラーメッセージが表示されること', async () => {
+    mockAddOrganizer.mockReturnValue({
+      index: null,
+      organizerId: null,
+      error: '主催者名は100文字以内にしてください',
+    });
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.type(input, '非常に長い主催者名');
+    await user.click(screen.getByText(/「非常に長い主催者名」を新しい主催者として追加/));
+
+    await waitFor(() => {
+      expect(screen.getByText('主催者名は100文字以内にしてください')).toBeInTheDocument();
+    });
+
+    // BlobWriter は呼ばれない
+    expect(mockExecuteWriteSequence).not.toHaveBeenCalled();
+  });
+
+  it('新規主催者追加で BlobWriter が失敗するとエラーが表示されること', async () => {
+    mockExecuteWriteSequence.mockResolvedValue({ results: [], allSucceeded: false });
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.type(input, '新規主催者');
+    await user.click(screen.getByText(/「新規主催者」を新しい主催者として追加/));
+
+    await waitFor(() => {
+      expect(screen.getByText('主催者の追加に失敗しました')).toBeInTheDocument();
+    });
+  });
+
+  it('新規主催者追加でデータ競合が発生するとエラーが表示されること', async () => {
+    // index.json の書き込みが成功しなかった（version 不一致で null が返された）
+    mockExecuteWriteSequence.mockImplementation(async ({ indexUpdater }) => {
+      // indexUpdater を呼び出して null を返させる（version 不一致をシミュレート）
+      const latestIndex = { ...createIndexWithGroups(), version: 999 };
+      indexUpdater(latestIndex);
+      return {
+        allSucceeded: true,
+        results: [{ path: 'data/something-else.json', success: true }],
+      };
+    });
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.type(input, '新規主催者');
+    await user.click(screen.getByText(/「新規主催者」を新しい主催者として追加/));
+
+    await waitFor(() => {
+      expect(screen.getByText('データの競合が発生しました。再度お試しください。')).toBeInTheDocument();
+    });
+  });
+
+  it('新規主催者追加で例外が発生するとエラーが表示されること', async () => {
+    mockExecuteWriteSequence.mockRejectedValue(new Error('ネットワークエラー'));
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.type(input, '新規主催者');
+    await user.click(screen.getByText(/「新規主催者」を新しい主催者として追加/));
+
+    await waitFor(() => {
+      expect(screen.getByText('主催者の追加に失敗しました。ネットワークエラー')).toBeInTheDocument();
+    });
+  });
+
+  it('主催者保存で fetchIndex が失敗するとエラーが表示されること', async () => {
+    // 2回目の fetchIndex（保存時の楽観ロック用）が失敗
+    mockFetchIndex
+      .mockResolvedValueOnce({ ok: true, data: createIndexWithGroups() })
+      .mockResolvedValueOnce({ ok: false, error: 'ネットワークエラー' });
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.click(input);
+    await user.click(screen.getByText('フロントエンド推進室'));
+
+    await user.click(screen.getByRole('button', { name: '主催者を保存' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('最新データの取得に失敗しました。ネットワーク接続を確認してください')).toBeInTheDocument();
+    });
+  });
+
+  it('主催者保存で例外が発生するとエラーが表示されること', async () => {
+    mockFetchIndex
+      .mockResolvedValueOnce({ ok: true, data: createIndexWithGroups() })
+      .mockResolvedValueOnce({ ok: true, data: createIndexWithGroups() });
+    mockExecuteWriteSequence.mockRejectedValue(new Error('書き込みエラー'));
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.click(input);
+    await user.click(screen.getByText('フロントエンド推進室'));
+
+    await user.click(screen.getByRole('button', { name: '主催者を保存' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('主催者の保存に失敗しました。書き込みエラー')).toBeInTheDocument();
+    });
+  });
+
+  it('updateGroupOrganizer がエラーを返すとエラーメッセージが表示されること', async () => {
+    mockUpdateGroupOrganizer.mockReturnValue({
+      index: null,
+      error: '指定されたグループが見つかりません',
+    });
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.click(input);
+    await user.click(screen.getByText('フロントエンド推進室'));
+
+    await user.click(screen.getByRole('button', { name: '主催者を保存' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('指定されたグループが見つかりません')).toBeInTheDocument();
+    });
+
+    // BlobWriter は呼ばれない
+    expect(mockExecuteWriteSequence).not.toHaveBeenCalled();
+  });
+
+  it('主催者保存で BlobWriter が失敗するとエラーメッセージが表示されること', async () => {
+    mockFetchIndex
+      .mockResolvedValueOnce({ ok: true, data: createIndexWithGroups() })
+      .mockResolvedValueOnce({ ok: true, data: createIndexWithGroups() });
+    mockExecuteWriteSequence.mockResolvedValue({
+      allSucceeded: false,
+      results: [{ path: 'data/index.json', success: false, error: 'アップロードエラー' }],
+    });
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.click(input);
+    await user.click(screen.getByText('フロントエンド推進室'));
+
+    await user.click(screen.getByRole('button', { name: '主催者を保存' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('主催者の保存に失敗しました。アップロードエラー')).toBeInTheDocument();
+    });
+  });
+
+  it('主催者保存で version 不一致の場合にエラーが表示されること', async () => {
+    // 2回目の fetchIndex で version が異なるデータを返す
+    const conflictIndex = { ...createIndexWithGroups(), version: 999 };
+    mockFetchIndex
+      .mockResolvedValueOnce({ ok: true, data: createIndexWithGroups() })
+      .mockResolvedValueOnce({ ok: true, data: conflictIndex });
+
+    const user = userEvent.setup();
+    render(<MemoryRouter><AdminPage /></MemoryRouter>);
+
+    await expandGroup(user);
+
+    const input = screen.getByRole('combobox', { name: '主催者を検索' });
+    await user.click(input);
+    await user.click(screen.getByText('フロントエンド推進室'));
+
+    await user.click(screen.getByRole('button', { name: '主催者を保存' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('他のユーザーが同時に編集しています。最新データを再読み込みしてください')).toBeInTheDocument();
+    });
   });
 });

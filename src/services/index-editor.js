@@ -2,6 +2,13 @@
 import { ulid } from 'ulidx';
 import { parseSessionRef, createSessionRef, sessionRefToPath } from './session-ref.js';
 
+/**
+ * organizers 配列のイミュータブルコピーを返すヘルパー
+ */
+function copyOrganizers(currentIndex) {
+    return (currentIndex.organizers ?? []).map((o) => ({ ...o }));
+}
+
 export class IndexEditor {
     /**
      * グループ名を更新する
@@ -40,6 +47,7 @@ export class IndexEditor {
                 schemaVersion: 2,
                 version: currentVersion + 1,
                 updatedAt: new Date().toISOString(),
+                organizers: copyOrganizers(currentIndex),
                 groups,
                 members: currentIndex.members.map((m) => ({
                     ...m,
@@ -109,6 +117,7 @@ export class IndexEditor {
         );
         targetGroup.sessionRevisions = mergedSessionRevisions;
         targetGroup.totalDurationSeconds = Math.round(mergedDuration);
+        // 統合先グループの organizerId を保持（統合元は破棄）
 
         const sourceGroupIdSet = new Set(sourceGroups.map((group) => group.id));
         const filteredGroups = groups.filter((group) => !sourceGroupIdSet.has(group.id));
@@ -120,6 +129,7 @@ export class IndexEditor {
                 schemaVersion: 2,
                 version: currentVersion + 1,
                 updatedAt: new Date().toISOString(),
+                organizers: copyOrganizers(currentIndex),
                 groups: filteredGroups,
                 members: currentIndex.members.map((m) => ({
                     ...m,
@@ -239,6 +249,7 @@ export class IndexEditor {
                 schemaVersion: 2,
                 version: currentVersion + 1,
                 updatedAt: new Date().toISOString(),
+                organizers: copyOrganizers(currentIndex),
                 groups,
                 members,
             },
@@ -346,6 +357,7 @@ export class IndexEditor {
             schemaVersion: 2,
             version: currentVersion + 1,
             updatedAt: new Date().toISOString(),
+            organizers: copyOrganizers(currentIndex),
             groups: currentIndex.groups.map((g) => ({
                 ...g,
                 sessionRevisions: [...g.sessionRevisions],
@@ -366,5 +378,152 @@ export class IndexEditor {
         };
 
         return { index, memberId };
+    }
+
+    /**
+     * 新規主催者を追加する
+     * @param {object} currentIndex - 現在の DashboardIndex（V2）
+     * @param {string} name - 主催者名
+     * @returns {{ index: object, organizerId: string, error?: string }}
+     */
+    addOrganizer(currentIndex, name) {
+        // バリデーション
+        if (typeof name !== 'string') {
+            return { index: currentIndex, organizerId: null, error: '主催者名は文字列である必要があります' };
+        }
+        if (name.length === 0 || name.trim().length === 0) {
+            return { index: currentIndex, organizerId: null, error: '主催者名を入力してください' };
+        }
+        if (name.length > 256) {
+            return { index: currentIndex, organizerId: null, error: '主催者名は256文字以内で入力してください' };
+        }
+
+        const organizerId = ulid();
+        const currentVersion = currentIndex.version ?? 0;
+
+        const index = {
+            schemaVersion: 2,
+            version: currentVersion + 1,
+            updatedAt: new Date().toISOString(),
+            organizers: [
+                ...copyOrganizers(currentIndex),
+                { id: organizerId, name },
+            ],
+            groups: currentIndex.groups.map((g) => ({
+                ...g,
+                sessionRevisions: [...g.sessionRevisions],
+            })),
+            members: currentIndex.members.map((m) => ({
+                ...m,
+                sessionRevisions: [...m.sessionRevisions],
+            })),
+        };
+
+        return { index, organizerId };
+    }
+
+    /**
+     * グループの主催者を設定/解除する
+     * @param {object} currentIndex - 現在の DashboardIndex（V2）
+     * @param {string} groupId - 対象グループの ID
+     * @param {string|null} organizerId - 主催者 ID（null で解除）
+     * @returns {{ index: object, error?: string }}
+     */
+    updateGroupOrganizer(currentIndex, groupId, organizerId) {
+        // バリデーション
+        if (!groupId || typeof groupId !== 'string') {
+            return { index: currentIndex, error: 'グループIDが指定されていません' };
+        }
+        if (organizerId !== null && typeof organizerId !== 'string') {
+            return { index: currentIndex, error: '主催者IDは文字列またはnullである必要があります' };
+        }
+
+        // 主催者の存在確認（null 以外の場合）
+        const organizers = copyOrganizers(currentIndex);
+        if (organizerId !== null) {
+            const organizerExists = organizers.some((o) => o.id === organizerId);
+            if (!organizerExists) {
+                return { index: currentIndex, error: `主催者ID ${organizerId} が見つかりません` };
+            }
+        }
+
+        // グループ検索
+        const groupMap = new Map();
+        const groups = currentIndex.groups.map((g) => {
+            const copy = { ...g, sessionRevisions: [...g.sessionRevisions] };
+            groupMap.set(copy.id, copy);
+            return copy;
+        });
+        const targetGroup = groupMap.get(groupId);
+
+        if (!targetGroup) {
+            return { index: currentIndex, error: `グループID ${groupId} が見つかりません` };
+        }
+
+        // 主催者を設定
+        targetGroup.organizerId = organizerId;
+
+        const currentVersion = currentIndex.version ?? 0;
+
+        return {
+            index: {
+                schemaVersion: 2,
+                version: currentVersion + 1,
+                updatedAt: new Date().toISOString(),
+                organizers,
+                groups,
+                members: currentIndex.members.map((m) => ({
+                    ...m,
+                    sessionRevisions: [...m.sessionRevisions],
+                })),
+            },
+        };
+    }
+
+    /**
+     * 主催者を削除する（参照しているグループの organizerId を null にリセット）
+     * @param {object} currentIndex - 現在の DashboardIndex（V2）
+     * @param {string} organizerId - 削除する主催者の ID
+     * @returns {{ index: object, error?: string }}
+     */
+    removeOrganizer(currentIndex, organizerId) {
+        // バリデーション
+        if (!organizerId || typeof organizerId !== 'string') {
+            return { index: currentIndex, error: '主催者IDが指定されていません' };
+        }
+
+        const organizers = copyOrganizers(currentIndex);
+        const organizerIndex = organizers.findIndex((o) => o.id === organizerId);
+        if (organizerIndex === -1) {
+            return { index: currentIndex, error: `主催者ID ${organizerId} が見つかりません` };
+        }
+
+        // 主催者を配列から除去
+        organizers.splice(organizerIndex, 1);
+
+        // 参照しているグループの organizerId を null にリセット
+        const groups = currentIndex.groups.map((g) => {
+            const copy = { ...g, sessionRevisions: [...g.sessionRevisions] };
+            if (copy.organizerId === organizerId) {
+                copy.organizerId = null;
+            }
+            return copy;
+        });
+
+        const currentVersion = currentIndex.version ?? 0;
+
+        return {
+            index: {
+                schemaVersion: 2,
+                version: currentVersion + 1,
+                updatedAt: new Date().toISOString(),
+                organizers,
+                groups,
+                members: currentIndex.members.map((m) => ({
+                    ...m,
+                    sessionRevisions: [...m.sessionRevisions],
+                })),
+            },
+        };
     }
 }

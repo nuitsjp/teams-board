@@ -20,6 +20,7 @@ import {
     Trash2,
     AlertCircle,
     CheckCircle,
+    Building2,
 } from 'lucide-react';
 
 /**
@@ -84,6 +85,7 @@ export function GroupDetailPage() {
     const [deleting, setDeleting] = useState(false);
     const [deleteMessage, setDeleteMessage] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [organizerName, setOrganizerName] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -110,8 +112,16 @@ export function GroupDetailPage() {
             }
 
             setGroup(found);
+            // 主催者名を解決
+            const orgMap = new Map(
+                (indexResult.data.organizers ?? []).map((o) => [o.id, o.name])
+            );
+            setOrganizerName(found.organizerId ? orgMap.get(found.organizerId) ?? null : null);
 
             const memberNameMap = new Map(members.map((m) => [m.id, m.name]));
+            const organizerMap = new Map(
+                (indexResult.data.organizers ?? []).map((o) => [o.id, o.name])
+            );
 
             const sessionResults = await Promise.all(
                 found.sessionRevisions.map((ref) => sharedDataFetcher.fetchSession(ref))
@@ -393,6 +403,12 @@ export function GroupDetailPage() {
                         <h2 className="text-xl font-bold text-text-primary break-words">
                             {group.name}
                         </h2>
+                        {organizerName && (
+                            <div className="flex items-center gap-1.5 mt-1 text-sm text-text-secondary">
+                                <Building2 className="w-4 h-4 text-text-muted" aria-hidden="true" />
+                                <span>{organizerName}</span>
+                            </div>
+                        )}
                         <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
                             <span className="flex items-center gap-1.5">
                                 <Calendar

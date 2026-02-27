@@ -24,9 +24,12 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  Building2,
+  Save,
 } from 'lucide-react';
 import { GroupNameEditor } from '../components/GroupNameEditor.jsx';
 import { SessionEditorPanel } from '../components/SessionEditorPanel.jsx';
+import { MemberSelector } from '../components/MemberSelector.jsx';
 
 const MAX_SESSION_NAME_LENGTH = 256;
 
@@ -94,6 +97,10 @@ export function AdminPage() {
   const [expandedGroupIds, setExpandedGroupIds] = useState(new Set());
   const [selectedSessionRef, setSelectedSessionRef] = useState(null);
 
+  // 主催者管理用の状態
+  const [organizerInputs, setOrganizerInputs] = useState({});
+  const [savingOrganizersGroupId, setSavingOrganizersGroupId] = useState(null);
+
   // 既存セッションの取得とグループ一覧の取得（V2: sessionRevisions ベース）
   useEffect(() => {
     let cancelled = false;
@@ -137,6 +144,15 @@ export function AdminPage() {
           )
         );
 
+        // 主催者入力状態を初期化
+        setOrganizerInputs(
+          Object.fromEntries(
+            indexResult.data.groups.map((g) => [
+              g.id,
+              g.organizerId ? [g.organizerId] : [],
+            ])
+          )
+        );
       }
     })();
     return () => {
@@ -779,6 +795,181 @@ export function AdminPage() {
     [cachedIndex, indexEditor, blobWriter, dataFetcher]
   );
 
+  // 主催者保存処理
+  const handleSaveGroupOrganizer = useCallback(
+    async (groupId) => {
+      const selectedIds = organizerInputs[groupId] ?? [];
+      const organizerId = selectedIds.length > 0 ? selectedIds[0] : null;
+
+      setSavingOrganizersGroupId(groupId);
+      setGroupMessage({ type: '', text: '' });
+
+      try {
+        const latestIndexResult = await dataFetcher.fetchIndex();
+        if (!latestIndexResult.ok) {
+          setGroupMessage({
+            type: 'error',
+            text: '最新データの取得に失敗しました。ネットワーク接続を確認してください',
+          });
+          setSavingOrganizersGroupId(null);
+          return;
+        }
+
+        if (
+          cachedIndex &&
+          (latestIndexResult.data.version ?? 0) !== (cachedIndex.version ?? 0)
+        ) {
+          setGroupMessage({
+            type: 'error',
+            text: '他のユーザーが同時に編集しています。最新データを再読み込みしてください',
+          });
+          setSavingOrganizersGroupId(null);
+          return;
+        }
+
+        const { index: updatedIndex, error } = indexEditor.updateGroupOrganizer(
+          latestIndexResult.data,
+          groupId,
+          organizerId
+        );
+
+        if (error) {
+          setGroupMessage({ type: 'error', text: error });
+          setSavingOrganizersGroupId(null);
+          return;
+        }
+
+        const result = await blobWriter.executeWriteSequence({
+          newItems: [],
+          indexUpdater: () => updatedIndex,
+        });
+
+        if (!result.allSucceeded) {
+          const errorMessages = result.results
+            .filter((r) => !r.success)
+            .map((r) => r.error)
+            .join(', ');
+          setGroupMessage({
+            type: 'error',
+            text: `主催者の保存に失敗しました。${errorMessages}`,
+          });
+          setSavingOrganizersGroupId(null);
+          return;
+        }
+
+        dataFetcher.invalidateIndexCache();
+        const refreshed = await dataFetcher.fetchIndex();
+        if (refreshed.ok) {
+          setGroups(refreshed.data.groups);
+          setCachedIndex(refreshed.data);
+          setOrganizerInputs(
+            Object.fromEntries(
+              refreshed.data.groups.map((g) => [
+                g.id,
+                g.organizerId ? [g.organizerId] : [],
+              ])
+            )
+          );
+        }
+
+        setGroupMessage({ type: 'success', text: '主催者を保存しました' });
+      } catch (err) {
+        setGroupMessage({
+          type: 'error',
+          text: `主催者の保存に失敗しました。${err.message}`,
+        });
+      } finally {
+        setSavingOrganizersGroupId(null);
+      }
+    },
+    [dataFetcher, indexEditor, blobWriter, cachedIndex, organizerInputs]
+  );
+
+  // 新規主催者追加ハンドラ
+  const handleAddNewOrganizer = useCallback(
+    async (name) => {
+      /* v8 ignore next -- groups ロード後にのみ UI から呼ばれるため cachedIndex は常に存在 */
+      if (!cachedIndex) return null;
+
+      const { index: newIndex, organizerId, error } = indexEditor.addOrganizer(cachedIndex, name);
+      if (error) {
+        setGroupMessage({ type: 'error', text: error });
+        return null;
+      }
+
+      try {
+        const result = await blobWriter.executeWriteSequence({
+          newItems: [],
+          /* v8 ignore next 25 -- blobWriter 内部で呼ばれるコールバックのため直接テスト不可 */
+          indexUpdater: (latestIndex) => {
+            if (
+              cachedIndex &&
+              (latestIndex.version ?? 0) !== (cachedIndex.version ?? 0)
+            ) {
+              return null;
+            }
+
+            return {
+              ...latestIndex,
+              schemaVersion: 2,
+              version: (latestIndex.version ?? 0) + 1,
+              updatedAt: new Date().toISOString(),
+              organizers: [
+                ...(latestIndex.organizers ?? []).map((o) => ({ ...o })),
+                { id: organizerId, name },
+              ],
+              groups: latestIndex.groups.map((g) => ({
+                ...g,
+                sessionRevisions: [...g.sessionRevisions],
+              })),
+              members: latestIndex.members.map((m) => ({
+                ...m,
+                sessionRevisions: [...m.sessionRevisions],
+              })),
+            };
+          },
+        });
+
+        if (!result.allSucceeded) {
+          setGroupMessage({ type: 'error', text: '主催者の追加に失敗しました' });
+          return null;
+        }
+
+        const indexWritten = result.results.some(
+          (r) => r.path === 'data/index.json' && r.success
+        );
+        if (!indexWritten) {
+          setGroupMessage({
+            type: 'error',
+            text: 'データの競合が発生しました。再度お試しください。',
+          });
+          dataFetcher.invalidateIndexCache();
+          const refreshed = await dataFetcher.fetchIndex();
+          if (refreshed.ok) {
+            setCachedIndex(refreshed.data);
+          }
+          return null;
+        }
+
+        setCachedIndex(newIndex);
+        dataFetcher.invalidateIndexCache();
+        const refreshed = await dataFetcher.fetchIndex();
+        if (refreshed.ok) {
+          setCachedIndex(refreshed.data);
+        }
+
+        return organizerId;
+      } catch (error) {
+        setGroupMessage({
+          type: 'error',
+          text: `主催者の追加に失敗しました。${error.message}`,
+        });
+        return null;
+      }
+    },
+    [cachedIndex, indexEditor, blobWriter, dataFetcher]
+  );
+
   // 非管理者はダッシュボードにリダイレクト
   if (!auth.isAdmin) return <Navigate to="/" replace />;
 
@@ -928,13 +1119,41 @@ export function AdminPage() {
                         </span>
                       )}
                     </div>
-                    {/* セッション一覧（アコーディオン） */}
+                    {/* 主催者 + セッション一覧（アコーディオン） */}
                     <div
                       className="accordion-panel"
                       data-expanded={isExpanded}
                       aria-hidden={!isExpanded}
                     >
                       <div className="accordion-panel-inner">
+                        {/* 主催者セクション */}
+                        <div className="px-3 py-3 border-t border-border-light">
+                          <MemberSelector
+                            items={cachedIndex?.organizers ?? []}
+                            selectedIds={organizerInputs[group.id] ?? []}
+                            onSelectionChange={(ids) =>
+                              setOrganizerInputs((prev) => ({ ...prev, [group.id]: ids }))
+                            }
+                            onAddNew={handleAddNewOrganizer}
+                            disabled={isGroupOperationDisabled || savingOrganizersGroupId === group.id}
+                            label="主催者"
+                            icon={Building2}
+                            searchPlaceholder="主催者を検索または新規追加..."
+                            addNewLabelFn={(name) => `「${name}」を新しい主催者として追加`}
+                            multiple={false}
+                          />
+                          <div className="mt-2 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveGroupOrganizer(group.id)}
+                              disabled={isGroupOperationDisabled || savingOrganizersGroupId === group.id}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white rounded-lg text-xs hover:bg-primary-700 transition-colors disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
+                            >
+                              <Save className="w-3.5 h-3.5" aria-hidden="true" />
+                              {savingOrganizersGroupId === group.id ? '保存中...' : '主催者を保存'}
+                            </button>
+                          </div>
+                        </div>
                         <div className="border-t border-border-light">
                           {groupSessions.length === 0 ? (
                             <p className="px-3 py-2 text-xs text-text-muted">セッションなし</p>

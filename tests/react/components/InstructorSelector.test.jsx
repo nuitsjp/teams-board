@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InstructorSelector } from '../../../src/components/InstructorSelector.jsx';
+import { MemberSelector } from '../../../src/components/MemberSelector.jsx';
 
 const defaultMembers = [
     { id: 'member-1', name: 'Suzuki Taro' },
@@ -240,7 +241,7 @@ describe('InstructorSelector', () => {
 
         await user.click(screen.getByRole('combobox'));
 
-        expect(screen.getByText('該当するメンバーがありません')).toBeInTheDocument();
+        expect(screen.getByText('該当するアイテムがありません')).toBeInTheDocument();
     });
 
     it('IME 入力中は Escape キーが無視される', async () => {
@@ -320,5 +321,67 @@ describe('InstructorSelector', () => {
 
         expect(onAddNewMember).toHaveBeenCalledWith('新しい講師');
         expect(onInstructorChange).not.toHaveBeenCalled();
+    });
+});
+
+describe('MemberSelector — single-select (multiple=false)', () => {
+    it('multiple=false 時にアイテム選択で既存選択が置換されること', async () => {
+        const user = userEvent.setup();
+        const onSelectionChange = vi.fn();
+
+        render(
+            <MemberSelector
+                items={defaultMembers}
+                selectedIds={['member-1']}
+                onSelectionChange={onSelectionChange}
+                onAddNew={vi.fn()}
+                multiple={false}
+            />
+        );
+
+        await user.click(screen.getByRole('combobox'));
+        await user.click(screen.getByText('Tanaka Koji'));
+
+        // multiple=false なので既存の member-1 は置換され [member-2] のみ
+        expect(onSelectionChange).toHaveBeenCalledWith(['member-2']);
+    });
+
+    it('multiple=false 時に新規追加で selectedIds が置換されること', async () => {
+        const user = userEvent.setup();
+        const onAddNew = vi.fn().mockResolvedValue('new-id');
+        const onSelectionChange = vi.fn();
+
+        render(
+            <MemberSelector
+                items={defaultMembers}
+                selectedIds={['member-1']}
+                onSelectionChange={onSelectionChange}
+                onAddNew={onAddNew}
+                multiple={false}
+                addNewLabelFn={(name) => `「${name}」を新しい主催者として追加`}
+            />
+        );
+
+        await user.type(screen.getByRole('combobox'), '新しい主催者');
+        await user.click(screen.getByText(/「新しい主催者」を新しい主催者として追加/));
+
+        expect(onAddNew).toHaveBeenCalledWith('新しい主催者');
+        expect(onSelectionChange).toHaveBeenCalledWith(['new-id']);
+    });
+
+    it('カスタム label と searchPlaceholder が表示されること', () => {
+        render(
+            <MemberSelector
+                items={defaultMembers}
+                selectedIds={[]}
+                onSelectionChange={vi.fn()}
+                onAddNew={vi.fn()}
+                label="主催者"
+                searchPlaceholder="主催者を検索..."
+            />
+        );
+
+        expect(screen.getByText('主催者')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('主催者を検索...')).toBeInTheDocument();
     });
 });
