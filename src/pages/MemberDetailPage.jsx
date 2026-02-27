@@ -398,32 +398,32 @@ export function MemberDetailPage() {
                       aria-expanded={isExpanded}
                       className="w-full px-6 py-3.5 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
                         {isExpanded ? (
-                          <ChevronDown className="w-5 h-5 text-text-muted" aria-hidden="true" />
+                          <ChevronDown className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
                         ) : (
-                          <ChevronRight className="w-5 h-5 text-text-muted" aria-hidden="true" />
+                          <ChevronRight className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
                         )}
-                        <div>
+                        <div className="min-w-0">
                           <h3 className="text-base font-bold text-text-primary">{group.groupName}</h3>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
-                            <span className="flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
-                              <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回参加
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
-                              <span className="font-display">{formatDuration(group.totalDurationSeconds)}</span>
-                            </span>
-                          </div>
+                          {group.organizerName && (
+                            <div className="flex items-center gap-1 text-xs text-text-muted">
+                              <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{group.organizerName}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      {group.organizerName && (
-                        <span className="flex items-center gap-1 text-sm text-text-muted shrink-0">
-                          <Building2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                          <span>{group.organizerName}</span>
+                      <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+                          <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回参加
                         </span>
-                      )}
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+                          <span className="font-display">{formatDuration(group.totalDurationSeconds)}</span>
+                        </span>
+                      </div>
                     </button>
 
                     <div
@@ -497,28 +497,28 @@ export function MemberDetailPage() {
                       aria-expanded={isExpanded}
                       className="w-full px-6 py-3.5 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
                         {isExpanded ? (
-                          <ChevronDown className="w-5 h-5 text-text-muted" aria-hidden="true" />
+                          <ChevronDown className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
                         ) : (
-                          <ChevronRight className="w-5 h-5 text-text-muted" aria-hidden="true" />
+                          <ChevronRight className="w-5 h-5 text-text-muted shrink-0" aria-hidden="true" />
                         )}
-                        <div>
+                        <div className="min-w-0">
                           <h4 className="text-base font-bold text-text-primary">{group.groupName}</h4>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
-                            <span className="flex items-center gap-1.5">
-                              <GraduationCap className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
-                              <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回
-                            </span>
-                          </div>
+                          {group.organizerName && (
+                            <div className="flex items-center gap-1 text-xs text-text-muted">
+                              <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{group.organizerName}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      {group.organizerName && (
-                        <span className="flex items-center gap-1 text-sm text-text-muted shrink-0">
-                          <Building2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                          <span>{group.organizerName}</span>
+                      <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
+                        <span className="flex items-center gap-1.5">
+                          <GraduationCap className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+                          <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回
                         </span>
-                      )}
+                      </div>
                     </button>
 
                     <div
