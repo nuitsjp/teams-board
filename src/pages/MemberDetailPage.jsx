@@ -348,7 +348,7 @@ export function MemberDetailPage() {
                 key={period.label}
                 onClick={() => setSelectedPeriodLabel(period.label)}
                 aria-pressed={isSelected}
-                className={`w-full text-left px-4 py-3 rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+                className={`w-full text-left px-4 py-3 min-h-[73px] rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
                   isSelected
                     ? 'bg-white shadow-sm border-l-3 border-l-primary-500'
                     : 'hover:bg-surface-muted border-l-3 border-l-transparent'
@@ -396,7 +396,7 @@ export function MemberDetailPage() {
                     <button
                       onClick={() => toggleGroup(group.groupId)}
                       aria-expanded={isExpanded}
-                      className="w-full px-6 py-3.5 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                      className="w-full px-6 py-3 min-h-[73px] flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
                     >
                       <div className="flex items-center gap-4 min-w-0 flex-1">
                         {isExpanded ? (
@@ -495,7 +495,7 @@ export function MemberDetailPage() {
                     <button
                       onClick={() => toggleGroup(`instructor-${group.groupId}`)}
                       aria-expanded={isExpanded}
-                      className="w-full px-6 py-3.5 flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                      className="w-full px-6 py-3 min-h-[73px] flex items-center justify-between text-left hover:bg-surface-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
                     >
                       <div className="flex items-center gap-4 min-w-0 flex-1">
                         {isExpanded ? (
