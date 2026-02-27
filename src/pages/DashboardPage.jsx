@@ -78,7 +78,7 @@ export function DashboardPage() {
     );
   }
 
-  const { groups, members } = data;
+  const { groups, members, organizers } = data;
 
   const { totalSessions, totalDuration } = groups.reduce(
     (acc, g) => ({
@@ -100,7 +100,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* 左カラム: グループ — メンバー一覧スクロール時もビューポートに追従 */}
         <div className="lg:col-span-6 lg:sticky lg:top-20 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-          <GroupList groups={groups} />
+          <GroupList groups={groups} organizers={organizers ?? []} />
         </div>
 
         {/* 右カラム: メンバー一覧 */}

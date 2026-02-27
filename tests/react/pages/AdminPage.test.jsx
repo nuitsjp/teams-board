@@ -2079,7 +2079,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
     // 講師検索入力に新規名を入力
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
 
     // 新規追加オプションをクリック
@@ -2110,7 +2110,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2136,7 +2136,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2162,7 +2162,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2232,7 +2232,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 
@@ -2281,7 +2281,7 @@ describe('AdminPage — 新規メンバー追加（講師用）', () => {
     await user.click(await screen.findByRole('button', { name: /テストグループ1 を展開/ }));
     await user.click(await screen.findByRole('button', { name: /2026-02-08/ }));
 
-    const instructorInput = screen.getByRole('combobox');
+    const instructorInput = screen.getByRole('combobox', { name: '講師を検索' });
     await user.type(instructorInput, '新しい講師');
     await user.click(screen.getByText(/「新しい講師」を新しい講師として追加/));
 

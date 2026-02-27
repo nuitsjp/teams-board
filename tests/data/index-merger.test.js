@@ -320,4 +320,53 @@ describe('IndexMerger', () => {
       expect(result.warnings).toEqual([]);
     });
   });
+
+  describe('主催者（organizer）関連', () => {
+    it('新規グループに organizerId: null が設定されること', () => {
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
+      expect(result.index.groups[0].organizerId).toBeNull();
+    });
+
+    it('organizers 配列がイミュータブルにコピーされること', () => {
+      const indexWithOrganizers = {
+        ...emptyIndex,
+        organizers: [{ id: 'org1', name: '開発チーム' }],
+      };
+      const parsedSession = createParsedSession();
+      const result = merger.merge(indexWithOrganizers, parsedSession);
+
+      expect(result.index.organizers).toEqual([{ id: 'org1', name: '開発チーム' }]);
+      expect(result.index.organizers).not.toBe(indexWithOrganizers.organizers);
+      expect(result.index.organizers[0]).not.toBe(indexWithOrganizers.organizers[0]);
+    });
+
+    it('organizers が未定義の場合は空配列になること', () => {
+      const parsedSession = createParsedSession();
+      const result = merger.merge(emptyIndex, parsedSession);
+
+      expect(result.index.organizers).toEqual([]);
+    });
+
+    it('既存グループの organizerId が保持されること', () => {
+      const existingIndex = {
+        ...emptyIndex,
+        organizers: [{ id: 'org1', name: '開発チーム' }],
+        groups: [
+          {
+            id: 'existing-group',
+            name: 'フロントエンド勉強会',
+            organizerId: 'org1',
+            totalDurationSeconds: 0,
+            sessionRevisions: [],
+          },
+        ],
+      };
+      const parsedSession = createParsedSession();
+      const result = merger.merge(existingIndex, parsedSession);
+
+      expect(result.index.groups[0].organizerId).toBe('org1');
+    });
+  });
 });

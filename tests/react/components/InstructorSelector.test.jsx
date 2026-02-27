@@ -240,7 +240,7 @@ describe('InstructorSelector', () => {
 
         await user.click(screen.getByRole('combobox'));
 
-        expect(screen.getByText('該当するメンバーがありません')).toBeInTheDocument();
+        expect(screen.getByText('該当するアイテムがありません')).toBeInTheDocument();
     });
 
     it('IME 入力中は Escape キーが無視される', async () => {

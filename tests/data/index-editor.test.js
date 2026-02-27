@@ -816,4 +816,252 @@ describe('IndexEditor', () => {
       expect(result.index).toBe(sampleIndex);
     });
   });
+
+  // --- 主催者関連テスト ---
+
+  const sampleIndexWithOrganizers = {
+    schemaVersion: 2,
+    version: 1,
+    organizers: [
+      { id: 'org1', name: '開発チーム' },
+      { id: 'org2', name: '技術戦略部' },
+    ],
+    groups: [
+      {
+        id: 'group1',
+        name: 'テストグループ1',
+        organizerId: 'org1',
+        totalDurationSeconds: 3600,
+        sessionRevisions: ['session1/0'],
+      },
+      {
+        id: 'group2',
+        name: 'テストグループ2',
+        organizerId: null,
+        totalDurationSeconds: 1800,
+        sessionRevisions: ['session2/0'],
+      },
+    ],
+    members: [
+      {
+        id: 'member1',
+        name: 'メンバー1',
+        totalDurationSeconds: 3600,
+        sessionRevisions: ['session1/0'],
+      },
+    ],
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  describe('addOrganizer', () => {
+    it('正常系: 新規主催者を追加し ULID を返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addOrganizer(sampleIndexWithOrganizers, '新しい組織');
+
+      expect(result.error).toBeUndefined();
+      expect(result.organizerId).toBeTruthy();
+      expect(result.index.organizers).toHaveLength(3);
+      expect(result.index.organizers[2].name).toBe('新しい組織');
+      expect(result.index.organizers[2].id).toBe(result.organizerId);
+      expect(result.index.version).toBe(2);
+    });
+
+    it('正常系: 入力オブジェクトは変更されない', () => {
+      const editor = new IndexEditor();
+      const original = JSON.parse(JSON.stringify(sampleIndexWithOrganizers));
+      editor.addOrganizer(sampleIndexWithOrganizers, '新しい組織');
+
+      expect(sampleIndexWithOrganizers).toEqual(original);
+    });
+
+    it('異常系: 空文字はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addOrganizer(sampleIndexWithOrganizers, '');
+
+      expect(result.error).toBe('主催者名を入力してください');
+      expect(result.index).toBe(sampleIndexWithOrganizers);
+    });
+
+    it('異常系: 空白のみはエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addOrganizer(sampleIndexWithOrganizers, '   ');
+
+      expect(result.error).toBe('主催者名を入力してください');
+    });
+
+    it('異常系: 256文字超はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addOrganizer(sampleIndexWithOrganizers, 'a'.repeat(257));
+
+      expect(result.error).toBe('主催者名は256文字以内で入力してください');
+    });
+
+    it('異常系: 文字列でない場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.addOrganizer(sampleIndexWithOrganizers, 123);
+
+      expect(result.error).toBe('主催者名は文字列である必要があります');
+    });
+  });
+
+  describe('updateGroupOrganizer', () => {
+    it('正常系: グループに主催者を設定する', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupOrganizer(sampleIndexWithOrganizers, 'group2', 'org2');
+
+      expect(result.error).toBeUndefined();
+      expect(result.index.groups.find((g) => g.id === 'group2').organizerId).toBe('org2');
+      expect(result.index.version).toBe(2);
+    });
+
+    it('正常系: 主催者を解除（null を設定）する', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupOrganizer(sampleIndexWithOrganizers, 'group1', null);
+
+      expect(result.error).toBeUndefined();
+      expect(result.index.groups.find((g) => g.id === 'group1').organizerId).toBeNull();
+    });
+
+    it('正常系: 他のグループやメンバーに影響しない', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupOrganizer(sampleIndexWithOrganizers, 'group2', 'org1');
+
+      expect(result.index.groups.find((g) => g.id === 'group1').organizerId).toBe('org1');
+      expect(result.index.members).toHaveLength(1);
+    });
+
+    it('正常系: 入力オブジェクトは変更されない', () => {
+      const editor = new IndexEditor();
+      const original = JSON.parse(JSON.stringify(sampleIndexWithOrganizers));
+      editor.updateGroupOrganizer(sampleIndexWithOrganizers, 'group2', 'org1');
+
+      expect(sampleIndexWithOrganizers).toEqual(original);
+    });
+
+    it('正常系: organizers 配列もイミュータブルにコピーされる', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupOrganizer(sampleIndexWithOrganizers, 'group2', 'org1');
+
+      expect(result.index.organizers).not.toBe(sampleIndexWithOrganizers.organizers);
+      expect(result.index.organizers).toEqual(sampleIndexWithOrganizers.organizers);
+    });
+
+    it('異常系: 存在しないグループIDはエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupOrganizer(sampleIndexWithOrganizers, 'nonexistent', 'org1');
+
+      expect(result.error).toBe('グループID nonexistent が見つかりません');
+      expect(result.index).toBe(sampleIndexWithOrganizers);
+    });
+
+    it('異常系: 存在しない主催者IDはエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupOrganizer(sampleIndexWithOrganizers, 'group1', 'nonexistent');
+
+      expect(result.error).toBe('主催者ID nonexistent が見つかりません');
+    });
+
+    it('異常系: グループIDが未指定はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupOrganizer(sampleIndexWithOrganizers, '', 'org1');
+
+      expect(result.error).toBe('グループIDが指定されていません');
+    });
+
+    it('異常系: 主催者IDが文字列でもnullでもない場合はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupOrganizer(sampleIndexWithOrganizers, 'group1', 123);
+
+      expect(result.error).toBe('主催者IDは文字列またはnullである必要があります');
+    });
+  });
+
+  describe('removeOrganizer', () => {
+    it('正常系: 主催者を削除し、参照グループの organizerId を null にリセットする', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeOrganizer(sampleIndexWithOrganizers, 'org1');
+
+      expect(result.error).toBeUndefined();
+      expect(result.index.organizers).toHaveLength(1);
+      expect(result.index.organizers[0].id).toBe('org2');
+      expect(result.index.groups.find((g) => g.id === 'group1').organizerId).toBeNull();
+      expect(result.index.version).toBe(2);
+    });
+
+    it('正常系: 参照されていない主催者も正常に削除できる', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeOrganizer(sampleIndexWithOrganizers, 'org2');
+
+      expect(result.error).toBeUndefined();
+      expect(result.index.organizers).toHaveLength(1);
+      expect(result.index.groups.find((g) => g.id === 'group1').organizerId).toBe('org1');
+    });
+
+    it('正常系: 入力オブジェクトは変更されない', () => {
+      const editor = new IndexEditor();
+      const original = JSON.parse(JSON.stringify(sampleIndexWithOrganizers));
+      editor.removeOrganizer(sampleIndexWithOrganizers, 'org1');
+
+      expect(sampleIndexWithOrganizers).toEqual(original);
+    });
+
+    it('異常系: 存在しない主催者IDはエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeOrganizer(sampleIndexWithOrganizers, 'nonexistent');
+
+      expect(result.error).toBe('主催者ID nonexistent が見つかりません');
+    });
+
+    it('異常系: 主催者IDが未指定はエラーを返す', () => {
+      const editor = new IndexEditor();
+      const result = editor.removeOrganizer(sampleIndexWithOrganizers, '');
+
+      expect(result.error).toBe('主催者IDが指定されていません');
+    });
+  });
+
+  describe('既存メソッドの organizers 保持', () => {
+    it('updateGroupName: organizers がイミュータブルにコピーされる', () => {
+      const editor = new IndexEditor();
+      const result = editor.updateGroupName(sampleIndexWithOrganizers, 'group1', '新名前');
+
+      expect(result.index.organizers).toEqual(sampleIndexWithOrganizers.organizers);
+      expect(result.index.organizers).not.toBe(sampleIndexWithOrganizers.organizers);
+    });
+
+    it('mergeGroups: organizers がイミュータブルにコピーされ、統合先 organizerId が保持される', () => {
+      const editor = new IndexEditor();
+      const result = editor.mergeGroups(sampleIndexWithOrganizers, 'group1', ['group1', 'group2']);
+
+      expect(result.index.organizers).toEqual(sampleIndexWithOrganizers.organizers);
+      expect(result.index.organizers).not.toBe(sampleIndexWithOrganizers.organizers);
+      expect(result.index.groups).toHaveLength(1);
+      expect(result.index.groups[0].organizerId).toBe('org1');
+    });
+
+    it('removeSessionFromGroup: organizers がイミュータブルにコピーされる', () => {
+      const editor = new IndexEditor();
+      const sessionData = {
+        attendances: [{ memberId: 'member1', durationSeconds: 1800 }],
+        instructors: [],
+      };
+      const result = editor.removeSessionFromGroup(
+        sampleIndexWithOrganizers,
+        'group1',
+        'session1/0',
+        sessionData
+      );
+
+      expect(result.index.organizers).toEqual(sampleIndexWithOrganizers.organizers);
+      expect(result.index.organizers).not.toBe(sampleIndexWithOrganizers.organizers);
+    });
+
+    it('addMember: organizers がイミュータブルにコピーされる', () => {
+      const editor = new IndexEditor();
+      const result = editor.addMember(sampleIndexWithOrganizers, '新メンバー');
+
+      expect(result.index.organizers).toEqual(sampleIndexWithOrganizers.organizers);
+      expect(result.index.organizers).not.toBe(sampleIndexWithOrganizers.organizers);
+    });
+  });
 });

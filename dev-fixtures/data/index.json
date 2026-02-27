@@ -2,10 +2,21 @@
   "schemaVersion": 2,
   "version": 1,
   "updatedAt": "2026-02-17T10:13:57.654Z",
+  "organizers": [
+    {
+      "id": "01KHNHF98Q1ORGN1Z0R0000001",
+      "name": "フロントエンド推進室"
+    },
+    {
+      "id": "01KHNHF98Q1ORGN1Z0R0000002",
+      "name": "技術戦略部"
+    }
+  ],
   "groups": [
     {
       "id": "01KHNHF98M86MWSATH6W4TR205",
       "name": "フロントエンド勉強会",
+      "organizerId": "01KHNHF98Q1ORGN1Z0R0000001",
       "totalDurationSeconds": 64805,
       "sessionRevisions": [
         "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
@@ -25,6 +36,7 @@
     {
       "id": "01KHNHF98N1V9F6KS4EF77WWG9",
       "name": "TypeScript読書会",
+      "organizerId": "01KHNHF98Q1ORGN1Z0R0000002",
       "totalDurationSeconds": 54900,
       "sessionRevisions": [
         "01KHNHF98NHCE84RXN9CPPZJ96/0",
@@ -37,6 +49,7 @@
     {
       "id": "01KHNHF98NFYN6BJSEKEHG92KP",
       "name": "ソフトウェア設計勉強会",
+      "organizerId": null,
       "totalDurationSeconds": 30000,
       "sessionRevisions": [
         "01KHNHF98PW37VS33RZ04CMD3W/0",
@@ -46,6 +59,7 @@
     {
       "id": "01KHNHF98NDA6XJD3WBTR60XQ9",
       "name": "インフラ技術研究会",
+      "organizerId": null,
       "totalDurationSeconds": 18600,
       "sessionRevisions": [
         "01KHNHF98PT0FNSFP4J0CJAMNQ/0",

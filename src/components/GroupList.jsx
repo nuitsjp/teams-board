@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { formatDuration } from '../utils/format-duration';
-import { Users, Clock, ChevronRight } from 'lucide-react';
+import { Users, Clock, ChevronRight, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 /** ホバー時にテキストが省略されている場合のみツールチップを有効化 */
@@ -16,7 +16,7 @@ function handleTruncateMouseLeave(e) {
     e.currentTarget.removeAttribute('data-truncated');
 }
 
-const GroupRow = memo(function GroupRow({ group, onNavigate, index }) {
+const GroupRow = memo(function GroupRow({ group, onNavigate, index, organizerName }) {
     return (
         <div
             data-testid="group-row"
@@ -31,6 +31,12 @@ const GroupRow = memo(function GroupRow({ group, onNavigate, index }) {
                 onMouseLeave={handleTruncateMouseLeave}
             >
                 <h3 className="font-semibold text-text-primary truncate">{group.name}</h3>
+                {organizerName && (
+                    <div className="flex items-center gap-1 text-xs text-text-muted">
+                        <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{organizerName}</span>
+                    </div>
+                )}
             </div>
             <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
                 <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
@@ -49,8 +55,9 @@ const GroupRow = memo(function GroupRow({ group, onNavigate, index }) {
     );
 });
 
-export function GroupList({ groups }) {
+export function GroupList({ groups, organizers = [] }) {
     const navigate = useNavigate();
+    const organizerMap = new Map(organizers.map((o) => [o.id, o.name]));
 
     return (
         <div className="card-base">
@@ -62,7 +69,13 @@ export function GroupList({ groups }) {
             </div>
             <div>
                 {groups.map((group, index) => (
-                    <GroupRow key={group.id} group={group} onNavigate={navigate} index={index} />
+                    <GroupRow
+                        key={group.id}
+                        group={group}
+                        onNavigate={navigate}
+                        index={index}
+                        organizerName={group.organizerId ? organizerMap.get(group.organizerId) ?? null : null}
+                    />
                 ))}
             </div>
         </div>
