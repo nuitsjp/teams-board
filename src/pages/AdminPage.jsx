@@ -900,6 +900,7 @@ export function AdminPage() {
       try {
         const result = await blobWriter.executeWriteSequence({
           newItems: [],
+          /* v8 ignore next 25 -- blobWriter 内部で呼ばれるコールバックのため直接テスト不可 */
           indexUpdater: (latestIndex) => {
             if (
               cachedIndex &&
