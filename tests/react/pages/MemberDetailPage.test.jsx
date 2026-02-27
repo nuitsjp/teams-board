@@ -19,10 +19,12 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
 const mockIndexData = {
   schemaVersion: 2,
   version: 1,
+  organizers: [{ id: 'org1', name: 'フロントエンド推進室' }],
   groups: [
     {
       id: 'g1',
       name: 'フロントエンド勉強会',
+      organizerId: 'org1',
       totalDurationSeconds: 3600,
       sessionRevisions: ['g1-2026-01-15/0'],
     },
@@ -149,6 +151,40 @@ describe('MemberDetailPage', () => {
     expect(screen.getByText('振り返り会')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '日付' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: '参加時間' })).toBeInTheDocument();
+  });
+
+  it('グループアコーディオンに主催者名が表示されること', async () => {
+    mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+    mockFetchSession.mockResolvedValue({ ok: true, data: mockSessionData });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+    });
+
+    // 主催者名がグループ名の下に表示される
+    expect(screen.getByText('フロントエンド推進室')).toBeInTheDocument();
+  });
+
+  it('主催者が未設定のグループでは主催者名が表示されないこと', async () => {
+    const indexWithoutOrganizer = {
+      ...mockIndexData,
+      organizers: [],
+      groups: [
+        { ...mockIndexData.groups[0], organizerId: null },
+      ],
+    };
+    mockFetchIndex.mockResolvedValue({ ok: true, data: indexWithoutOrganizer });
+    mockFetchSession.mockResolvedValue({ ok: true, data: mockSessionData });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('佐藤 一郎')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('フロントエンド推進室')).not.toBeInTheDocument();
   });
 
   it('存在しないメンバーIDの場合にエラーを表示すること', async () => {

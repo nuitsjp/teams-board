@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { getFiscalPeriod } from '../utils/fiscal-period.js';
-import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight, GraduationCap, Building2 } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -46,7 +46,7 @@ export function MemberDetailPage() {
         return;
       }
 
-      const { groups, members } = indexResult.data;
+      const { groups, members, organizers } = indexResult.data;
       const found = members.find((m) => m.id === memberId);
       if (!found) {
         setError('参加者が見つかりません');
@@ -56,11 +56,15 @@ export function MemberDetailPage() {
 
       setMember(found);
 
+      // 主催者名のルックアップマップ
+      const organizerMap = new Map((organizers ?? []).map((o) => [o.id, o.name]));
+
       // sessionRef → グループ情報のマッピング
       const sessionGroupMap = new Map();
       for (const group of groups) {
+        const organizerName = group.organizerId ? organizerMap.get(group.organizerId) ?? null : null;
         for (const ref of group.sessionRevisions) {
-          sessionGroupMap.set(ref, { groupId: group.id, groupName: group.name });
+          sessionGroupMap.set(ref, { groupId: group.id, groupName: group.name, organizerName });
         }
       }
 
@@ -118,6 +122,7 @@ export function MemberDetailPage() {
           sessionId: session.sessionId,
           groupId: resolvedGroup.groupId,
           groupName: resolvedGroup.groupName,
+          organizerName: resolvedGroup.organizerName,
           date,
           title: session.title,
           durationSeconds: attendance.durationSeconds,
@@ -157,6 +162,7 @@ export function MemberDetailPage() {
           sessionId: session.sessionId,
           groupId: resolvedGroup.groupId,
           groupName: resolvedGroup.groupName,
+          organizerName: resolvedGroup.organizerName,
           date,
           title: session.title,
         });
@@ -172,6 +178,7 @@ export function MemberDetailPage() {
             groupMap.set(session.groupId, {
               groupId: session.groupId,
               groupName: session.groupName,
+              organizerName: session.organizerName,
               totalDurationSeconds: 0,
               sessions: [],
             });
@@ -200,6 +207,7 @@ export function MemberDetailPage() {
             instructorGroupMap.set(session.groupId, {
               groupId: session.groupId,
               groupName: session.groupName,
+              organizerName: session.organizerName,
               sessions: [],
             });
           }
@@ -398,6 +406,12 @@ export function MemberDetailPage() {
                         )}
                         <div>
                           <h3 className="text-base font-bold text-text-primary">{group.groupName}</h3>
+                          {group.organizerName && (
+                            <div className="flex items-center gap-1 text-xs text-text-muted">
+                              <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{group.organizerName}</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                             <span className="flex items-center gap-1.5">
                               <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
@@ -491,6 +505,12 @@ export function MemberDetailPage() {
                         )}
                         <div>
                           <h4 className="text-base font-bold text-text-primary">{group.groupName}</h4>
+                          {group.organizerName && (
+                            <div className="flex items-center gap-1 text-xs text-text-muted">
+                              <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{group.organizerName}</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                             <span className="flex items-center gap-1.5">
                               <GraduationCap className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
