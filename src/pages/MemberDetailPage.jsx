@@ -415,15 +415,15 @@ export function MemberDetailPage() {
                               <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                               <span className="font-display">{formatDuration(group.totalDurationSeconds)}</span>
                             </span>
-                            {group.organizerName && (
-                              <span className="flex items-center gap-1 text-text-muted">
-                                <Building2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                                <span>{group.organizerName}</span>
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
+                      {group.organizerName && (
+                        <span className="flex items-center gap-1 text-sm text-text-muted shrink-0">
+                          <Building2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                          <span>{group.organizerName}</span>
+                        </span>
+                      )}
                     </button>
 
                     <div
@@ -510,15 +510,15 @@ export function MemberDetailPage() {
                               <GraduationCap className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                               <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回
                             </span>
-                            {group.organizerName && (
-                              <span className="flex items-center gap-1 text-text-muted">
-                                <Building2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                                <span>{group.organizerName}</span>
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
+                      {group.organizerName && (
+                        <span className="flex items-center gap-1 text-sm text-text-muted shrink-0">
+                          <Building2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                          <span>{group.organizerName}</span>
+                        </span>
+                      )}
                     </button>
 
                     <div
