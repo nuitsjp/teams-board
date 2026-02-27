@@ -406,12 +406,6 @@ export function MemberDetailPage() {
                         )}
                         <div>
                           <h3 className="text-base font-bold text-text-primary">{group.groupName}</h3>
-                          {group.organizerName && (
-                            <div className="flex items-center gap-1 text-xs text-text-muted">
-                              <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
-                              <span className="truncate">{group.organizerName}</span>
-                            </div>
-                          )}
                           <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                             <span className="flex items-center gap-1.5">
                               <Calendar className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
@@ -421,6 +415,12 @@ export function MemberDetailPage() {
                               <Clock className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                               <span className="font-display">{formatDuration(group.totalDurationSeconds)}</span>
                             </span>
+                            {group.organizerName && (
+                              <span className="flex items-center gap-1 text-text-muted">
+                                <Building2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                <span>{group.organizerName}</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -505,17 +505,17 @@ export function MemberDetailPage() {
                         )}
                         <div>
                           <h4 className="text-base font-bold text-text-primary">{group.groupName}</h4>
-                          {group.organizerName && (
-                            <div className="flex items-center gap-1 text-xs text-text-muted">
-                              <Building2 className="w-3 h-3 shrink-0" aria-hidden="true" />
-                              <span className="truncate">{group.organizerName}</span>
-                            </div>
-                          )}
                           <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                             <span className="flex items-center gap-1.5">
                               <GraduationCap className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
                               <span className="font-display font-semibold text-text-primary">{group.sessionCount}</span>回
                             </span>
+                            {group.organizerName && (
+                              <span className="flex items-center gap-1 text-text-muted">
+                                <Building2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                <span>{group.organizerName}</span>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
