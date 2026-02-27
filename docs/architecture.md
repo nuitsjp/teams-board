@@ -7,7 +7,7 @@
 - 対象：
   - ブラウザで動作する SPA（React + Vite）
   - データモデル（`data/index.json` / `data/sessions/*.json` / `data/sources/*.csv`）
-  - 管理者向け CSV 取込・保存・グループ名編集の処理
+  - 管理者向け CSV 取込・保存・グループ名編集・主催者設定・講師設定の処理
   - 開発・テスト・デプロイの実装構成
 - 非対象：
   - ドキュメントシステム（MkDocs）自体のアーキテクチャ
@@ -16,11 +16,11 @@
 
 Teams Board は、Microsoft Teams の参加者レポート CSV を集約し、以下を可視化する静的サイト型ダッシュボードである。
 
-- 会議グループ単位の開催回数・総参加時間
-- メンバー単位の参加回数・総参加時間
-- セッション単位の参加者詳細
+- 会議グループ単位の開催回数・総参加時間・主催者情報
+- メンバー単位の参加回数・総参加時間・講師実績
+- セッション単位の参加者詳細・講師情報
 
-更新系操作（CSV 取込、グループ名編集）は管理者のみ実行でき、SAS トークンを用いて Azure Blob Storage のデータを直接更新する。
+更新系操作（CSV 取込、グループ名編集、主催者設定、講師設定）は管理者のみ実行でき、SAS トークンを用いて Azure Blob Storage のデータを直接更新する。
 
 ## 3. システムコンテキスト
 
@@ -33,7 +33,7 @@ graph LR
     Blob[(Azure Blob Storage<br/>$web)]
 
     Admin -->|参加者レポート取得<br/>システム外作業| Teams
-    Admin -->|CSV取込・グループ名編集| SPA
+    Admin -->|CSV取込・グループ名編集<br/>主催者設定・講師設定| SPA
     User -->|閲覧| SPA
     SPA -->|GET data/index.json| Blob
     SPA -->|GET data/sessions/*.json| Blob
@@ -94,7 +94,7 @@ graph TD
 | --- | --- | --- | --- |
 | `CsvTransformer` | Teams 参加者レポート（UTF-16LE/TSV）解析 | CSV `File` | `sessionRecord` と `mergeInput`、警告 |
 | `IndexMerger` | セッション追加時の `index.json` 更新 | 現在 index + 新規セッション情報 | 更新済み index + warnings |
-| `IndexEditor` | グループ名編集 | 現在 index + `groupId` + `newName` | 更新済み index または検証エラー |
+| `IndexEditor` | グループ名編集、主催者管理、セッションリビジョン作成（講師設定含む）、メンバー追加 | 現在 index + 編集パラメーター | 更新済み index または検証エラー |
 | `DataFetcher` | 参照系 JSON 取得 | 相対パス (`data/...`) | `{ ok, data/error }` |
 | `ProductionIndexFetcher` / `DevIndexFetcher` | 保存前の最新 index 取得 | Blob URL + SAS / 開発用相対 URL | `{ ok, data/error }` |
 | `AzureBlobStorage` / `DevBlobStorage` | PUT 書き込み抽象化 | path + content + contentType | `{ path, success, error? }` |
@@ -106,33 +106,37 @@ graph TD
 
 | パス | 内容 | 更新方式 |
 | --- | --- | --- |
-| `data/index.json` | グループ・メンバーの集約情報 + `updatedAt` | 上書き更新 |
-| `data/sessions/<sessionId>.json` | セッション単位の参加明細 | 追記作成（重複時は同名更新の可能性あり） |
-| `data/sources/<sessionId>.csv` | 取込元 CSV 原本 | 追記作成（重複時は同名更新の可能性あり） |
+| `data/index.json` | グループ・メンバー・主催者の集約情報 + `version` / `updatedAt` | 上書き更新（楽観ロック） |
+| `data/sessions/<sessionId>/<revision>.json` | セッション単位の参加明細・講師情報 | リビジョン追記（既存ファイルは不変） |
+| `data/sources/<sessionId>.csv` | 取込元 CSV 原本 | 追記作成 |
 
 ### 6.2 `index.json` 論理モデル
 
 | エンティティ | フィールド | 説明 |
 | --- | --- | --- |
-| GroupSummary | `id`, `name`, `totalDurationSeconds`, `sessionIds[]` | 会議グループ集約 |
-| MemberSummary | `id`, `name`, `totalDurationSeconds`, `sessionIds[]` | メンバー集約 |
-| DashboardIndex | `groups[]`, `members[]`, `updatedAt` | ダッシュボード表示基盤 |
+| Organizer | `id`, `name` | 主催者（組織・部署） |
+| GroupSummary | `id`, `name`, `organizerId`, `totalDurationSeconds`, `sessionRevisions[]` | 会議グループ集約 |
+| MemberSummary | `id`, `name`, `totalDurationSeconds`, `instructorCount`, `sessionRevisions[]` | メンバー集約 |
+| DashboardIndex | `schemaVersion`, `version`, `updatedAt`, `organizers[]`, `groups[]`, `members[]` | ダッシュボード表示基盤 |
 
-### 6.3 `sessions/*.json` 論理モデル
+### 6.3 `sessions/<sessionId>/<revision>.json` 論理モデル
 
 | フィールド | 説明 |
 | --- | --- |
-| `id` | `groupId-YYYY-MM-DD` 形式のセッション ID |
-| `date` | 開催日（`YYYY-MM-DD`） |
+| `sessionId` | セッション ID（ULID） |
+| `revision` | リビジョン番号（0 始まり整数） |
+| `title` | セッションタイトル |
+| `startedAt` | 開始日時（ISO 8601） |
+| `endedAt` | 終了日時（ISO 8601 または `null`） |
 | `attendances[]` | `memberId`, `durationSeconds` の配列 |
+| `instructors[]` | 講師メンバー ID の配列 |
+| `createdAt` | 作成日時（ISO 8601） |
 
-所属グループは `sessions/*.json` では保持せず、`index.json` の `groups[].sessionIds` で一元管理する。
+所属グループは `sessions/` では保持せず、`index.json` の `groups[].sessionRevisions[]` で一元管理する。
 
 ### 6.4 ID 生成ルール
 
-1. `groupId`: クリーニング後会議タイトルの SHA-256 先頭 8 hex
-2. `memberId`: メールアドレスの SHA-256 先頭 8 hex
-3. `sessionId`: `groupId-date`
+すべての ID（`groupId` / `memberId` / `sessionId` / `organizerId`）は ULID を使用する。
 
 `IndexMerger` は既存 `sessionId` と重複した場合に集約更新を行わず warning を返す。
 
@@ -142,7 +146,7 @@ graph TD
 
 1. `DataFetcher.fetchIndex()` が `data/index.json?v=<timestamp>` を取得する。
 2. ダッシュボードは集約値を直接描画する。
-3. 詳細画面は `sessionIds` を使って `data/sessions/*.json` を並列取得する。
+3. 詳細画面は `sessionRevisions` を使って `data/sessions/<sessionId>/<revision>.json` を並列取得する。
 4. 取得失敗時は画面でエラーメッセージを表示する。
 
 ### 7.2 CSV 取込・保存系（管理者）
@@ -169,7 +173,9 @@ sequenceDiagram
 
 保存順序は `raw -> session -> index`。途中失敗時は即時中断し、ロールバックは行わない。
 
-### 7.3 グループ名編集系（管理者）
+### 7.3 グループ・セッション編集系（管理者）
+
+#### グループ名編集
 
 1. 画面初期表示時に `index.json` を取得し、`cachedIndex` として保持する。
 2. 保存時に再度 `index.json` を取得し、`updatedAt` を比較する。
@@ -177,11 +183,25 @@ sequenceDiagram
 4. `BlobWriter` で `data/index.json` を上書きする。
 5. 保存後に再取得して画面状態を同期する。
 
+#### 主催者設定
+
+1. 管理者が会議グループに対して主催者を選択・割り当てる。
+2. `IndexEditor` が `index.json` の `groups[].organizerId` を更新し、必要に応じて `organizers[]` に新規主催者を追加する。
+3. `BlobWriter` で `data/index.json` を上書きする。
+
+#### 講師設定
+
+1. 管理者がセッションに対して講師メンバーを指定する。
+2. `IndexEditor` が新しいリビジョンのセッション JSON を生成し、`instructors[]` を設定する。
+3. セッション JSON を `data/sessions/<sessionId>/<newRevision>.json` に保存する。
+4. `index.json` の `sessionRevisions[]` を新リビジョンに置換し、対象メンバーの `instructorCount` を再集計する。
+5. `BlobWriter` で `data/index.json` を上書きする。
+
 ### 7.4 業務操作の連携方式
 
-- 管理者の登録・修正操作は `data/index.json` と `data/sessions/*.json` を更新する。
+- 管理者の登録・修正・設定操作は `data/index.json` と `data/sessions/*.json` を更新する。
 - 利用者の閲覧操作は更新済みの静的データを参照して行われ、管理者の更新操作とは非同期で連携する。
-- グループ名修正では `index.json` の `updatedAt` を更新時刻として扱い、保存時の整合性確認に利用する。
+- グループ名修正・主催者設定・講師設定では `index.json` の `version` による楽観ロックで保存時の整合性を確認する。
 
 ## 8. 認証・認可・セキュリティ
 
@@ -299,7 +319,7 @@ E2E テストでは、以下の方針で画面遷移とアサーションの安�
    `raw/session/index` の途中失敗時にロールバックがなく、不整合が残る可能性がある。
 2. CSV 取込の同時更新競合制御が弱い  
    グループ名編集と異なり `updatedAt` 比較を伴わないため、同時操作で上書き競合が起こり得る。
-3. ID の衝突可能性  
-   8 hex（32bit）ハッシュを使うため、理論上衝突リスクがある。
+3. ID の衝突可能性
+   ULID はタイムスタンプ＋ランダム成分で構成されるため衝突リスクは極めて低いが、理論上ゼロではない。
 4. 認可の中心が SAS トークン運用  
    トークン配布・失効・権限範囲は運用設計に依存する。
