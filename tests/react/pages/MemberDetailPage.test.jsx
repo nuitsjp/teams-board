@@ -16,6 +16,12 @@ vi.mock('../../../src/services/data-fetcher.js', () => {
   };
 });
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
 const mockIndexData = {
   schemaVersion: 2,
   version: 1,
@@ -197,15 +203,45 @@ describe('MemberDetailPage', () => {
     });
   });
 
-  it('「一覧へ戻る」リンクが表示されること', async () => {
+  it('「戻る」リンクが表示されること', async () => {
     mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
     mockFetchSession.mockResolvedValue({ ok: true, data: mockSessionData });
 
     renderWithRouter('m1');
 
     await waitFor(() => {
-      expect(screen.getByText('一覧へ戻る')).toBeInTheDocument();
+      expect(screen.getByText('戻る')).toBeInTheDocument();
     });
+  });
+
+  it('「戻る」ボタンクリックで navigateBack が呼ばれること', async () => {
+    const user = userEvent.setup();
+    mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+    mockFetchSession.mockResolvedValue({ ok: true, data: mockSessionData });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('戻る')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('戻る'));
+    // 履歴なし環境ではダッシュボードへフォールバック
+    expect(mockNavigate).toHaveBeenCalledWith('/');
+  });
+
+  it('エラー画面の「戻る」ボタンクリックで navigateBack が呼ばれること', async () => {
+    const user = userEvent.setup();
+    mockFetchIndex.mockResolvedValue({ ok: false, error: 'ネットワークエラー' });
+
+    renderWithRouter('m1');
+
+    await waitFor(() => {
+      expect(screen.getByText('戻る')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('戻る'));
+    expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
   describe('期別表示', () => {

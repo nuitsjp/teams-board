@@ -18,6 +18,12 @@ vi.mock('../../../src/services/shared-data-fetcher.js', () => {
     };
 });
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return { ...actual, useNavigate: () => mockNavigate };
+});
+
 // useAuth モック
 const mockAuth = { sasToken: null, isAdmin: false };
 vi.mock('../../../src/hooks/useAuth.jsx', () => ({
@@ -59,10 +65,12 @@ vi.mock('../../../src/services/blob-storage.js', () => ({
 const mockIndexData = {
     schemaVersion: 2,
     version: 1,
+    organizers: [{ id: 'org1', name: 'フロントエンド推進室' }],
     groups: [
         {
             id: 'g1',
             name: 'フロントエンド勉強会',
+            organizerId: 'org1',
             totalDurationSeconds: 5400,
             sessionRevisions: ['g1-2026-01-15/0', 'g1-2026-01-20/0'],
         },
@@ -329,7 +337,7 @@ describe('GroupDetailPage', () => {
         });
     });
 
-    it('「一覧へ戻る」ボタンが表示されること', async () => {
+    it('「戻る」ボタンが表示されること', async () => {
         mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
         mockFetchSession.mockImplementation((ref) => {
             if (ref === 'g1-2026-01-15/0')
@@ -342,8 +350,64 @@ describe('GroupDetailPage', () => {
         renderWithRouter('g1');
 
         await waitFor(() => {
-            expect(screen.getByText('一覧へ戻る')).toBeInTheDocument();
+            expect(screen.getByText('戻る')).toBeInTheDocument();
         });
+    });
+
+    it('「戻る」ボタンクリックで navigate(-1) が呼ばれること', async () => {
+        const user = userEvent.setup();
+        mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+        mockFetchSession.mockImplementation((ref) => {
+            if (ref === 'g1-2026-01-15/0')
+                return Promise.resolve({ ok: true, data: mockSessionData1 });
+            if (ref === 'g1-2026-01-20/0')
+                return Promise.resolve({ ok: true, data: mockSessionData2 });
+            return Promise.resolve({ ok: false, error: 'not found' });
+        });
+
+        renderWithRouter('g1');
+
+        await waitFor(() => {
+            expect(screen.getByText('戻る')).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByText('戻る'));
+        // 履歴なし環境ではダッシュボードへフォールバック
+        expect(mockNavigate).toHaveBeenCalledWith('/');
+    });
+
+    it('エラー画面の「戻る」ボタンクリックで navigateBack が呼ばれること', async () => {
+        const user = userEvent.setup();
+        mockFetchIndex.mockResolvedValue({ ok: false, error: 'Network error' });
+
+        renderWithRouter('g1');
+
+        await waitFor(() => {
+            expect(screen.getByText('戻る')).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByText('戻る'));
+        expect(mockNavigate).toHaveBeenCalledWith('/');
+    });
+
+    it('主催者名がヘッダーカードに表示されること', async () => {
+        mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+        mockFetchSession.mockImplementation((ref) => {
+            if (ref === 'g1-2026-01-15/0')
+                return Promise.resolve({ ok: true, data: mockSessionData1 });
+            if (ref === 'g1-2026-01-20/0')
+                return Promise.resolve({ ok: true, data: mockSessionData2 });
+            return Promise.resolve({ ok: false, error: 'not found' });
+        });
+
+        renderWithRouter('g1');
+
+        await waitFor(() => {
+            expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+        });
+
+        // 主催者名が表示される
+        expect(screen.getByText('フロントエンド推進室')).toBeInTheDocument();
     });
 
     it('講師がいるセッションに講師名がカンマ区切りで表示されること', async () => {

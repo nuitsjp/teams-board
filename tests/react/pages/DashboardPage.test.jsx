@@ -17,8 +17,11 @@ vi.mock('../../../src/services/shared-data-fetcher.js', () => {
 });
 
 const mockIndexData = {
+  organizers: [
+    { id: 'org1', name: 'フロントエンド推進室' },
+  ],
   groups: [
-    { id: 'g1', name: 'フロントエンド勉強会', totalDurationSeconds: 3600, sessionRevisions: ['s1'] },
+    { id: 'g1', name: 'フロントエンド勉強会', organizerId: 'org1', totalDurationSeconds: 3600, sessionRevisions: ['s1'] },
   ],
   members: [
     { id: 'm1', name: '佐藤 一郎', totalDurationSeconds: 1800, sessionRevisions: ['s1'] },
@@ -92,6 +95,57 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/データ取得エラー/)).toBeInTheDocument();
     });
+  });
+
+  it('主催者セクションが表示されること', async () => {
+    mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('主催者')).toBeInTheDocument();
+    });
+
+    // OrganizerList の行が表示されている
+    expect(screen.getAllByTestId('organizer-row')).toHaveLength(1);
+  });
+
+  it('organizers が undefined の場合でも正常に表示されること', async () => {
+    const dataWithUndefinedOrganizers = { ...mockIndexData, organizers: undefined };
+    mockFetchIndex.mockResolvedValue({ ok: true, data: dataWithUndefinedOrganizers });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('主催者')).not.toBeInTheDocument();
+  });
+
+  it('主催者が0件の場合は主催者セクションが表示されないこと', async () => {
+    const dataWithoutOrganizers = { ...mockIndexData, organizers: [] };
+    mockFetchIndex.mockResolvedValue({ ok: true, data: dataWithoutOrganizers });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('主催者')).not.toBeInTheDocument();
   });
 
   it('管理画面保存後の再表示で最新データを表示すること', async () => {

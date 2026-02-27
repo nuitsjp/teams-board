@@ -3,6 +3,7 @@ import { sharedDataFetcher } from '../services/shared-data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { SummaryCard } from '../components/SummaryCard';
 import { GroupList } from '../components/GroupList';
+import { OrganizerList } from '../components/OrganizerList';
 import { MemberList } from '../components/MemberList';
 import { Clock, Users, User } from 'lucide-react';
 
@@ -98,9 +99,16 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* 左カラム: グループ — メンバー一覧スクロール時もビューポートに追従 */}
-        <div className="lg:col-span-6 lg:sticky lg:top-20 animate-fade-in-up" style={{ animationDelay: '150ms' }}>
-          <GroupList groups={groups} organizers={organizers ?? []} />
+        {/* 左カラム: グループ + 主催者 — メンバー一覧スクロール時もビューポートに追従 */}
+        <div className="lg:col-span-6 lg:sticky lg:top-20 space-y-8">
+          <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+            <GroupList groups={groups} organizers={organizers ?? []} />
+          </div>
+          {(organizers ?? []).length > 0 && (
+            <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+              <OrganizerList organizers={organizers} groups={groups} />
+            </div>
+          )}
         </div>
 
         {/* 右カラム: メンバー一覧 */}

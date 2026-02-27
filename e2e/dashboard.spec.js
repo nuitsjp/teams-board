@@ -115,11 +115,11 @@ test.describe('画面遷移', () => {
         // 詳細画面に遷移 — メンバー名がヘッダーに表示される
         await expect(page.getByRole('heading', { name: memberName })).toBeVisible();
 
-        // 「一覧へ戻る」ボタンが表示されること
-        await expect(page.getByText('一覧へ戻る')).toBeVisible();
+        // 「戻る」ボタンが表示されること
+        await expect(page.getByText('戻る')).toBeVisible();
     });
 
-    test('「一覧へ戻る」ボタンでダッシュボードに戻れること', async ({ page }) => {
+    test('「戻る」ボタンでダッシュボードに戻れること', async ({ page }) => {
         await navigateTo(page, '/');
 
         // ヘッダー表示で画面準備完了を確認
@@ -131,10 +131,10 @@ test.describe('画面遷移', () => {
         await memberRow.click();
 
         // 詳細画面が表示されるまで待つ
-        await expect(page.getByText('一覧へ戻る')).toBeVisible();
+        await expect(page.getByText('戻る')).toBeVisible();
 
-        // 「一覧へ戻る」をクリック
-        await page.getByText('一覧へ戻る').click();
+        // 「戻る」をクリック
+        await page.getByText('戻る').click();
 
         // ダッシュボードに戻る
         await expect(page.getByRole('heading', { name: 'メンバー' })).toBeVisible();
@@ -170,8 +170,8 @@ test.describe('グループ詳細画面', () => {
         // 詳細画面に遷移 — グループ名がヘッダーに表示される
         await expect(page.getByRole('heading', { name: groupName })).toBeVisible();
 
-        // 「一覧へ戻る」ボタンが表示されること
-        await expect(page.getByText('一覧へ戻る')).toBeVisible();
+        // 「戻る」ボタンが表示されること
+        await expect(page.getByText('戻る')).toBeVisible();
     });
 
     test('グループ詳細画面でセッション一覧が表示されること', async ({ page }) => {
@@ -224,7 +224,7 @@ test.describe('グループ詳細画面', () => {
 
     test('グループ詳細画面のヘッダーに主催者名が表示されること', async ({ page }) => {
         const index = await fetchIndex();
-        // organizerId が設定されたグループ（フロントエンド勉強会）に遷移
+        // organizerId が設定されたグループに遷移
         const group = index.groups.find((g) => g.organizerId);
         if (!group) {
             throw new Error('主催者が設定されたグループが存在しないためテストできません');
@@ -266,21 +266,22 @@ test.describe('グループ詳細画面', () => {
         expect(foundInstructor).toBe(true);
     });
 
-    test('グループ詳細画面から「一覧へ戻る」でダッシュボードに戻れること', async ({ page }) => {
+    test('グループ詳細画面から「戻る」でダッシュボードに戻れること', async ({ page }) => {
         const index = await fetchIndex();
         const group = selectGroup(index);
         if (!group) {
             throw new Error('グループデータが存在しないためテストできません');
         }
+        // 直接URLアクセス（履歴なし）でもダッシュボードにフォールバックすること
         await navigateTo(page, `/#/groups/${group.id}`);
 
         // 詳細画面が表示されるまで待つ（画面準備完了を確認）
         await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
-        // 「一覧へ戻る」をクリック
-        await page.getByText('一覧へ戻る').click();
+        // 「戻る」をクリック
+        await page.getByText('戻る').click();
 
-        // ダッシュボードに戻る
+        // ダッシュボードに戻る（履歴なしでもフォールバック）
         await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
     });
 });
@@ -374,7 +375,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
 
     test('講師回数を持つメンバーで講師履歴セクションが表示されること', async ({ page }) => {
         const index = await fetchIndex();
-        // instructorCount > 0 のメンバー（Suzuki Taro A）に遷移
+        // instructorCount > 0 のメンバーに遷移
         const member = index.members.find((m) => (m.instructorCount ?? 0) > 0);
         if (!member) {
             throw new Error('講師回数を持つメンバーが存在しないためテストできません');

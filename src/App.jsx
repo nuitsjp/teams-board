@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { DashboardPage } from './pages/DashboardPage.jsx';
 import { MemberDetailPage } from './pages/MemberDetailPage.jsx';
 import { GroupDetailPage } from './pages/GroupDetailPage.jsx';
+import { OrganizerDetailPage } from './pages/OrganizerDetailPage.jsx';
 import { BookOpen, Settings } from 'lucide-react';
 
 const loadAdminPage = () => import('./pages/AdminPage.jsx');
@@ -20,6 +21,7 @@ const router = createHashRouter([
   { path: '/', element: <DashboardPage /> },
   { path: '/members/:memberId', element: <MemberDetailPage /> },
   { path: '/groups/:groupId', element: <GroupDetailPage /> },
+  { path: '/organizers/:organizerId', element: <OrganizerDetailPage /> },
   {
     path: '/admin',
     element: (
