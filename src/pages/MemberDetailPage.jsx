@@ -340,7 +340,7 @@ export function MemberDetailPage() {
       {/* 期別2カラムレイアウト（出席履歴 + 講師履歴 統合） */}
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-6">
         {/* 左列: 統合期サマリーリスト */}
-        <div className="space-y-2">
+        <div className="space-y-4">
           {unifiedPeriods.map((period) => {
             const isSelected = period.label === selectedPeriodLabel;
             return (
@@ -348,7 +348,7 @@ export function MemberDetailPage() {
                 key={period.label}
                 onClick={() => setSelectedPeriodLabel(period.label)}
                 aria-pressed={isSelected}
-                className={`w-full text-left px-4 py-3 min-h-[73px] rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+                className={`w-full text-left px-4 py-3 min-h-[73px] rounded-r-2xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
                   isSelected
                     ? 'bg-white shadow-sm border-l-3 border-l-primary-500'
                     : 'hover:bg-surface-muted border-l-3 border-l-transparent'
