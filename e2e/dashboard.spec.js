@@ -267,22 +267,21 @@ test.describe('グループ詳細画面', () => {
     });
 
     test('グループ詳細画面から「戻る」でダッシュボードに戻れること', async ({ page }) => {
-        // まずダッシュボードに遷移して履歴を作る
-        await navigateTo(page, '/');
-        await expect(page.locator('header')).toContainText('Teams Board');
-
-        // グループ行をクリックして詳細画面に遷移
-        const groupRow = page.getByTestId('group-row').first();
-        await expect(groupRow).toBeVisible();
-        await groupRow.click();
+        const index = await fetchIndex();
+        const group = selectGroup(index);
+        if (!group) {
+            throw new Error('グループデータが存在しないためテストできません');
+        }
+        // 直接URLアクセス（履歴なし）でもダッシュボードにフォールバックすること
+        await navigateTo(page, `/#/groups/${group.id}`);
 
         // 詳細画面が表示されるまで待つ（画面準備完了を確認）
-        await expect(page.getByText('戻る')).toBeVisible();
+        await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
         // 「戻る」をクリック
         await page.getByText('戻る').click();
 
-        // ダッシュボードに戻る
+        // ダッシュボードに戻る（履歴なしでもフォールバック）
         await expect(page.getByRole('heading', { name: 'グループ', level: 2 })).toBeVisible();
     });
 });

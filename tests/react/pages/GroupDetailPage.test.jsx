@@ -372,10 +372,11 @@ describe('GroupDetailPage', () => {
         });
 
         await user.click(screen.getByText('戻る'));
-        expect(mockNavigate).toHaveBeenCalledWith(-1);
+        // 履歴なし環境ではダッシュボードへフォールバック
+        expect(mockNavigate).toHaveBeenCalledWith('/');
     });
 
-    it('エラー画面の「戻る」ボタンクリックで navigate(-1) が呼ばれること', async () => {
+    it('エラー画面の「戻る」ボタンクリックで navigateBack が呼ばれること', async () => {
         const user = userEvent.setup();
         mockFetchIndex.mockResolvedValue({ ok: false, error: 'Network error' });
 
@@ -386,7 +387,7 @@ describe('GroupDetailPage', () => {
         });
 
         await user.click(screen.getByText('戻る'));
-        expect(mockNavigate).toHaveBeenCalledWith(-1);
+        expect(mockNavigate).toHaveBeenCalledWith('/');
     });
 
     it('主催者名がヘッダーカードに表示されること', async () => {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { navigateBack } from '../utils/navigate-back.js';
 import { useAuth, createAuthAdapter } from '../hooks/useAuth.jsx';
 import { useFileQueue } from '../hooks/useFileQueue.js';
 import { FileDropZone } from '../components/FileDropZone.jsx';
@@ -979,7 +980,7 @@ export function AdminPage() {
       {/* 戻るボタン */}
       <button
         type="button"
-        onClick={() => navigate(-1)}
+        onClick={() => navigateBack(navigate)}
         className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />

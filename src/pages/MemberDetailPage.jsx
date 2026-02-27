@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
+import { navigateBack } from '../utils/navigate-back.js';
 import { getFiscalPeriod } from '../utils/fiscal-period.js';
 import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight, GraduationCap, Building2 } from 'lucide-react';
 
@@ -289,7 +290,7 @@ export function MemberDetailPage() {
         </div>
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => navigateBack(navigate)}
           className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-lg"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
@@ -304,7 +305,7 @@ export function MemberDetailPage() {
       {/* 戻るボタン */}
       <button
         type="button"
-        onClick={() => navigate(-1)}
+        onClick={() => navigateBack(navigate)}
         className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
