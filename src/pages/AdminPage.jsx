@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth, createAuthAdapter } from '../hooks/useAuth.jsx';
 import { useFileQueue } from '../hooks/useFileQueue.js';
 import { FileDropZone } from '../components/FileDropZone.jsx';
@@ -37,6 +37,7 @@ const MAX_SESSION_NAME_LENGTH = 256;
  * 管理者パネル — CSVインポート・プレビュー・一括保存機能
  */
 export function AdminPage() {
+  const navigate = useNavigate();
   const auth = useAuth();
   const authAdapter = useMemo(() => createAuthAdapter(auth), [auth]);
 
@@ -976,13 +977,14 @@ export function AdminPage() {
   return (
     <div className="space-y-6">
       {/* 戻るボタン */}
-      <Link
-        to="/"
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-        ダッシュボードへ戻る
-      </Link>
+        戻る
+      </button>
 
       <div>
         <h2 className="text-xl font-bold text-text-primary tracking-tight">管理者パネル</h2>

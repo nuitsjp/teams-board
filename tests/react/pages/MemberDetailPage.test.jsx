@@ -197,14 +197,14 @@ describe('MemberDetailPage', () => {
     });
   });
 
-  it('「一覧へ戻る」リンクが表示されること', async () => {
+  it('「戻る」リンクが表示されること', async () => {
     mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
     mockFetchSession.mockResolvedValue({ ok: true, data: mockSessionData });
 
     renderWithRouter('m1');
 
     await waitFor(() => {
-      expect(screen.getByText('一覧へ戻る')).toBeInTheDocument();
+      expect(screen.getByText('戻る')).toBeInTheDocument();
     });
   });
 

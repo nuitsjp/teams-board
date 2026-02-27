@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { getFiscalPeriod } from '../utils/fiscal-period.js';
@@ -28,6 +28,7 @@ function extractDate(startedAt) {
  */
 export function MemberDetailPage() {
   const { memberId } = useParams();
+  const navigate = useNavigate();
   const [member, setMember] = useState(null);
   const [unifiedPeriods, setUnifiedPeriods] = useState([]);
   const [selectedPeriodLabel, setSelectedPeriodLabel] = useState(null);
@@ -286,13 +287,14 @@ export function MemberDetailPage() {
         <div className="mx-auto max-w-xl mt-8 card-base border-l-4 border-l-error p-4 text-red-700">
           {error}
         </div>
-        <Link
-          to="/"
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
           className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-lg"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          一覧へ戻る
-        </Link>
+          戻る
+        </button>
       </div>
     );
   }
@@ -300,13 +302,14 @@ export function MemberDetailPage() {
   return (
     <div className="space-y-6">
       {/* 戻るボタン */}
-      <Link
-        to="/"
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded-lg px-3 py-1.5 -ml-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
       >
         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-        一覧へ戻る
-      </Link>
+        戻る
+      </button>
 
       {/* メンバーヘッダーカード — アクセント帯付き */}
       <div className="card-base rounded-t-none overflow-hidden animate-fade-in-up">

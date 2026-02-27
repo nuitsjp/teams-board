@@ -329,7 +329,7 @@ describe('GroupDetailPage', () => {
         });
     });
 
-    it('「一覧へ戻る」ボタンが表示されること', async () => {
+    it('「戻る」ボタンが表示されること', async () => {
         mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
         mockFetchSession.mockImplementation((ref) => {
             if (ref === 'g1-2026-01-15/0')
@@ -342,7 +342,7 @@ describe('GroupDetailPage', () => {
         renderWithRouter('g1');
 
         await waitFor(() => {
-            expect(screen.getByText('一覧へ戻る')).toBeInTheDocument();
+            expect(screen.getByText('戻る')).toBeInTheDocument();
         });
     });
 
