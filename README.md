@@ -14,7 +14,7 @@
 
 ## 参考資料
 
-- [ドキュメントサイト](https://ssd-mkdocs-platform.github.io/teams-board/)
+- [ドキュメントサイト](https://nuitsjp.github.io/teams-board/)
 - [デモサイト](https://stteamsboarddevprod.z11.web.core.windows.net/)
 
 ---
