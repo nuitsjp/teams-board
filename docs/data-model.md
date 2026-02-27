@@ -24,13 +24,20 @@ classDiagram
         +number schemaVersion
         +number version
         +string updatedAt
+        +Organizer[] organizers
         +GroupSummary[] groups
         +MemberSummary[] members
+    }
+
+    class Organizer {
+        +string id
+        +string name
     }
 
     class GroupSummary {
         +string id
         +string name
+        +string|null organizerId
         +number totalDurationSeconds
         +string[] sessionRevisions
     }
@@ -39,6 +46,7 @@ classDiagram
         +string id
         +string name
         +number totalDurationSeconds
+        +number instructorCount
         +string[] sessionRevisions
     }
 
@@ -49,6 +57,7 @@ classDiagram
         +string startedAt
         +string|null endedAt
         +Attendance[] attendances
+        +string[] instructors
         +string createdAt
     }
 
@@ -57,11 +66,14 @@ classDiagram
         +number durationSeconds
     }
 
+    DashboardIndex "1" *-- "0..*" Organizer : organizers
     DashboardIndex "1" *-- "0..*" GroupSummary : groups
     DashboardIndex "1" *-- "0..*" MemberSummary : members
+    Organizer "1" <.. "0..*" GroupSummary : organizerId で参照
     GroupSummary "0..*" ..> "0..*" SessionRecord : sessionRevisions[] で参照
     MemberSummary "0..*" ..> "0..*" SessionRecord : sessionRevisions[] で参照
     SessionRecord "1" *-- "1..*" Attendance : attendances
+    SessionRecord "0..*" ..> "0..*" MemberSummary : instructors[] で参照
 ```
 
 ## 3. 属性定義
@@ -73,28 +85,38 @@ classDiagram
 | `schemaVersion` | `number` | 必須 | スキーマバージョン | 固定値 `2` |
 | `version` | `number` | 必須 | 楽観ロック用バージョン | 0 始まりの整数。更新のたびにインクリメントする |
 | `updatedAt` | `string` | 必須 | 最終更新日時 | ISO 8601 形式（例: `2026-02-17T09:30:00.000Z`） |
+| `organizers` | `Organizer[]` | 必須 | 主催者の一覧 | 配列要素は `id` 一意 |
 | `groups` | `GroupSummary[]` | 必須 | 会議グループ集約の一覧 | 配列要素は `id` 一意 |
 | `members` | `MemberSummary[]` | 必須 | メンバー集約の一覧 | 配列要素は `id` 一意 |
 
-### 3.2 GroupSummary
+### 3.2 Organizer
+
+| 属性 | 型 | 必須 | 説明 | 制約・備考 |
+| --- | --- | --- | --- | --- |
+| `id` | `string` | 必須 | 主催者 ID | ULID（26 文字） |
+| `name` | `string` | 必須 | 主催者名 | 組織名や部署名など |
+
+### 3.3 GroupSummary
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
 | `id` | `string` | 必須 | 会議グループ ID | ULID（26 文字） |
 | `name` | `string` | 必須 | 会議グループ名 | CSV 取込時の正規化済み会議タイトル。名前ベースで既存グループとマッチングする |
+| `organizerId` | `string \| null` | 必須 | 主催者 ID | `Organizer.id`（ULID）を参照。未設定の場合は `null` |
 | `totalDurationSeconds` | `number` | 必須 | グループ累計参加秒数 | 0 以上の整数 |
 | `sessionRevisions` | `string[]` | 必須 | グループに属するセッション参照一覧 | `<sessionId>/<revision>` 形式 |
 
-### 3.3 MemberSummary
+### 3.4 MemberSummary
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
 | `id` | `string` | 必須 | メンバー ID | ULID（26 文字） |
 | `name` | `string` | 必須 | 表示名 | CSV の参加者名。名前ベースで既存メンバーとマッチングする |
 | `totalDurationSeconds` | `number` | 必須 | メンバー累計参加秒数 | 0 以上の整数 |
+| `instructorCount` | `number` | 必須 | 講師担当回数 | 0 以上の整数。セッションの `instructors[]` で指定された回数の集計値 |
 | `sessionRevisions` | `string[]` | 必須 | 参加したセッション参照一覧 | `<sessionId>/<revision>` 形式 |
 
-### 3.4 SessionRecord（`data/sessions/<sessionId>/<revision>.json`）
+### 3.5 SessionRecord（`data/sessions/<sessionId>/<revision>.json`）
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
@@ -104,6 +126,7 @@ classDiagram
 | `startedAt` | `string` | 必須 | 開始日時 | ISO 8601 形式 |
 | `endedAt` | `string \| null` | 必須 | 終了日時 | ISO 8601 形式。未設定の場合は `null` |
 | `attendances` | `Attendance[]` | 必須 | 参加明細一覧 | 1 件以上 |
+| `instructors` | `string[]` | 必須 | 講師メンバー ID 一覧 | `MemberSummary.id`（ULID）を参照。講師がいない場合は空配列 |
 | `createdAt` | `string` | 必須 | 作成日時 | ISO 8601 形式 |
 
 補足：
@@ -111,7 +134,7 @@ classDiagram
 - セッション JSON は追記のみで更新しないため、`updatedAt` は持たない
 - `groupId` はセッション JSON では持たず、`index.json` 側の所属情報で解決する
 
-### 3.5 Attendance
+### 3.6 Attendance
 
 | 属性 | 型 | 必須 | 説明 | 制約・備考 |
 | --- | --- | --- | --- | --- |
@@ -125,6 +148,9 @@ classDiagram
 | セッション参照 | `groups[].sessionRevisions[]` / `members[].sessionRevisions[]` は `data/sessions/<sessionId>/<revision>.json` を参照する |
 | パス導出 | 参照キー `<sessionId>/<revision>` から保存パス `data/sessions/<sessionId>/<revision>.json` を直接組み立てる |
 | グループ所属 | `SessionRecord` は `groupId` を持たず、`index.json` の `groups[].sessionRevisions[]` で所属を解決する |
+| 主催者参照 | `groups[].organizerId` は `organizers[].id` を参照する。`null` の場合は主催者未設定を意味する |
+| 講師参照 | `SessionRecord.instructors[]` は `members[].id` を参照する。指定されたメンバーはそのセッションの講師として記録される |
+| 講師集計 | `members[].instructorCount` は `sessions` 全体で当該メンバーが `instructors[]` に含まれる回数の集計値である |
 | 楽観ロック | `index.json` の `version` フィールドで競合を検出する。書き込み前に最新の `version` を確認し、不一致の場合は更新を中止する |
 | 更新日時 | `index.json` 更新時に `updatedAt` を現在時刻で更新する |
 
@@ -157,10 +183,17 @@ classDiagram
   "schemaVersion": 2,
   "version": 42,
   "updatedAt": "2026-02-17T09:30:00.000Z",
+  "organizers": [
+    {
+      "id": "01K2K5J1ABCD1234EFGH5678IJ",
+      "name": "フロントエンド推進室"
+    }
+  ],
   "groups": [
     {
       "id": "01K2K5K3PXW7CSMMAZ5X6VG5Q1",
       "name": "フロントエンド勉強会",
+      "organizerId": "01K2K5J1ABCD1234EFGH5678IJ",
       "totalDurationSeconds": 12420,
       "sessionRevisions": [
         "01K2K5R30YQWQ4YET5M8Q0M2J0/1",
@@ -173,6 +206,7 @@ classDiagram
       "id": "01K2K5N62DRBQ3DVQTV3EWM0BZ",
       "name": "佐藤 一郎",
       "totalDurationSeconds": 7020,
+      "instructorCount": 2,
       "sessionRevisions": [
         "01K2K5R30YQWQ4YET5M8Q0M2J0/1",
         "01K2K62G6Q2W3WB8M87J4J96MM/0"
@@ -182,6 +216,7 @@ classDiagram
       "id": "01K2K5P4XVEJ6SZ1NY80HC84YQ",
       "name": "鈴木 花子",
       "totalDurationSeconds": 5400,
+      "instructorCount": 0,
       "sessionRevisions": [
         "01K2K5R30YQWQ4YET5M8Q0M2J0/1"
       ]
@@ -209,6 +244,7 @@ classDiagram
       "durationSeconds": 5400
     }
   ],
+  "instructors": ["01K2K5N62DRBQ3DVQTV3EWM0BZ"],
   "createdAt": "2026-02-17T09:10:00.000Z"
 }
 ```
