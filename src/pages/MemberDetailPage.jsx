@@ -338,7 +338,7 @@ export function MemberDetailPage() {
       </div>
 
       {/* 期別2カラムレイアウト（出席履歴 + 講師履歴 統合） */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-6">
         {/* 左列: 統合期サマリーリスト */}
         <div className="space-y-2">
           {unifiedPeriods.map((period) => {
