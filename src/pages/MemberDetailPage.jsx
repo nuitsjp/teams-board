@@ -348,7 +348,7 @@ export function MemberDetailPage() {
                 key={period.label}
                 onClick={() => setSelectedPeriodLabel(period.label)}
                 aria-pressed={isSelected}
-                className={`w-full text-left px-4 py-3 min-h-[73px] rounded-r-2xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
+                className={`w-full text-left px-4 py-3 min-h-[73px] rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
                   isSelected
                     ? 'bg-white shadow-sm border-l-3 border-l-primary-500'
                     : 'hover:bg-surface-muted border-l-3 border-l-transparent'
@@ -390,7 +390,7 @@ export function MemberDetailPage() {
                 return (
                   <div
                     key={group.groupId}
-                    className="card-base overflow-hidden animate-fade-in-up"
+                    className="card-base rounded-lg overflow-hidden animate-fade-in-up"
                     style={{ animationDelay: `${index * 80}ms` }}
                   >
                     <button
@@ -489,7 +489,7 @@ export function MemberDetailPage() {
                 return (
                   <div
                     key={`instructor-${group.groupId}`}
-                    className="card-base overflow-hidden animate-fade-in-up"
+                    className="card-base rounded-lg overflow-hidden animate-fade-in-up"
                     style={{ animationDelay: `${index * 80}ms` }}
                   >
                     <button
