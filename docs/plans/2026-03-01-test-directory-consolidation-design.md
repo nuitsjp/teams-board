@@ -90,7 +90,7 @@ include: ['tests/**/*.test.{js,jsx}'],
 include: ['tests/unit/**/*.test.{js,jsx}'],
 ```
 
-`setupFiles` は `'./tests/vitest.setup.js'` のまま変更不要。
+`setupFiles` は `resolve(__dirname, 'tests/vitest.setup.js')` を指定する（pnpm workspace ルート解決問題の対策として絶対パスを使用）。
 
 ### package.json（scripts）
 
