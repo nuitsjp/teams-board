@@ -111,7 +111,7 @@ tests/playwright-report/
 tests/test-results/
 ```
 
-### CI ワークフロー（.github/workflows/app-deployment.yml）
+### CI ワークフロー（`.github/workflows/app-deployment.yml`）
 
 - paths フィルター: `e2e/**` → `tests/e2e/**`
 - アーティファクト path: `playwright-report/` → `tests/playwright-report/`
