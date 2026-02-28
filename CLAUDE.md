@@ -33,8 +33,8 @@ pnpm run preview          # ビルド後のプレビュー
 pnpm test                 # Vitest で全ユニットテストを実行
 pnpm run test:watch       # Vitest ウォッチモード
 pnpm run test:coverage    # テストカバレッジ付きで実行
-pnpm vitest run tests/logic/csv-transformer.test.js           # 単一テストファイル実行
-pnpm vitest run tests/react/pages/DashboardPage.test.jsx      # React コンポーネントテスト
+pnpm vitest run tests/unit/logic/csv-transformer.test.js      # 単一テストファイル実行
+pnpm vitest run tests/unit/react/pages/DashboardPage.test.jsx # React コンポーネントテスト
 
 # E2E テスト (Playwright)
 pnpm exec playwright install   # 初回のみ: ブラウザをインストール
@@ -130,12 +130,12 @@ The SAS token is extracted from the URL query parameter (`token`) on first load,
 
 ### Test Structure
 
-- `tests/data/` — DataFetcher, BlobWriter, IndexMerger tests
-- `tests/logic/` — CsvTransformer tests
-- `tests/react/` — React component, page, and hook tests
+- `tests/unit/data/` — DataFetcher, BlobWriter, IndexMerger tests
+- `tests/unit/logic/` — CsvTransformer tests
+- `tests/unit/react/` — React component, page, and hook tests
 - `tests/fixtures/` — Test CSV fixtures
 - `tests/vitest.setup.js` — webcrypto polyfill + jest-dom setup
-- `e2e/` — Playwright E2E tests、2プロジェクトに分離:
+- `tests/e2e/` — Playwright E2E tests、2プロジェクトに分離:
   - **`readonly-tests`** — 読み取り専用テスト（並列実行可）
   - **`data-mutation-tests`** — `admin-dev-mode.spec.js`（データ変更あり、readonly-tests 完了後に実行）
 

@@ -13,8 +13,8 @@ docs/openspec
 .playwright-mcp/
 
 # Playwright テスト生成物
-playwright-report/
-test-results/
+tests/playwright-report/
+tests/test-results/
 
 # E2Eテストのバックアップファイル
 dev-fixtures/data/.*.backup
