@@ -135,8 +135,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['tests/**/*.test.{js,jsx}'],
-    setupFiles: ['./tests/vitest.setup.js'],
+    include: ['tests/unit/**/*.test.{js,jsx}'],
+    setupFiles: [resolve(__dirname, 'tests/vitest.setup.js')],
     coverage: {
       include: ['src/**/*.{js,jsx}'],
       exclude: ['src/main.jsx', 'src/App.jsx', 'src/services/shared-data-fetcher.js'],

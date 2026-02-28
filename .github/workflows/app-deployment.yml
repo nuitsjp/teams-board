@@ -6,7 +6,6 @@ on:
     paths:
       - 'src/**'
       - 'tests/**'
-      - 'e2e/**'
       - 'public/**'
       - 'dev-fixtures/**'
       - 'index.html'
@@ -14,7 +13,6 @@ on:
       - 'pnpm-lock.yaml'
       - 'vite.config.js'
       - 'vitest.config.js'
-      - 'playwright.config.js'
       - 'eslint.config.js'
       - '.github/workflows/app-deployment.yml'
       - '.github/actions/setup-node-pnpm-uv/**'
@@ -24,7 +22,6 @@ on:
     paths:
       - 'src/**'
       - 'tests/**'
-      - 'e2e/**'
       - 'public/**'
       - 'dev-fixtures/**'
       - 'index.html'
@@ -32,7 +29,6 @@ on:
       - 'pnpm-lock.yaml'
       - 'vite.config.js'
       - 'vitest.config.js'
-      - 'playwright.config.js'
       - 'eslint.config.js'
       - '.github/workflows/app-deployment.yml'
       - '.github/actions/setup-node-pnpm-uv/**'
@@ -220,5 +216,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: playwright-report/
+          path: tests/playwright-report/
           retention-days: 30
