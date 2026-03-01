@@ -261,9 +261,9 @@ sequenceDiagram
 
 | 種別 | 主対象 | 代表ファイル |
 | --- | --- | --- |
-| ロジック/データ単体 | `CsvTransformer`, `IndexMerger`, `IndexEditor`, `BlobWriter`, `DataFetcher` | `tests/logic/`, `tests/data/` |
-| React コンポーネント/ページ | 画面表示・遷移・操作 | `tests/react/` |
-| E2E | 主要導線（ダッシュボード、管理者導線、開発モード更新） | `e2e/*.spec.js` |
+| ロジック/データ単体 | `CsvTransformer`, `IndexMerger`, `IndexEditor`, `BlobWriter`, `DataFetcher` | `tests/unit/logic/`, `tests/unit/data/` |
+| React コンポーネント/ページ | 画面表示・遷移・操作 | `tests/unit/react/` |
+| E2E | 主要導線（ダッシュボード、管理者導線、開発モード更新） | `tests/e2e/*.spec.js` |
 
 E2E は `global-setup` / `global-teardown` で `dev-fixtures/data/index.json` を退避・復元し、データ変更テストの再現性を担保する。
 
