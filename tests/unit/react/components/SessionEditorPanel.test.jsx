@@ -18,6 +18,8 @@ describe('SessionEditorPanel', () => {
     const defaultProps = {
         sessionName: '',
         onSessionNameChange: vi.fn(),
+        sessionUrl: '',
+        onSessionUrlChange: vi.fn(),
         onSave: vi.fn(),
         saving: false,
         message: { type: '', text: '' },
@@ -82,7 +84,7 @@ describe('SessionEditorPanel', () => {
         );
 
         await user.click(screen.getByRole('button', { name: '保存' }));
-        expect(onSave).toHaveBeenCalledWith('session1/0', '新しい名前', ['member-1']);
+        expect(onSave).toHaveBeenCalledWith('session1/0', '新しい名前', ['member-1'], '');
     });
 
     it('Enter キーで onSave が呼ばれる', async () => {
@@ -102,7 +104,7 @@ describe('SessionEditorPanel', () => {
         const input = screen.getByLabelText(/のセッション名/);
         await user.click(input);
         await user.keyboard('{Enter}');
-        expect(onSave).toHaveBeenCalledWith('session1/0', 'テスト', []);
+        expect(onSave).toHaveBeenCalledWith('session1/0', 'テスト', [], '');
     });
 
     it('Enter 以外のキーでは onSave が呼ばれない', async () => {
@@ -194,6 +196,117 @@ describe('SessionEditorPanel', () => {
 
         await user.type(screen.getByLabelText(/のセッション名/), 'A');
         expect(onChange).toHaveBeenCalledWith('A');
+    });
+
+    it('参考情報入力フィールドが表示される', () => {
+        render(
+            <SessionEditorPanel
+                {...defaultProps}
+                session={defaultSession}
+                sessionUrl="https://example.com/recording"
+            />
+        );
+
+        expect(screen.getByLabelText(/の参考情報 URL/)).toBeInTheDocument();
+        expect(screen.getByDisplayValue('https://example.com/recording')).toBeInTheDocument();
+    });
+
+    it('参考情報入力変更時に onSessionUrlChange が呼ばれる', async () => {
+        const user = userEvent.setup();
+        const onUrlChange = vi.fn();
+
+        render(
+            <SessionEditorPanel
+                {...defaultProps}
+                session={defaultSession}
+                onSessionUrlChange={onUrlChange}
+            />
+        );
+
+        await user.type(screen.getByLabelText(/の参考情報 URL/), 'h');
+        expect(onUrlChange).toHaveBeenCalledWith('h');
+    });
+
+    it('参考情報クリアボタンで onSessionUrlChange が空文字で呼ばれる', async () => {
+        const user = userEvent.setup();
+        const onUrlChange = vi.fn();
+
+        render(
+            <SessionEditorPanel
+                {...defaultProps}
+                session={defaultSession}
+                sessionUrl="https://example.com/test"
+                onSessionUrlChange={onUrlChange}
+            />
+        );
+
+        await user.click(screen.getByLabelText('参考情報をクリア'));
+        expect(onUrlChange).toHaveBeenCalledWith('');
+    });
+
+    it('参考情報が空の場合はクリアボタンが表示されない', () => {
+        render(
+            <SessionEditorPanel
+                {...defaultProps}
+                session={defaultSession}
+                sessionUrl=""
+            />
+        );
+
+        expect(screen.queryByLabelText('参考情報をクリア')).not.toBeInTheDocument();
+    });
+
+    it('sessionUrl が undefined の場合に参考情報入力欄が空で表示される', () => {
+        render(
+            <SessionEditorPanel
+                {...defaultProps}
+                session={defaultSession}
+                sessionUrl={undefined}
+            />
+        );
+
+        const urlInput = screen.getByLabelText(/の参考情報 URL/);
+        expect(urlInput.value).toBe('');
+    });
+
+    it('保存ボタンクリックで onSave が sessionUrl を含む4引数で呼ばれる', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn();
+
+        render(
+            <SessionEditorPanel
+                {...defaultProps}
+                session={defaultSession}
+                sessionName="テスト名"
+                sessionUrl="https://example.com/test"
+                onSave={onSave}
+                instructorIds={['member-1']}
+            />
+        );
+
+        await user.click(screen.getByRole('button', { name: '保存' }));
+        expect(onSave).toHaveBeenCalledWith('session1/0', 'テスト名', ['member-1'], 'https://example.com/test');
+    });
+
+    it('参考情報入力で Enter キーを押すと保存が呼ばれる', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn();
+
+        render(
+            <SessionEditorPanel
+                {...defaultProps}
+                session={defaultSession}
+                sessionName="テスト"
+                sessionUrl="https://example.com"
+                onSave={onSave}
+                instructorIds={[]}
+            />
+        );
+
+        const urlInput = screen.getByLabelText(/の参考情報 URL/);
+        await user.click(urlInput);
+        await user.keyboard('{Enter}');
+        expect(onSave).toHaveBeenCalledWith('session1/0', 'テスト', [], 'https://example.com');
     });
 
     it('講師セクションに InstructorSelector が表示される', () => {

@@ -740,6 +740,64 @@ describe('IndexEditor', () => {
       expect(result.error).toBe('講師IDは文字列である必要があります');
       expect(result.sessionRecord).toBeNull();
     });
+
+    it('正常系: url を設定して新リビジョンを作成する', () => {
+      const editor = new IndexEditor();
+      const result = editor.createSessionRevision('session1/0', sessionData, {
+        url: 'https://example.com/recording',
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.url).toBe('https://example.com/recording');
+      expect(result.sessionRecord.title).toBe('元のタイトル');
+    });
+
+    it('正常系: 既存の url が維持されること', () => {
+      const editor = new IndexEditor();
+      const dataWithUrl = { ...sessionData, url: 'https://example.com/existing' };
+      const result = editor.createSessionRevision('session1/0', dataWithUrl, {
+        title: '新タイトル',
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.url).toBe('https://example.com/existing');
+    });
+
+    it('正常系: url を空文字にしてクリアする', () => {
+      const editor = new IndexEditor();
+      const dataWithUrl = { ...sessionData, url: 'https://example.com/existing' };
+      const result = editor.createSessionRevision('session1/0', dataWithUrl, {
+        url: '',
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.url).toBeUndefined();
+    });
+
+    it('後方互換性: url フィールドが未定義の既存データでも正常動作すること', () => {
+      const editor = new IndexEditor();
+      const dataWithoutUrl = { ...sessionData };
+      delete dataWithoutUrl.url;
+      const result = editor.createSessionRevision('session1/0', dataWithoutUrl, {
+        title: 'テスト',
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.url).toBeUndefined();
+      expect(result.sessionRecord.title).toBe('テスト');
+    });
+
+    it('後方互換性: url フィールドなしの sessionData に対して url を新規設定する', () => {
+      const editor = new IndexEditor();
+      const dataWithoutUrl = { ...sessionData };
+      delete dataWithoutUrl.url;
+      const result = editor.createSessionRevision('session1/0', dataWithoutUrl, {
+        url: 'https://example.com/new',
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.sessionRecord.url).toBe('https://example.com/new');
+    });
   });
 
   describe('addMember', () => {
