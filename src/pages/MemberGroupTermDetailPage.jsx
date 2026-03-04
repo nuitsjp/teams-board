@@ -736,6 +736,7 @@ export function MemberGroupTermDetailPage() {
                                         >
                                             日付
                                         </th>
+                                        <th scope="col" className="px-6 py-2" />
                                         <th
                                             scope="col"
                                             className="px-6 py-2 text-right text-xs font-semibold text-text-muted uppercase tracking-wider"
@@ -756,15 +757,11 @@ export function MemberGroupTermDetailPage() {
                                             key={session.sessionId}
                                             className="text-sm hover:bg-surface-muted transition-colors"
                                         >
-                                            <td className="px-6 py-3 text-text-primary">
-                                                <div className="whitespace-nowrap">
-                                                    {session.date}
-                                                </div>
-                                                {session.title && (
-                                                    <div className="text-xs text-text-secondary truncate max-w-[200px]">
-                                                        {session.title}
-                                                    </div>
-                                                )}
+                                            <td className="px-6 py-3 text-text-primary whitespace-nowrap">
+                                                {session.date}
+                                            </td>
+                                            <td className="px-6 py-3 text-text-secondary text-sm">
+                                                {session.title || ''}
                                             </td>
                                             <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
                                                 {formatDuration(session.durationSeconds)}
