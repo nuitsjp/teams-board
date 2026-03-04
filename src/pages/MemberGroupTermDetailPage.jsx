@@ -600,12 +600,10 @@ export function MemberGroupTermDetailPage() {
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-base">
                             {memberName.charAt(0)}
                         </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-text-primary">{memberName}</h2>
-                            <p className="text-xs text-text-secondary">
-                                {groupName} / {termLabel}
-                            </p>
-                        </div>
+                        <h2 className="text-lg font-bold text-text-primary">{memberName}</h2>
+                        <span className="text-base text-text-secondary font-medium">
+                            {groupName} / {termLabel}
+                        </span>
                     </div>
                 </div>
             </div>
