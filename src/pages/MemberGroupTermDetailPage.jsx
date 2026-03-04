@@ -201,7 +201,9 @@ export function MemberGroupTermDetailPage() {
 
     const hasCommon = commonDetail && !isDetailEmpty(commonDetail);
     const hasMember = memberDetail && !isDetailEmpty(memberDetail);
+    // メンバー情報優先: メンバー情報があれば共通情報タブは非表示
     const showTabs = hasCommon || hasMember;
+    const displayTab = hasMember ? 'member' : hasCommon ? 'common' : null;
 
     // 編集開始
     const startEditing = useCallback(() => {
@@ -618,38 +620,9 @@ export function MemberGroupTermDetailPage() {
                     {/* タブ */}
                     {showTabs && (
                         <div className="border-b border-border-light flex">
-                            {hasCommon && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setActiveTab('common');
-                                        setEditing(false);
-                                    }}
-                                    className={`px-6 py-3 text-sm font-medium transition-colors ${
-                                        activeTab === 'common'
-                                            ? 'border-b-2 border-primary-500 text-primary-700'
-                                            : 'text-text-secondary hover:text-text-primary hover:bg-surface-muted'
-                                    }`}
-                                >
-                                    共通情報
-                                </button>
-                            )}
-                            {hasMember && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setActiveTab('member');
-                                        setEditing(false);
-                                    }}
-                                    className={`px-6 py-3 text-sm font-medium transition-colors ${
-                                        activeTab === 'member'
-                                            ? 'border-b-2 border-primary-500 text-primary-700'
-                                            : 'text-text-secondary hover:text-text-primary hover:bg-surface-muted'
-                                    }`}
-                                >
-                                    メンバー情報
-                                </button>
-                            )}
+                            <div className="px-6 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-700">
+                                詳細
+                            </div>
                         </div>
                     )}
 
@@ -668,11 +641,11 @@ export function MemberGroupTermDetailPage() {
                             </div>
                         )}
 
-                        {/* 共通情報タブの内容 */}
-                        {activeTab === 'common' && !editing && renderDetail(commonDetail)}
+                        {/* 共通情報の表示（メンバー情報がない場合のみ） */}
+                        {displayTab === 'common' && !editing && renderDetail(commonDetail)}
 
-                        {/* メンバー情報タブの内容 */}
-                        {activeTab === 'member' && !editing && (
+                        {/* メンバー情報の表示（優先） */}
+                        {displayTab === 'member' && !editing && (
                             <div>
                                 {renderDetail(memberDetail)}
                                 <div className="mt-4">
