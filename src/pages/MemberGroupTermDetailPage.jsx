@@ -595,33 +595,17 @@ export function MemberGroupTermDetailPage() {
             {/* ヘッダーカード */}
             <div className="card-base rounded-t-none overflow-hidden animate-fade-in-up">
                 <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-accent-400" />
-                <div className="p-8">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-xl">
+                <div className="px-8 py-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-primary-700 font-bold text-base">
                             {memberName.charAt(0)}
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-text-primary">{memberName}</h2>
-                            <p className="text-sm text-text-secondary mt-0.5">
+                            <h2 className="text-lg font-bold text-text-primary">{memberName}</h2>
+                            <p className="text-xs text-text-secondary">
                                 {groupName} / {termLabel}
                             </p>
                         </div>
-                    </div>
-                    <div className="flex items-center gap-4 mt-4 text-sm text-text-secondary">
-                        <span className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4 text-text-muted" aria-hidden="true" />
-                            合計{' '}
-                            <span className="font-display font-semibold text-text-primary">
-                                {formatDuration(totalDurationSeconds)}
-                            </span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4 text-text-muted" aria-hidden="true" />
-                            <span className="font-display font-semibold text-text-primary">
-                                {sessions.length}
-                            </span>
-                            回参加
-                        </span>
                     </div>
                 </div>
             </div>
@@ -717,8 +701,30 @@ export function MemberGroupTermDetailPage() {
                         className="card-base overflow-hidden animate-fade-in-up"
                         style={{ animationDelay: '160ms' }}
                     >
-                        <div className="px-6 py-4 border-b border-border-light">
+                        <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
                             <h3 className="text-base font-bold text-text-primary">セッション一覧</h3>
+                            <div className="flex items-center gap-4 text-sm text-text-secondary">
+                                <span className="flex items-center gap-1.5">
+                                    <Clock
+                                        className="w-4 h-4 text-text-muted"
+                                        aria-hidden="true"
+                                    />
+                                    合計{' '}
+                                    <span className="font-display font-semibold text-text-primary">
+                                        {formatDuration(totalDurationSeconds)}
+                                    </span>
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <Calendar
+                                        className="w-4 h-4 text-text-muted"
+                                        aria-hidden="true"
+                                    />
+                                    <span className="font-display font-semibold text-text-primary">
+                                        {sessions.length}
+                                    </span>
+                                    回参加
+                                </span>
+                            </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">
