@@ -148,7 +148,7 @@ describe('MemberDetailPage', () => {
         });
 
         // 期サマリーが表示される（2025年度 下期 = 2026年1月）
-        expect(screen.getByText('2025年度 下期')).toBeInTheDocument();
+        expect(screen.getAllByText('2025年度 下期').length).toBeGreaterThanOrEqual(1);
         // グループ名がカードに表示される
         expect(screen.getByText(/フロントエンド勉強会/)).toBeInTheDocument();
         // グループカードが表示される（data-testid 要素）

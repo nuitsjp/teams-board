@@ -4,7 +4,7 @@ import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { navigateBack } from '../utils/navigate-back.js';
 import { getFiscalPeriod } from '../utils/fiscal-period.js';
-import { ArrowLeft, Clock, Calendar, GraduationCap, Building2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, GraduationCap, Building2, ChevronRight, Users } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -392,63 +392,68 @@ export function MemberDetailPage() {
                 {/* 右列: 選択した期のグループ一覧 */}
                 {selectedPeriod && (
                     <div className="card-base">
-                        {selectedPeriod.groups.map((group, index) => (
-                            <div
-                                key={group.groupId}
-                                data-testid="group-card"
-                                onClick={() =>
-                                    navigate(
-                                        `/members/${memberId}/groups/${group.groupId}/terms/${selectedPeriod.sortKey}`
-                                    )
-                                }
-                                className="list-accent-primary p-4 px-6 hover:bg-surface-muted cursor-pointer flex justify-between items-center group animate-fade-in-up border-b border-border-light last:border-b-0 last:rounded-b-2xl min-h-[73px]"
-                                style={{ animationDelay: `${index * 60}ms` }}
-                            >
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="font-semibold text-text-primary truncate">
-                                        {group.groupName}
-                                    </h3>
-                                    {group.organizerName && (
-                                        <div className="flex items-center gap-1 text-xs text-text-muted">
-                                            <Building2
-                                                className="w-3 h-3 shrink-0"
-                                                aria-hidden="true"
-                                            />
-                                            <span className="truncate">
-                                                {group.organizerName}
+                        <div className="p-6 border-b border-border-light flex items-center min-h-[83px]">
+                            <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                                <Users className="w-5 h-5 text-primary-600" />
+                                {selectedPeriod.label}
+                            </h2>
+                        </div>
+                        <div>
+                            {selectedPeriod.groups.map((group, index) => (
+                                <div
+                                    key={group.groupId}
+                                    data-testid="group-card"
+                                    onClick={() =>
+                                        navigate(
+                                            `/members/${memberId}/groups/${group.groupId}/terms/${selectedPeriod.sortKey}`
+                                        )
+                                    }
+                                    className="list-accent-primary p-4 px-6 hover:bg-surface-muted cursor-pointer flex justify-between items-center group animate-fade-in-up border-b border-border-light last:border-b-0 last:rounded-b-2xl min-h-[73px]"
+                                    style={{ animationDelay: `${index * 60}ms` }}
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="font-semibold text-text-primary truncate">
+                                            {group.groupName}
+                                        </h3>
+                                        {group.organizerName && (
+                                            <div className="flex items-center gap-1 text-xs text-text-muted">
+                                                <Building2
+                                                    className="w-3 h-3 shrink-0"
+                                                    aria-hidden="true"
+                                                />
+                                                <span className="truncate">
+                                                    {group.organizerName}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
+                                        <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
+                                            <span className="font-semibold text-text-primary font-display">
+                                                {group.sessionCount}
+                                            </span>{' '}
+                                            回参加
+                                        </span>
+                                        <span className="flex items-center gap-1.5 whitespace-nowrap">
+                                            <Clock className="w-4 h-4 text-text-muted" aria-hidden="true" />
+                                            <span className="font-display">
+                                                {formatDuration(group.totalDurationSeconds)}
                                             </span>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
-                                    <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
-                                        <span className="font-semibold text-text-primary font-display">
-                                            {group.sessionCount}
-                                        </span>{' '}
-                                        回参加
-                                    </span>
-                                    <span className="flex items-center gap-1.5 whitespace-nowrap">
-                                        <Clock
-                                            className="w-4 h-4 text-text-muted"
-                                            aria-hidden="true"
-                                        />
-                                        <span className="font-display">
-                                            {formatDuration(group.totalDurationSeconds)}
                                         </span>
-                                    </span>
-                                    {group.hasInstructor && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
-                                            <GraduationCap
-                                                className="w-3 h-3"
-                                                aria-hidden="true"
-                                            />
-                                            講師
-                                        </span>
-                                    )}
-                                    <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-primary-600 transition-colors" />
+                                        {group.hasInstructor && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
+                                                <GraduationCap
+                                                    className="w-3 h-3"
+                                                    aria-hidden="true"
+                                                />
+                                                講師
+                                            </span>
+                                        )}
+                                        <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-primary-600 transition-colors" />
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
