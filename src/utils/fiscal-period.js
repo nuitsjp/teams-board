@@ -19,3 +19,15 @@ export function getFiscalPeriod(dateString) {
 
     return { fiscalYear, half, label, sortKey };
 }
+
+/**
+ * sortKey（termKey）から期ラベルを復元する
+ * @param {string|number} termKey - sortKey 形式（例: "20240" = 2024年度 上期）
+ * @returns {string} 期ラベル（例: "2024年度 上期"）
+ */
+export function termKeyToLabel(termKey) {
+    const key = Number(termKey);
+    const fiscalYear = Math.floor(key / 10);
+    const halfDigit = key % 10;
+    return `${fiscalYear}年度 ${halfDigit === 0 ? '上期' : '下期'}`;
+}
