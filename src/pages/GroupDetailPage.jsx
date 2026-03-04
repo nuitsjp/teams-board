@@ -583,6 +583,303 @@ export function GroupDetailPage() {
 
                 {/* 右列: 選択した期のセッション別アコーディオン */}
                 <div className="space-y-4">
+                    {/* 共通情報セクション（管理者モードのみ） */}
+                    {auth.isAdmin && selectedPeriod && (
+                        <div className="card-base overflow-hidden animate-fade-in-up">
+                            <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
+                                <h3 className="text-base font-bold text-text-primary">
+                                    共通情報（{selectedPeriod.label}）
+                                </h3>
+                                {!editingCommon && (
+                                    <button
+                                        type="button"
+                                        onClick={startEditingCommon}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-primary-600 hover:bg-primary-50 transition-colors"
+                                    >
+                                        <Pencil className="w-4 h-4" aria-hidden="true" />
+                                        編集
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* メッセージ */}
+                            <div aria-live="polite">
+                                {commonMessage && (
+                                    <div
+                                        className={`mx-6 mt-4 p-3 rounded-xl flex items-center gap-2 animate-scale-in ${
+                                            commonMessage.type === 'success'
+                                                ? 'bg-green-50 text-green-800'
+                                                : 'bg-red-50 text-red-800'
+                                        }`}
+                                    >
+                                        {commonMessage.type === 'success' ? (
+                                            <CheckCircle className="w-5 h-5" aria-hidden="true" />
+                                        ) : (
+                                            <AlertCircle className="w-5 h-5" aria-hidden="true" />
+                                        )}
+                                        <span className="text-sm">{commonMessage.text}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-6">
+                                {!editingCommon ? (
+                                    /* 表示モード */
+                                    commonDetail &&
+                                    (commonDetail.purpose ||
+                                        commonDetail.learningContent ||
+                                        commonDetail.learningOutcome ||
+                                        (commonDetail.references && commonDetail.references.length > 0)) ? (
+                                        <div className="space-y-4">
+                                            {commonDetail.purpose && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-text-secondary mb-1">
+                                                        セッションの目的
+                                                    </h4>
+                                                    <p className="text-sm text-text-primary whitespace-pre-wrap">
+                                                        {commonDetail.purpose}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {commonDetail.learningContent && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-text-secondary mb-1">
+                                                        学習内容
+                                                    </h4>
+                                                    <p className="text-sm text-text-primary whitespace-pre-wrap">
+                                                        {commonDetail.learningContent}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {commonDetail.learningOutcome && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-text-secondary mb-1">
+                                                        学習の成果
+                                                    </h4>
+                                                    <p className="text-sm text-text-primary whitespace-pre-wrap">
+                                                        {commonDetail.learningOutcome}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            {commonDetail.references &&
+                                                commonDetail.references.length > 0 && (
+                                                    <div>
+                                                        <h4 className="text-sm font-semibold text-text-secondary mb-1">
+                                                            参考資料
+                                                        </h4>
+                                                        <ul className="space-y-1">
+                                                            {commonDetail.references.map((ref, i) => (
+                                                                <li key={i} className="text-sm">
+                                                                    <a
+                                                                        href={ref.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-800 hover:underline"
+                                                                    >
+                                                                        {ref.title || ref.url}
+                                                                        <ExternalLink
+                                                                            className="w-3 h-3"
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                    </a>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-text-muted text-center py-4">
+                                            共通情報は未登録です
+                                        </p>
+                                    )
+                                ) : (
+                                    /* 編集モード */
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label
+                                                htmlFor="common-purpose"
+                                                className="block text-sm font-semibold text-text-secondary mb-1"
+                                            >
+                                                セッションの目的
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="common-purpose"
+                                                value={commonEditData.purpose}
+                                                onChange={(e) =>
+                                                    setCommonEditData((prev) => ({
+                                                        ...prev,
+                                                        purpose: e.target.value,
+                                                    }))
+                                                }
+                                                className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label
+                                                htmlFor="common-learningContent"
+                                                className="block text-sm font-semibold text-text-secondary mb-1"
+                                            >
+                                                学習内容
+                                            </label>
+                                            <textarea
+                                                id="common-learningContent"
+                                                value={commonEditData.learningContent}
+                                                onChange={(e) =>
+                                                    setCommonEditData((prev) => ({
+                                                        ...prev,
+                                                        learningContent: e.target.value,
+                                                    }))
+                                                }
+                                                rows={3}
+                                                className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label
+                                                htmlFor="common-learningOutcome"
+                                                className="block text-sm font-semibold text-text-secondary mb-1"
+                                            >
+                                                学習の成果
+                                            </label>
+                                            <textarea
+                                                id="common-learningOutcome"
+                                                value={commonEditData.learningOutcome}
+                                                onChange={(e) =>
+                                                    setCommonEditData((prev) => ({
+                                                        ...prev,
+                                                        learningOutcome: e.target.value,
+                                                    }))
+                                                }
+                                                rows={3}
+                                                className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-semibold text-text-secondary">
+                                                    参考資料
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setCommonEditData((prev) => ({
+                                                            ...prev,
+                                                            references: [
+                                                                ...prev.references,
+                                                                { title: '', url: '' },
+                                                            ],
+                                                        }))
+                                                    }
+                                                    className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800"
+                                                >
+                                                    <Plus className="w-3 h-3" aria-hidden="true" />
+                                                    追加
+                                                </button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {commonEditData.references.map((ref, i) => (
+                                                    <div key={i} className="flex gap-2 items-center">
+                                                        <input
+                                                            type="text"
+                                                            value={ref.title}
+                                                            onChange={(e) => {
+                                                                const refs = [
+                                                                    ...commonEditData.references,
+                                                                ];
+                                                                refs[i] = {
+                                                                    ...refs[i],
+                                                                    title: e.target.value,
+                                                                };
+                                                                setCommonEditData((prev) => ({
+                                                                    ...prev,
+                                                                    references: refs,
+                                                                }));
+                                                            }}
+                                                            placeholder="タイトル"
+                                                            className="w-2/5 rounded-lg border border-border-light px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                        />
+                                                        <input
+                                                            type="url"
+                                                            value={ref.url}
+                                                            onChange={(e) => {
+                                                                const refs = [
+                                                                    ...commonEditData.references,
+                                                                ];
+                                                                refs[i] = {
+                                                                    ...refs[i],
+                                                                    url: e.target.value,
+                                                                };
+                                                                setCommonEditData((prev) => ({
+                                                                    ...prev,
+                                                                    references: refs,
+                                                                }));
+                                                                setCommonUrlErrors((prev) =>
+                                                                    prev.filter((idx) => idx !== i)
+                                                                );
+                                                            }}
+                                                            placeholder="https://..."
+                                                            className={`flex-1 rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${commonUrlErrors.includes(i) ? 'border-red-400 bg-red-50' : 'border-border-light'}`}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCommonEditData((prev) => ({
+                                                                    ...prev,
+                                                                    references: prev.references.filter(
+                                                                        (_, idx) => idx !== i
+                                                                    ),
+                                                                }));
+                                                                setCommonUrlErrors((prev) =>
+                                                                    prev
+                                                                        .filter((idx) => idx !== i)
+                                                                        .map((idx) =>
+                                                                            idx > i ? idx - 1 : idx
+                                                                        )
+                                                                );
+                                                            }}
+                                                            className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                                                            aria-label={`参考資料 ${i + 1} を削除`}
+                                                        >
+                                                            <X className="w-4 h-4" aria-hidden="true" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {commonEditData.references.some((_, i) =>
+                                                    commonUrlErrors.includes(i)
+                                                ) && (
+                                                    <p className="text-xs text-red-600">
+                                                        http または https の URL を入力してください
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleSaveCommon}
+                                                disabled={savingCommon}
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <Save className="w-4 h-4" aria-hidden="true" />
+                                                {savingCommon ? '保存中...' : '保存'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditingCommon(false)}
+                                                disabled={savingCommon}
+                                                className="px-4 py-2 rounded-lg border border-border-light text-sm text-text-primary hover:bg-surface-muted transition-colors disabled:opacity-50"
+                                            >
+                                                キャンセル
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {selectedPeriod &&
                         selectedPeriod.sessions.map((session, index) => {
                             const isExpanded = expandedSessions.has(session.sessionId);
@@ -732,302 +1029,7 @@ export function GroupDetailPage() {
                 </div>
             </div>
 
-            {/* 共通情報セクション（管理者モードのみ） */}
-            {auth.isAdmin && selectedPeriod && (
-                <div className="card-base overflow-hidden animate-fade-in-up">
-                    <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
-                        <h3 className="text-base font-bold text-text-primary">
-                            共通情報（{selectedPeriod.label}）
-                        </h3>
-                        {!editingCommon && (
-                            <button
-                                type="button"
-                                onClick={startEditingCommon}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-primary-600 hover:bg-primary-50 transition-colors"
-                            >
-                                <Pencil className="w-4 h-4" aria-hidden="true" />
-                                編集
-                            </button>
-                        )}
-                    </div>
-
-                    {/* メッセージ */}
-                    <div aria-live="polite">
-                        {commonMessage && (
-                            <div
-                                className={`mx-6 mt-4 p-3 rounded-xl flex items-center gap-2 animate-scale-in ${
-                                    commonMessage.type === 'success'
-                                        ? 'bg-green-50 text-green-800'
-                                        : 'bg-red-50 text-red-800'
-                                }`}
-                            >
-                                {commonMessage.type === 'success' ? (
-                                    <CheckCircle className="w-5 h-5" aria-hidden="true" />
-                                ) : (
-                                    <AlertCircle className="w-5 h-5" aria-hidden="true" />
-                                )}
-                                <span className="text-sm">{commonMessage.text}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="p-6">
-                        {!editingCommon ? (
-                            /* 表示モード */
-                            commonDetail &&
-                            (commonDetail.purpose ||
-                                commonDetail.learningContent ||
-                                commonDetail.learningOutcome ||
-                                (commonDetail.references && commonDetail.references.length > 0)) ? (
-                                <div className="space-y-4">
-                                    {commonDetail.purpose && (
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-text-secondary mb-1">
-                                                セッションの目的
-                                            </h4>
-                                            <p className="text-sm text-text-primary whitespace-pre-wrap">
-                                                {commonDetail.purpose}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {commonDetail.learningContent && (
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-text-secondary mb-1">
-                                                学習内容
-                                            </h4>
-                                            <p className="text-sm text-text-primary whitespace-pre-wrap">
-                                                {commonDetail.learningContent}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {commonDetail.learningOutcome && (
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-text-secondary mb-1">
-                                                学習の成果
-                                            </h4>
-                                            <p className="text-sm text-text-primary whitespace-pre-wrap">
-                                                {commonDetail.learningOutcome}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {commonDetail.references &&
-                                        commonDetail.references.length > 0 && (
-                                            <div>
-                                                <h4 className="text-sm font-semibold text-text-secondary mb-1">
-                                                    参考資料
-                                                </h4>
-                                                <ul className="space-y-1">
-                                                    {commonDetail.references.map((ref, i) => (
-                                                        <li key={i} className="text-sm">
-                                                            <a
-                                                                href={ref.url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-800 hover:underline"
-                                                            >
-                                                                {ref.title || ref.url}
-                                                                <ExternalLink
-                                                                    className="w-3 h-3"
-                                                                    aria-hidden="true"
-                                                                />
-                                                            </a>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-text-muted text-center py-4">
-                                    共通情報は未登録です
-                                </p>
-                            )
-                        ) : (
-                            /* 編集モード */
-                            <div className="space-y-4">
-                                <div>
-                                    <label
-                                        htmlFor="common-purpose"
-                                        className="block text-sm font-semibold text-text-secondary mb-1"
-                                    >
-                                        セッションの目的
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="common-purpose"
-                                        value={commonEditData.purpose}
-                                        onChange={(e) =>
-                                            setCommonEditData((prev) => ({
-                                                ...prev,
-                                                purpose: e.target.value,
-                                            }))
-                                        }
-                                        className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        htmlFor="common-learningContent"
-                                        className="block text-sm font-semibold text-text-secondary mb-1"
-                                    >
-                                        学習内容
-                                    </label>
-                                    <textarea
-                                        id="common-learningContent"
-                                        value={commonEditData.learningContent}
-                                        onChange={(e) =>
-                                            setCommonEditData((prev) => ({
-                                                ...prev,
-                                                learningContent: e.target.value,
-                                            }))
-                                        }
-                                        rows={3}
-                                        className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label
-                                        htmlFor="common-learningOutcome"
-                                        className="block text-sm font-semibold text-text-secondary mb-1"
-                                    >
-                                        学習の成果
-                                    </label>
-                                    <textarea
-                                        id="common-learningOutcome"
-                                        value={commonEditData.learningOutcome}
-                                        onChange={(e) =>
-                                            setCommonEditData((prev) => ({
-                                                ...prev,
-                                                learningOutcome: e.target.value,
-                                            }))
-                                        }
-                                        rows={3}
-                                        className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                    />
-                                </div>
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-semibold text-text-secondary">
-                                            参考資料
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setCommonEditData((prev) => ({
-                                                    ...prev,
-                                                    references: [
-                                                        ...prev.references,
-                                                        { title: '', url: '' },
-                                                    ],
-                                                }))
-                                            }
-                                            className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800"
-                                        >
-                                            <Plus className="w-3 h-3" aria-hidden="true" />
-                                            追加
-                                        </button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {commonEditData.references.map((ref, i) => (
-                                            <div key={i} className="flex gap-2 items-center">
-                                                <input
-                                                    type="text"
-                                                    value={ref.title}
-                                                    onChange={(e) => {
-                                                        const refs = [
-                                                            ...commonEditData.references,
-                                                        ];
-                                                        refs[i] = {
-                                                            ...refs[i],
-                                                            title: e.target.value,
-                                                        };
-                                                        setCommonEditData((prev) => ({
-                                                            ...prev,
-                                                            references: refs,
-                                                        }));
-                                                    }}
-                                                    placeholder="タイトル"
-                                                    className="w-2/5 rounded-lg border border-border-light px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                                />
-                                                <input
-                                                    type="url"
-                                                    value={ref.url}
-                                                    onChange={(e) => {
-                                                        const refs = [
-                                                            ...commonEditData.references,
-                                                        ];
-                                                        refs[i] = {
-                                                            ...refs[i],
-                                                            url: e.target.value,
-                                                        };
-                                                        setCommonEditData((prev) => ({
-                                                            ...prev,
-                                                            references: refs,
-                                                        }));
-                                                        setCommonUrlErrors((prev) =>
-                                                            prev.filter((idx) => idx !== i)
-                                                        );
-                                                    }}
-                                                    placeholder="https://..."
-                                                    className={`flex-1 rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${commonUrlErrors.includes(i) ? 'border-red-400 bg-red-50' : 'border-border-light'}`}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setCommonEditData((prev) => ({
-                                                            ...prev,
-                                                            references: prev.references.filter(
-                                                                (_, idx) => idx !== i
-                                                            ),
-                                                        }));
-                                                        setCommonUrlErrors((prev) =>
-                                                            prev
-                                                                .filter((idx) => idx !== i)
-                                                                .map((idx) =>
-                                                                    idx > i ? idx - 1 : idx
-                                                                )
-                                                        );
-                                                    }}
-                                                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
-                                                    aria-label={`参考資料 ${i + 1} を削除`}
-                                                >
-                                                    <X className="w-4 h-4" aria-hidden="true" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                        {commonEditData.references.some((_, i) =>
-                                            commonUrlErrors.includes(i)
-                                        ) && (
-                                            <p className="text-xs text-red-600">
-                                                http または https の URL を入力してください
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={handleSaveCommon}
-                                        disabled={savingCommon}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <Save className="w-4 h-4" aria-hidden="true" />
-                                        {savingCommon ? '保存中...' : '保存'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditingCommon(false)}
-                                        disabled={savingCommon}
-                                        className="px-4 py-2 rounded-lg border border-border-light text-sm text-text-primary hover:bg-surface-muted transition-colors disabled:opacity-50"
-                                    >
-                                        キャンセル
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            {/* 共通情報セクション: 右列上部に移動済み */}
             {deleteTarget && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div
