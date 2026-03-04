@@ -435,11 +435,11 @@ export function MemberGroupTermDetailPage() {
                 >
                     セッションの目的
                 </label>
-                <textarea
+                <input
+                    type="text"
                     id="edit-purpose"
                     value={editData.purpose}
                     onChange={(e) => setEditData((prev) => ({ ...prev, purpose: e.target.value }))}
-                    rows={3}
                     className="w-full rounded-lg border border-border-light px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
             </div>
@@ -491,42 +491,40 @@ export function MemberGroupTermDetailPage() {
                 </div>
                 <div className="space-y-2">
                     {editData.references.map((ref, i) => (
-                        <div key={i} className="flex gap-2 items-start">
-                            <div className="flex-1 space-y-1">
-                                <input
-                                    type="text"
-                                    value={ref.title}
-                                    onChange={(e) => updateReference(i, 'title', e.target.value)}
-                                    placeholder="タイトル"
-                                    className="w-full rounded-lg border border-border-light px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                />
-                                <input
-                                    type="url"
-                                    value={ref.url}
-                                    onChange={(e) => updateReference(i, 'url', e.target.value)}
-                                    placeholder="https://..."
-                                    className={`w-full rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                                        urlErrors.includes(i)
-                                            ? 'border-red-400 bg-red-50'
-                                            : 'border-border-light'
-                                    }`}
-                                />
-                                {urlErrors.includes(i) && (
-                                    <p className="text-xs text-red-600">
-                                        http または https の URL を入力してください
-                                    </p>
-                                )}
-                            </div>
+                        <div key={i} className="flex gap-2 items-center">
+                            <input
+                                type="text"
+                                value={ref.title}
+                                onChange={(e) => updateReference(i, 'title', e.target.value)}
+                                placeholder="タイトル"
+                                className="w-2/5 rounded-lg border border-border-light px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                            <input
+                                type="url"
+                                value={ref.url}
+                                onChange={(e) => updateReference(i, 'url', e.target.value)}
+                                placeholder="https://..."
+                                className={`flex-1 rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                                    urlErrors.includes(i)
+                                        ? 'border-red-400 bg-red-50'
+                                        : 'border-border-light'
+                                }`}
+                            />
                             <button
                                 type="button"
                                 onClick={() => removeReference(i)}
-                                className="mt-1 p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
                                 aria-label={`参考資料 ${i + 1} を削除`}
                             >
                                 <X className="w-4 h-4" aria-hidden="true" />
                             </button>
                         </div>
                     ))}
+                    {editData.references.some((_, i) => urlErrors.includes(i)) && (
+                        <p className="text-xs text-red-600">
+                            http または https の URL を入力してください
+                        </p>
+                    )}
                 </div>
             </div>
             <div className="flex items-center gap-3 pt-2">
