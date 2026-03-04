@@ -1,0 +1,15 @@
+{
+  "purpose": "状態管理の理解を深める",
+  "learningContent": "useReducer と Context API を組み合わせた状態管理パターンを学習。Redux Toolkit との比較も実施した",
+  "learningOutcome": "Context API を使った中規模アプリの状態管理ができるようになった",
+  "references": [
+    {
+      "title": "React ドキュメント - useReducer",
+      "url": "https://react.dev/reference/react/useReducer"
+    },
+    {
+      "title": "Redux Toolkit 公式ドキュメント",
+      "url": "https://redux-toolkit.js.org/introduction/getting-started"
+    }
+  ]
+}

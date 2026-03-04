@@ -1,0 +1,11 @@
+{
+  "purpose": "コンポーネント設計パターンの習得",
+  "learningContent": "Compound Components パターンと Headless UI の実装方法を学習。アクセシビリティを考慮したコンポーネント設計を実践した",
+  "learningOutcome": "再利用性の高いコンポーネント設計ができるようになった。社内プロジェクトのフォームコンポーネントをリファクタリングした",
+  "references": [
+    {
+      "title": "Patterns.dev - Compound Pattern",
+      "url": "https://www.patterns.dev/react/compound-pattern/"
+    }
+  ]
+}

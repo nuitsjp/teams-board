@@ -151,8 +151,8 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('2025年度 下期')).toBeInTheDocument();
         // グループ名がカードに表示される
         expect(screen.getByText(/フロントエンド勉強会/)).toBeInTheDocument();
-        // グループカードが表示される（ボタン要素）
-        const groupCard = screen.getByText(/フロントエンド勉強会/).closest('button');
+        // グループカードが表示される（data-testid 要素）
+        const groupCard = screen.getByText(/フロントエンド勉強会/).closest('[data-testid="group-card"]');
         expect(groupCard).toBeInTheDocument();
     });
 
@@ -339,7 +339,7 @@ describe('MemberDetailPage', () => {
         });
 
         // グループカードをクリック（sortKey: 2025年度下期 = 20251）
-        const groupCard = screen.getByText(/フロントエンド勉強会/).closest('button');
+        const groupCard = screen.getByText(/フロントエンド勉強会/).closest('[data-testid="group-card"]');
         await user.click(groupCard);
 
         expect(mockNavigate).toHaveBeenCalledWith('/members/m1/groups/g1/terms/20251');
@@ -457,8 +457,8 @@ describe('MemberDetailPage', () => {
 
         // 出席データのあるグループが表示される
         expect(screen.getByText(/グループA/)).toBeInTheDocument();
-        // グループカードがボタンとして表示される
-        const groupCard = screen.getByText(/グループA/).closest('button');
+        // グループカードが表示される
+        const groupCard = screen.getByText(/グループA/).closest('[data-testid="group-card"]');
         expect(groupCard).toBeInTheDocument();
     });
 

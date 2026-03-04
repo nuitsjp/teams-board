@@ -628,83 +628,10 @@ export function MemberGroupTermDetailPage() {
                 </div>
             </div>
 
-            {/* セッション一覧 */}
-            {sessions.length > 0 && (
-                <div
-                    className="card-base overflow-hidden animate-fade-in-up"
-                    style={{ animationDelay: '80ms' }}
-                >
-                    <div className="px-6 py-4 border-b border-border-light">
-                        <h3 className="text-base font-bold text-text-primary">セッション一覧</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-border-light bg-surface-muted/50">
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-2 text-left text-xs font-semibold text-text-muted uppercase tracking-wider"
-                                    >
-                                        日付
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-2 text-left text-xs font-semibold text-text-muted uppercase tracking-wider"
-                                    >
-                                        タイトル
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-2 text-right text-xs font-semibold text-text-muted uppercase tracking-wider"
-                                    >
-                                        参加時間
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-2 text-center text-xs font-semibold text-text-muted uppercase tracking-wider"
-                                    >
-                                        役割
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border-light">
-                                {sessions.map((session) => (
-                                    <tr
-                                        key={session.sessionId}
-                                        className="text-sm hover:bg-surface-muted transition-colors"
-                                    >
-                                        <td className="px-6 py-3 text-text-primary whitespace-nowrap">
-                                            {session.date}
-                                        </td>
-                                        <td className="px-6 py-3 text-text-secondary">
-                                            {session.title || '—'}
-                                        </td>
-                                        <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
-                                            {formatDuration(session.durationSeconds)}
-                                        </td>
-                                        <td className="px-6 py-3 text-center">
-                                            {session.isInstructor && (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
-                                                    <GraduationCap
-                                                        className="w-3 h-3"
-                                                        aria-hidden="true"
-                                                    />
-                                                    講師
-                                                </span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
             {/* 詳細情報エリア */}
             <div
                 className="card-base overflow-hidden animate-fade-in-up"
-                style={{ animationDelay: '160ms' }}
+                style={{ animationDelay: '80ms' }}
             >
                 {/* タブ */}
                 {showTabs && (
@@ -783,6 +710,79 @@ export function MemberGroupTermDetailPage() {
                     {editing && renderEditForm()}
                 </div>
             </div>
+
+            {/* セッション一覧 */}
+            {sessions.length > 0 && (
+                <div
+                    className="card-base overflow-hidden animate-fade-in-up"
+                    style={{ animationDelay: '160ms' }}
+                >
+                    <div className="px-6 py-4 border-b border-border-light">
+                        <h3 className="text-base font-bold text-text-primary">セッション一覧</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-border-light bg-surface-muted/50">
+                                    <th
+                                        scope="col"
+                                        className="px-6 py-2 text-left text-xs font-semibold text-text-muted uppercase tracking-wider"
+                                    >
+                                        日付
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="px-6 py-2 text-left text-xs font-semibold text-text-muted uppercase tracking-wider"
+                                    >
+                                        タイトル
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="px-6 py-2 text-right text-xs font-semibold text-text-muted uppercase tracking-wider"
+                                    >
+                                        参加時間
+                                    </th>
+                                    <th
+                                        scope="col"
+                                        className="px-6 py-2 text-center text-xs font-semibold text-text-muted uppercase tracking-wider"
+                                    >
+                                        役割
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border-light">
+                                {sessions.map((session) => (
+                                    <tr
+                                        key={session.sessionId}
+                                        className="text-sm hover:bg-surface-muted transition-colors"
+                                    >
+                                        <td className="px-6 py-3 text-text-primary whitespace-nowrap">
+                                            {session.date}
+                                        </td>
+                                        <td className="px-6 py-3 text-text-secondary">
+                                            {session.title || '—'}
+                                        </td>
+                                        <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
+                                            {formatDuration(session.durationSeconds)}
+                                        </td>
+                                        <td className="px-6 py-3 text-center">
+                                            {session.isInstructor && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
+                                                    <GraduationCap
+                                                        className="w-3 h-3"
+                                                        aria-hidden="true"
+                                                    />
+                                                    講師
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {/* 削除確認ダイアログ */}
             {showDeleteConfirm && (

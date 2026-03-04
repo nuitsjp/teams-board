@@ -1,0 +1,15 @@
+{
+  "purpose": "フロントエンド技術のキャッチアップと実践力向上",
+  "learningContent": "React 19 の新機能（Server Components、Actions）の理解と、Vite を使った高速な開発環境構築の実践",
+  "learningOutcome": "React 19 の主要な新機能を理解し、プロジェクトに適用できる状態を目指す",
+  "references": [
+    {
+      "title": "React 19 公式ドキュメント",
+      "url": "https://react.dev/blog/2024/12/05/react-19"
+    },
+    {
+      "title": "Vite 公式ガイド",
+      "url": "https://vite.dev/guide/"
+    }
+  ]
+}

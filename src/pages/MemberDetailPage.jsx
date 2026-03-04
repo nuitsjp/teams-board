@@ -390,74 +390,67 @@ export function MemberDetailPage() {
                 </div>
 
                 {/* 右列: 選択した期のグループ一覧 */}
-                <div className="space-y-3">
-                    {selectedPeriod &&
-                        selectedPeriod.groups.map((group, index) => (
-                            <button
+                {selectedPeriod && (
+                    <div className="card-base">
+                        {selectedPeriod.groups.map((group, index) => (
+                            <div
                                 key={group.groupId}
+                                data-testid="group-card"
                                 onClick={() =>
                                     navigate(
                                         `/members/${memberId}/groups/${group.groupId}/terms/${selectedPeriod.sortKey}`
                                     )
                                 }
-                                className="w-full card-base overflow-hidden animate-fade-in-up hover:shadow-md transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
-                                style={{ animationDelay: `${index * 80}ms` }}
+                                className="list-accent-primary p-4 px-6 hover:bg-surface-muted cursor-pointer flex justify-between items-center group animate-fade-in-up border-b border-border-light last:border-b-0 last:rounded-b-2xl min-h-[73px]"
+                                style={{ animationDelay: `${index * 60}ms` }}
                             >
-                                <div className="px-6 py-4 flex items-center justify-between">
-                                    <div className="min-w-0 flex-1">
-                                        <h3 className="text-base font-bold text-text-primary text-left">
-                                            {group.groupName}
-                                        </h3>
-                                        {group.organizerName && (
-                                            <div className="flex items-center gap-1 text-xs text-text-muted mt-0.5">
-                                                <Building2
-                                                    className="w-3 h-3 shrink-0"
-                                                    aria-hidden="true"
-                                                />
-                                                <span className="truncate">
-                                                    {group.organizerName}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-4 shrink-0 text-sm text-text-secondary">
-                                        <span className="flex items-center gap-1.5">
-                                            <Calendar
-                                                className="w-3.5 h-3.5 text-text-muted"
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="font-semibold text-text-primary truncate">
+                                        {group.groupName}
+                                    </h3>
+                                    {group.organizerName && (
+                                        <div className="flex items-center gap-1 text-xs text-text-muted">
+                                            <Building2
+                                                className="w-3 h-3 shrink-0"
                                                 aria-hidden="true"
                                             />
-                                            <span className="font-display font-semibold text-text-primary">
-                                                {group.sessionCount}
+                                            <span className="truncate">
+                                                {group.organizerName}
                                             </span>
-                                            回参加
-                                        </span>
-                                        <span className="flex items-center gap-1.5">
-                                            <Clock
-                                                className="w-3.5 h-3.5 text-text-muted"
-                                                aria-hidden="true"
-                                            />
-                                            <span className="font-display">
-                                                {formatDuration(group.totalDurationSeconds)}
-                                            </span>
-                                        </span>
-                                        {group.hasInstructor && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
-                                                <GraduationCap
-                                                    className="w-3 h-3"
-                                                    aria-hidden="true"
-                                                />
-                                                講師
-                                            </span>
-                                        )}
-                                        <ChevronRight
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center text-sm text-text-secondary gap-4 shrink-0">
+                                    <span className="flex items-center gap-1.5 bg-surface-muted px-2.5 py-1 rounded-md">
+                                        <span className="font-semibold text-text-primary font-display">
+                                            {group.sessionCount}
+                                        </span>{' '}
+                                        回参加
+                                    </span>
+                                    <span className="flex items-center gap-1.5 whitespace-nowrap">
+                                        <Clock
                                             className="w-4 h-4 text-text-muted"
                                             aria-hidden="true"
                                         />
-                                    </div>
+                                        <span className="font-display">
+                                            {formatDuration(group.totalDurationSeconds)}
+                                        </span>
+                                    </span>
+                                    {group.hasInstructor && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
+                                            <GraduationCap
+                                                className="w-3 h-3"
+                                                aria-hidden="true"
+                                            />
+                                            講師
+                                        </span>
+                                    )}
+                                    <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-primary-600 transition-colors" />
                                 </div>
-                            </button>
+                            </div>
                         ))}
-                </div>
+                    </div>
+                )}
             </div>
         </div>
     );
