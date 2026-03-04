@@ -696,36 +696,36 @@ export function MemberGroupTermDetailPage() {
                 </div>
 
                 {/* セッション一覧 */}
-                {sessions.length > 0 && (
-                    <div
-                        className="card-base overflow-hidden animate-fade-in-up"
-                        style={{ animationDelay: '160ms' }}
-                    >
-                        <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
-                            <h3 className="text-base font-bold text-text-primary">セッション一覧</h3>
-                            <div className="flex items-center gap-4 text-sm text-text-secondary">
-                                <span className="flex items-center gap-1.5">
-                                    <Clock
-                                        className="w-4 h-4 text-text-muted"
-                                        aria-hidden="true"
-                                    />
-                                    合計{' '}
-                                    <span className="font-display font-semibold text-text-primary">
-                                        {formatDuration(totalDurationSeconds)}
-                                    </span>
+                <div
+                    className="card-base overflow-hidden animate-fade-in-up"
+                    style={{ animationDelay: '160ms' }}
+                >
+                    <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
+                        <h3 className="text-base font-bold text-text-primary">セッション一覧</h3>
+                        <div className="flex items-center gap-4 text-sm text-text-secondary">
+                            <span className="flex items-center gap-1.5">
+                                <Clock
+                                    className="w-4 h-4 text-text-muted"
+                                    aria-hidden="true"
+                                />
+                                合計{' '}
+                                <span className="font-display font-semibold text-text-primary">
+                                    {formatDuration(totalDurationSeconds)}
                                 </span>
-                                <span className="flex items-center gap-1.5">
-                                    <Calendar
-                                        className="w-4 h-4 text-text-muted"
-                                        aria-hidden="true"
-                                    />
-                                    <span className="font-display font-semibold text-text-primary">
-                                        {sessions.length}
-                                    </span>
-                                    回参加
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                                <Calendar
+                                    className="w-4 h-4 text-text-muted"
+                                    aria-hidden="true"
+                                />
+                                <span className="font-display font-semibold text-text-primary">
+                                    {sessions.length}
                                 </span>
-                            </div>
+                                回参加
+                            </span>
                         </div>
+                    </div>
+                    {sessions.length > 0 ? (
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
@@ -778,8 +778,12 @@ export function MemberGroupTermDetailPage() {
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div className="px-6 py-8 text-center text-sm text-text-muted">
+                            セッションデータはありません
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* 削除確認ダイアログ */}
