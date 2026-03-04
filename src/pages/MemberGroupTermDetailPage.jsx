@@ -756,8 +756,15 @@ export function MemberGroupTermDetailPage() {
                                             key={session.sessionId}
                                             className="text-sm hover:bg-surface-muted transition-colors"
                                         >
-                                            <td className="px-6 py-3 text-text-primary whitespace-nowrap">
-                                                {session.date}
+                                            <td className="px-6 py-3 text-text-primary">
+                                                <div className="whitespace-nowrap">
+                                                    {session.date}
+                                                </div>
+                                                {session.title && (
+                                                    <div className="text-xs text-text-secondary truncate max-w-[200px]">
+                                                        {session.title}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
                                                 {formatDuration(session.durationSeconds)}
