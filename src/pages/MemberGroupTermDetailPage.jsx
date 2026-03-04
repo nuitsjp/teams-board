@@ -201,8 +201,7 @@ export function MemberGroupTermDetailPage() {
 
     const hasCommon = commonDetail && !isDetailEmpty(commonDetail);
     const hasMember = memberDetail && !isDetailEmpty(memberDetail);
-    // メンバー情報優先: メンバー情報があれば共通情報タブは非表示
-    const showTabs = hasCommon || hasMember;
+    // メンバー情報優先: メンバー情報があれば共通情報は非表示
     const displayTab = hasMember ? 'member' : hasCommon ? 'common' : null;
 
     // 編集開始
@@ -611,24 +610,20 @@ export function MemberGroupTermDetailPage() {
             </div>
 
             {/* 2カラムレイアウト: 詳細情報（左） + セッション一覧（右） */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 {/* 詳細情報エリア */}
                 <div
                     className="card-base overflow-hidden animate-fade-in-up"
                     style={{ animationDelay: '80ms' }}
                 >
-                    {/* タブ */}
-                    {showTabs && (
-                        <div className="border-b border-border-light flex">
-                            <div className="px-6 py-3 text-sm font-medium border-b-2 border-primary-500 text-primary-700">
-                                詳細
-                            </div>
-                        </div>
-                    )}
+                    {/* ヘッダー */}
+                    <div className="px-6 py-4 border-b border-border-light">
+                        <h3 className="text-base font-bold text-text-primary">詳細</h3>
+                    </div>
 
                     <div className="p-6">
                         {/* 両方未登録: 追加ボタン */}
-                        {!showTabs && !editing && (
+                        {!displayTab && !editing && (
                             <div className="flex items-center justify-center py-8">
                                 <button
                                     type="button"
