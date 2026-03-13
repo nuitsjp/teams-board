@@ -257,15 +257,15 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
 
         await expect(page.getByText('戻る')).toBeVisible();
 
-        // TypeScript読書会のグループ行をクリック
-        const groupRow = page
-            .getByTestId('member-term-group-row')
+        // TypeScript読書会のグループカードをクリック
+        const groupCard = page
+            .getByTestId('group-card')
             .filter({ hasText: 'TypeScript読書会' });
-        await expect(groupRow).toBeVisible();
-        await groupRow.click();
+        await expect(groupCard).toBeVisible();
+        await groupCard.click();
 
-        // 期詳細画面が表示されること
-        await expect(page.getByText('詳細')).toBeVisible();
+        // 期詳細画面が表示されること（個人情報のみの場合は「個人情報」ラベル）
+        await expect(page.getByText('個人情報')).toBeVisible();
 
         // メンバー情報が表示されていること
         await expect(page.getByText('業務で扱う複雑な型を読み解けるようにする')).toBeVisible();
@@ -284,7 +284,7 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
 
         // 編集モードに再度入り、削除を実行
         await page.getByRole('button', { name: '編集' }).click();
-        await page.getByRole('button', { name: '削除' }).click();
+        await page.getByRole('button', { name: '削除', exact: true }).click();
 
         // 削除確認ダイアログ
         const dialog = page.getByRole('dialog');

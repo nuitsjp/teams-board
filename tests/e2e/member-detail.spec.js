@@ -13,7 +13,7 @@ test.describe('メンバー期別グループ詳細画面', () => {
 
         // フロントエンド勉強会のグループ行をクリック
         const groupRow = page
-            .getByTestId('member-term-group-row')
+            .getByTestId('group-card')
             .filter({ hasText: 'フロントエンド勉強会' });
         await expect(groupRow).toBeVisible();
         await groupRow.click();
@@ -31,7 +31,7 @@ test.describe('メンバー期別グループ詳細画面', () => {
         await expect(page.getByRole('heading', { name: memberName })).toBeVisible();
 
         const groupRow = page
-            .getByTestId('member-term-group-row')
+            .getByTestId('group-card')
             .filter({ hasText: 'フロントエンド勉強会' });
         await groupRow.click();
 
@@ -51,12 +51,12 @@ test.describe('メンバー期別グループ詳細画面', () => {
 
         // フロントエンド勉強会（メンバー情報あり）をクリック
         const groupRow = page
-            .getByTestId('member-term-group-row')
+            .getByTestId('group-card')
             .filter({ hasText: 'フロントエンド勉強会' });
         await groupRow.click();
 
-        // 詳細セクションが表示されること
-        await expect(page.getByText('詳細')).toBeVisible();
+        // 詳細セクションが表示されること（個人情報のみの場合は「個人情報」ラベル）
+        await expect(page.getByText('個人情報')).toBeVisible();
 
         // メンバー情報の内容が表示されること（member-group-term-details のデータ）
         await expect(page.getByText('コンポーネント設計パターンの習得')).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('メンバー期別グループ詳細画面', () => {
         await expect(page.getByRole('heading', { name: memberName })).toBeVisible();
 
         const groupRow = page
-            .getByTestId('member-term-group-row')
+            .getByTestId('group-card')
             .filter({ hasText: 'フロントエンド勉強会' });
         await groupRow.click();
 
@@ -83,7 +83,7 @@ test.describe('メンバー期別グループ詳細画面', () => {
         await expect(page.getByRole('heading', { name: memberName })).toBeVisible();
 
         const groupRow = page
-            .getByTestId('member-term-group-row')
+            .getByTestId('group-card')
             .filter({ hasText: 'フロントエンド勉強会' });
         await groupRow.click();
 
@@ -93,6 +93,6 @@ test.describe('メンバー期別グループ詳細画面', () => {
         await page.getByText('戻る').click();
 
         // メンバー詳細画面に戻ること
-        await expect(page.getByTestId('member-term-group-row').first()).toBeVisible();
+        await expect(page.getByTestId('group-card').first()).toBeVisible();
     });
 });
