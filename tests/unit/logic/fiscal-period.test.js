@@ -1,4 +1,4 @@
-import { getFiscalPeriod } from '../../../src/utils/fiscal-period.js';
+import { getFiscalPeriod, termKeyToLabel } from '../../../src/utils/fiscal-period.js';
 
 describe('getFiscalPeriod', () => {
     it('上期に属するセッションを分類する（2025-06-15 → 2025年度 上期）', () => {
@@ -76,5 +76,19 @@ describe('getFiscalPeriod', () => {
         const firstHalf = getFiscalPeriod('2025-06-15');
         const secondHalf = getFiscalPeriod('2025-11-20');
         expect(secondHalf.sortKey).toBeGreaterThan(firstHalf.sortKey);
+    });
+});
+
+describe('termKeyToLabel', () => {
+    it('上期の termKey を日本語ラベルに変換する（文字列入力）', () => {
+        expect(termKeyToLabel('20250')).toBe('2025年度 上期');
+    });
+
+    it('下期の termKey を日本語ラベルに変換する（文字列入力）', () => {
+        expect(termKeyToLabel('20251')).toBe('2025年度 下期');
+    });
+
+    it('数値入力でも正しく変換する', () => {
+        expect(termKeyToLabel(20250)).toBe('2025年度 上期');
     });
 });

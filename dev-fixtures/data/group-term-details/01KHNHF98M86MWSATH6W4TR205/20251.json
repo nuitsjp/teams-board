@@ -1,0 +1,15 @@
+{
+  "purpose": "フロントエンド技術のキャッチアップと実践力向上",
+  "learningContent": "・React 19 の新機能（Server Components、Actions、use フック）の概要理解\n・Vite を使った高速な開発環境構築と HMR の仕組み\n・Tailwind CSS 4 のテーマカスタマイズとデザイントークン設計\n・コンポーネントのアクセシビリティ対応（WAI-ARIA、キーボード操作）\n・パフォーマンス最適化（React.memo、useMemo、コード分割）",
+  "learningOutcome": "React 19 の主要な新機能を理解し、プロジェクトへの適用方針を策定できた\nTailwind CSS 4 のテーマ設計により、統一的なデザインシステムの構築手法を習得した\nLighthouse スコア 90 以上を達成するパフォーマンス改善の実践ノウハウを蓄積した",
+  "references": [
+    {
+      "title": "React 19 公式ドキュメント",
+      "url": "https://react.dev/blog/2024/12/05/react-19"
+    },
+    {
+      "title": "Vite 公式ガイド",
+      "url": "https://vite.dev/guide/"
+    }
+  ]
+}

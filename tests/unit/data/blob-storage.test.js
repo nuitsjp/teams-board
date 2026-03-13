@@ -109,6 +109,86 @@ describe('AzureBlobStorage', () => {
     });
 });
 
+describe('AzureBlobStorage.delete', () => {
+    let storage;
+    let mockAuth;
+
+    beforeEach(() => {
+        mockAuth = { getSasToken: () => 'sv=2025-01-05&sig=test' };
+        storage = new AzureBlobStorage('https://blob.example.com', mockAuth);
+        vi.restoreAllMocks();
+    });
+
+    it('成功時に { success: true } を返すこと', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({ ok: true, status: 200 })
+        );
+
+        const result = await storage.delete('data/sessions/abc.json');
+
+        expect(result).toEqual({ path: 'data/sessions/abc.json', success: true });
+    });
+
+    it('正しいURL・ヘッダーでDELETE fetchが呼ばれること', async () => {
+        const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+        vi.stubGlobal('fetch', mockFetch);
+
+        await storage.delete('data/member-group-term-details/m1/g1/20251.json');
+
+        expect(mockFetch).toHaveBeenCalledWith(
+            'https://blob.example.com/data/member-group-term-details/m1/g1/20251.json?sv=2025-01-05&sig=test',
+            {
+                method: 'DELETE',
+                headers: {
+                    'x-ms-version': '2025-01-05',
+                },
+            }
+        );
+    });
+
+    it('404レスポンスは成功扱いになること（冪等性）', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' })
+        );
+
+        const result = await storage.delete('data/test.json');
+
+        expect(result).toEqual({ path: 'data/test.json', success: true });
+    });
+
+    it('HTTPエラー時に { success: false } とエラーメッセージを返すこと', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({ ok: false, status: 403, statusText: 'Forbidden' })
+        );
+
+        const result = await storage.delete('data/test.json');
+
+        expect(result).toEqual({
+            path: 'data/test.json',
+            success: false,
+            error: 'HTTP 403 Forbidden',
+        });
+    });
+
+    it('ネットワークエラー時に { success: false } とエラーメッセージを返すこと', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockRejectedValue(new Error('Network error'))
+        );
+
+        const result = await storage.delete('data/test.json');
+
+        expect(result).toEqual({
+            path: 'data/test.json',
+            success: false,
+            error: 'Network error',
+        });
+    });
+});
+
 describe('DevBlobStorage', () => {
     let storage;
 
@@ -262,5 +342,82 @@ describe('DevBlobStorage', () => {
         // warn が呼ばれた場合は最大1回
         expect(warnSpy.mock.calls.filter((c) => c[0].includes('開発モード')).length).toBeLessThanOrEqual(1);
         warnSpy.mockRestore();
+    });
+});
+
+describe('DevBlobStorage.delete', () => {
+    let storage;
+
+    beforeEach(() => {
+        storage = new DevBlobStorage();
+        vi.restoreAllMocks();
+    });
+
+    it('成功時に { success: true } を返すこと', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve({ success: true }),
+            })
+        );
+
+        const result = await storage.delete('data/member-group-term-details/m1/g1/20251.json');
+
+        expect(result).toEqual({
+            path: 'data/member-group-term-details/m1/g1/20251.json',
+            success: true,
+        });
+    });
+
+    it('/dev-fixtures-delete にPOSTリクエストを送信すること', async () => {
+        const mockFetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({ success: true }),
+        });
+        vi.stubGlobal('fetch', mockFetch);
+
+        await storage.delete('data/member-group-term-details/m1/g1/20251.json');
+
+        expect(mockFetch).toHaveBeenCalledWith('/dev-fixtures-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: 'data/member-group-term-details/m1/g1/20251.json' }),
+        });
+    });
+
+    it('HTTPエラーレスポンス時にエラー情報を返すこと', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: () => Promise.resolve({ error: 'ファイル削除に失敗しました' }),
+            })
+        );
+
+        const result = await storage.delete('data/test.json');
+
+        expect(result).toEqual({
+            path: 'data/test.json',
+            success: false,
+            error: 'ファイル削除に失敗しました',
+        });
+    });
+
+    it('ネットワークエラー時に { success: false } を返すこと', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockRejectedValue(new Error('Failed to fetch'))
+        );
+
+        const result = await storage.delete('data/test.json');
+
+        expect(result).toEqual({
+            path: 'data/test.json',
+            success: false,
+            error: 'Failed to fetch',
+        });
     });
 });

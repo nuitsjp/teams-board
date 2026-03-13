@@ -1,0 +1,15 @@
+{
+  "purpose": "状態管理の理解を深める",
+  "learningContent": "・useReducer と Context API を組み合わせたグローバル状態管理パターン\n・Redux Toolkit の createSlice / createAsyncThunk による非同期処理\n・Zustand や Jotai などの軽量状態管理ライブラリの比較検証\n・状態の正規化とキャッシュ戦略（React Query / TanStack Query）\n・コンポーネント間の状態共有におけるパフォーマンスの考慮点",
+  "learningOutcome": "Context API を使った中規模アプリの状態管理設計ができるようになった\nRedux Toolkit と TanStack Query の使い分けの判断基準を整理し、チーム内に共有した\nプロジェクトの状態管理を Redux から Zustand に移行し、バンドルサイズを 15% 削減した",
+  "references": [
+    {
+      "title": "React ドキュメント - useReducer",
+      "url": "https://react.dev/reference/react/useReducer"
+    },
+    {
+      "title": "Redux Toolkit 公式ドキュメント",
+      "url": "https://redux-toolkit.js.org/introduction/getting-started"
+    }
+  ]
+}

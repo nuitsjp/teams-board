@@ -1,0 +1,11 @@
+{
+  "purpose": "コンポーネント設計パターンの習得",
+  "learningContent": "・Compound Components パターンによる柔軟なコンポーネント API 設計\n・Headless UI ライブラリの設計思想と実装アプローチ\n・WAI-ARIA ロールとキーボードナビゲーションの実装\n・Storybook を使ったコンポーネントカタログの運用方法\n・テスト駆動でのコンポーネント開発（React Testing Library）",
+  "learningOutcome": "再利用性の高いコンポーネント設計ができるようになり、社内の UI ライブラリに 3 コンポーネントを追加した\nアクセシビリティ対応の知見を得て、既存フォームコンポーネントのキーボード操作対応を完了した\nStorybook によるコンポーネントドキュメント化の運用フローを確立した",
+  "references": [
+    {
+      "title": "Patterns.dev - Compound Pattern",
+      "url": "https://www.patterns.dev/react/compound-pattern/"
+    }
+  ]
+}

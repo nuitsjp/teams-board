@@ -206,10 +206,10 @@ test.describe('グループ詳細画面', () => {
         // セッション日付が表示されるまで待つ（画面準備完了を確認）
         await expect(page.getByRole('heading', { name: group.name })).toBeVisible();
 
-        // セッションをクリックして展開
+        // セッションをクリックして展開（セッション展開ボタン = aria-expanded 属性を持つボタン）
         const expandedTables = page.locator('.accordion-panel[data-expanded="true"] table');
-        const sessionHeadings = page.getByRole('heading', { level: 3 });
-        await sessionHeadings.first().click();
+        const sessionButtons = page.locator('button[aria-expanded]');
+        await sessionButtons.first().click();
         await expect(expandedTables).toHaveCount(1);
 
         // テーブルに名前列と参加時間列がある
@@ -218,7 +218,7 @@ test.describe('グループ詳細画面', () => {
         await expect(expandedPanel.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
 
         // 再クリックで折りたたみ
-        await sessionHeadings.first().click();
+        await sessionButtons.first().click();
         await expect(expandedTables).toHaveCount(0);
     });
 
@@ -309,7 +309,7 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
         }
     });
 
-    test('グループカードをクリックして出席履歴を展開・折りたたみできること', async ({ page }) => {
+    test('グループカードをクリックすると期別詳細画面に遷移すること', async ({ page }) => {
         const index = await fetchIndex();
         const member = selectMember(index, 2);
         const memberGroups = member ? getMemberGroups(index, member) : [];
@@ -323,33 +323,16 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
             page.getByRole('heading', { name: new RegExp(escapeRegExp(member.name)) })
         ).toBeVisible();
 
-        // 初期状態では出席履歴テーブルが表示されていない（複数グループなので折りたたみ）
-        await expect(
-            page.getByRole('heading', { name: memberGroups[0].name, level: 3 })
-        ).toBeVisible();
-        const attendanceSection = page.locator('[data-section="attendance"]');
-        const expandedTables = attendanceSection.locator(
-            '.accordion-panel[data-expanded="true"] table'
-        );
-        await expect(expandedTables).toHaveCount(0);
+        // グループカードが表示される
+        const groupCards = page.getByTestId('group-card');
+        await expect(groupCards.first()).toBeVisible();
 
-        // 「フロントエンド勉強会」カードをクリックして展開
-        await page.getByRole('heading', { name: memberGroups[0].name, level: 3 }).click();
-        await expect(expandedTables).toHaveCount(1);
-
-        // テーブルに日付列と参加時間列がある
-        const expandedPanel = attendanceSection
-            .locator('.accordion-panel[data-expanded="true"]')
-            .first();
-        await expect(expandedPanel.getByRole('columnheader', { name: '日付' })).toBeVisible();
-        await expect(expandedPanel.getByRole('columnheader', { name: '参加時間' })).toBeVisible();
-
-        // 再クリックで折りたたみ
-        await page.getByRole('heading', { name: memberGroups[0].name, level: 3 }).click();
-        await expect(expandedTables).toHaveCount(0);
+        // グループカードをクリックして期別詳細画面に遷移
+        await groupCards.first().click();
+        await expect(page).toHaveURL(/#\/members\/.+\/groups\/.+\/terms\/.+$/);
     });
 
-    test('グループが1つのみのメンバーでも初期状態でアコーディオンが閉じていること', async ({
+    test('グループが1つのみのメンバーでもグループカードが表示されること', async ({
         page,
     }) => {
         const index = await fetchIndex();
@@ -367,13 +350,12 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
             page.getByRole('heading', { name: memberGroups[0].name, level: 3 })
         ).toBeVisible();
 
-        // 全アコーディオンがデフォルトで閉じている
-        await expect(
-            page.locator('[data-section="attendance"] .accordion-panel[data-expanded="true"] table')
-        ).toHaveCount(0);
+        // グループカードが表示される
+        const groupCards = page.getByTestId('group-card');
+        await expect(groupCards).toHaveCount(1);
     });
 
-    test('講師回数を持つメンバーで講師履歴セクションが表示されること', async ({ page }) => {
+    test('講師回数を持つメンバーで講師バッジが表示されること', async ({ page }) => {
         const index = await fetchIndex();
         // instructorCount > 0 のメンバーに遷移
         const member = index.members.find((m) => (m.instructorCount ?? 0) > 0);
@@ -389,14 +371,9 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
 
         // ヘッダーに「講師」テキストが表示されること
         await expect(page.getByText('講師').first()).toBeVisible();
-
-        // 講師履歴セクションが表示されること
-        const instructorSection = page.locator('[data-section="instructor"]');
-        await expect(instructorSection).toBeVisible();
-        await expect(instructorSection.getByText('講師履歴')).toBeVisible();
     });
 
-    test('出席履歴のグループヘッダーに主催者名が表示されること', async ({ page }) => {
+    test('グループカードに主催者名が表示されること', async ({ page }) => {
         const index = await fetchIndex();
         const organizerMap = new Map((index.organizers ?? []).map((o) => [o.id, o.name]));
         // 主催者ありのグループに参加しているメンバーを選択
@@ -420,43 +397,16 @@ test.describe('メンバー詳細画面 — グループ別表示', () => {
             page.getByRole('heading', { name: new RegExp(escapeRegExp(member.name)) })
         ).toBeVisible();
 
-        // 出席履歴セクション内に主催者名テキストが表示されること
-        const attendanceSection = page.locator('[data-section="attendance"]');
-        await expect(attendanceSection).toBeVisible();
-        // 主催者名のいずれかが出席履歴セクション内に表示されていること
+        // 主催者名のいずれかがページ内に表示されていること
         const organizerNames = groupsWithOrganizer.map((g) => organizerMap.get(g.organizerId));
         let foundOrganizer = false;
         for (const name of organizerNames) {
-            const count = await attendanceSection.getByText(name).count();
+            const count = await page.getByText(name).count();
             if (count > 0) {
                 foundOrganizer = true;
                 break;
             }
         }
         expect(foundOrganizer).toBe(true);
-    });
-
-    test('複数のグループカードを同時に展開できること', async ({ page }) => {
-        const index = await fetchIndex();
-        const member = selectMember(index, 2);
-        const memberGroups = member ? getMemberGroups(index, member) : [];
-        if (!member || memberGroups.length < 2) {
-            throw new Error('複数グループのメンバーが必要です');
-        }
-        await navigateTo(page, `/#/members/${member.id}`);
-
-        // メンバー名が表示される（画面準備完了を確認）
-        await expect(
-            page.getByRole('heading', { name: new RegExp(escapeRegExp(member.name)) })
-        ).toBeVisible();
-
-        // 2つのグループを展開
-        await page.getByRole('heading', { name: memberGroups[0].name, level: 3 }).click();
-        await page.getByRole('heading', { name: memberGroups[1].name, level: 3 }).click();
-
-        // 2つのテーブルが表示される
-        await expect(
-            page.locator('[data-section="attendance"] .accordion-panel[data-expanded="true"] table')
-        ).toHaveCount(2);
     });
 });

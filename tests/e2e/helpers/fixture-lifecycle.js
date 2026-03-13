@@ -60,6 +60,27 @@ export async function restoreFromGit() {
 }
 
 /**
+ * Gitの現在のコミットから指定したdev-fixturesファイルを復元
+ * @param {string} relativePath - dev-fixtures/ からの相対パス
+ */
+export async function restoreFixtureFromGit(relativePath) {
+  const filePath = resolve(process.cwd(), 'dev-fixtures', relativePath);
+  const gitPath = `dev-fixtures/${relativePath}`;
+  try {
+    const content = execSync(`git show HEAD:${gitPath}`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const dir = resolve(filePath, '..');
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(filePath, content, 'utf-8');
+    console.log(`[fixture-lifecycle] Gitから復元しました: ${gitPath}`);
+  } catch (error) {
+    console.warn(`[fixture-lifecycle] Gitからの復元に失敗しました (${gitPath}): ${error.message}`);
+  }
+}
+
+/**
  * バックアップファイルを削除
  */
 export async function cleanupBackup() {
