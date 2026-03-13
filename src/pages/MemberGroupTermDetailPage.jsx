@@ -199,8 +199,6 @@ export function MemberGroupTermDetailPage() {
 
     const hasCommon = commonDetail && !isDetailEmpty(commonDetail);
     const hasMember = memberDetail && !isDetailEmpty(memberDetail);
-    // メンバー情報優先: メンバー情報があれば共通情報は非表示
-    const displayTab = hasMember ? 'member' : hasCommon ? 'common' : null;
 
     // 編集開始
     const startEditing = useCallback(() => {
@@ -616,12 +614,41 @@ export function MemberGroupTermDetailPage() {
                 >
                     {/* ヘッダー */}
                     <div className="px-6 py-4 border-b border-border-light">
-                        <h3 className="text-base font-bold text-text-primary">詳細</h3>
+                        {hasCommon && hasMember ? (
+                            <div className="flex gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('member')}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                        activeTab === 'member'
+                                            ? 'bg-primary-100 text-primary-700'
+                                            : 'text-text-secondary hover:bg-surface-muted'
+                                    }`}
+                                >
+                                    個人情報
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('common')}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                        activeTab === 'common'
+                                            ? 'bg-primary-100 text-primary-700'
+                                            : 'text-text-secondary hover:bg-surface-muted'
+                                    }`}
+                                >
+                                    共通情報
+                                </button>
+                            </div>
+                        ) : (
+                            <h3 className="text-base font-bold text-text-primary">
+                                {hasCommon ? '共通情報' : hasMember ? '個人情報' : '詳細'}
+                            </h3>
+                        )}
                     </div>
 
                     <div className="p-6">
                         {/* 両方未登録: 追加ボタン */}
-                        {!displayTab && !editing && (
+                        {!hasCommon && !hasMember && !editing && (
                             <div className="flex items-center justify-center py-8">
                                 <button
                                     type="button"
@@ -634,11 +661,11 @@ export function MemberGroupTermDetailPage() {
                             </div>
                         )}
 
-                        {/* 共通情報の表示（メンバー情報がない場合のみ） */}
-                        {displayTab === 'common' && !editing && renderDetail(commonDetail)}
+                        {/* 共通情報の表示 */}
+                        {activeTab === 'common' && !editing && renderDetail(commonDetail)}
 
-                        {/* メンバー情報の表示（優先） */}
-                        {displayTab === 'member' && !editing && (
+                        {/* メンバー情報の表示 */}
+                        {activeTab === 'member' && !editing && (
                             <div>
                                 {renderDetail(memberDetail)}
                                 <div className="mt-4">
