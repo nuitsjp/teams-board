@@ -62,6 +62,33 @@ vi.mock('../../../../src/services/blob-storage.js', () => ({
     DevBlobStorage: vi.fn(),
 }));
 
+const mockFetchGroupTermDetail = vi.fn();
+const mockSaveGroupTermDetail = vi.fn();
+const mockValidateTermDetail = vi.fn(() => null);
+vi.mock('../../../../src/services/term-detail-service.js', () => ({
+    createEmptyTermDetail: () => ({
+        purpose: '',
+        learningContent: '',
+        learningOutcome: '',
+        references: [],
+    }),
+    fetchGroupTermDetail: (...args) => mockFetchGroupTermDetail(...args),
+    saveGroupTermDetail: (...args) => mockSaveGroupTermDetail(...args),
+    validateTermDetail: (...args) => mockValidateTermDetail(...args),
+    hasTermDetailContent: (detail) =>
+        Boolean(
+            detail &&
+                ((detail.purpose ?? '').trim() ||
+                    (detail.learningContent ?? '').trim() ||
+                    (detail.learningOutcome ?? '').trim() ||
+                    (detail.references ?? []).some(
+                        (reference) =>
+                            (reference.title ?? '').trim() ||
+                            (reference.url ?? '').trim()
+                    ))
+        ),
+}));
+
 const mockIndexData = {
     schemaVersion: 2,
     version: 1,
@@ -116,6 +143,7 @@ const mockSessionData2 = {
     sessionId: 'g1-2026-01-20',
     revision: 0,
     title: '第3回 React入門',
+    url: 'https://example.com/recording',
     startedAt: '2026-01-20T19:00:00',
     endedAt: null,
     instructors: [],
@@ -218,6 +246,8 @@ describe('GroupDetailPage', () => {
         // デフォルトは非管理者モード
         mockAuth.sasToken = null;
         mockAuth.isAdmin = false;
+        mockFetchGroupTermDetail.mockResolvedValue({ ok: true, data: null });
+        mockSaveGroupTermDetail.mockResolvedValue({ success: true });
     });
 
     it('ローディング中に「読み込み中…」と表示すること', () => {
@@ -449,6 +479,68 @@ describe('GroupDetailPage', () => {
         expect(instructorTexts).toHaveLength(1);
     });
 
+    it('共通情報が存在する場合にセッション一覧より上で表示されること', async () => {
+        mockFetchGroupTermDetail.mockResolvedValue({
+            ok: true,
+            data: {
+                purpose: '期の目的',
+                learningContent: '共通の学習内容',
+                learningOutcome: '',
+                references: [],
+            },
+        });
+        mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+        mockFetchSession.mockImplementation((ref) => {
+            if (ref === 'g1-2026-01-15/0')
+                return Promise.resolve({ ok: true, data: mockSessionData1 });
+            if (ref === 'g1-2026-01-20/0')
+                return Promise.resolve({ ok: true, data: mockSessionData2 });
+            return Promise.resolve({ ok: false, error: 'not found' });
+        });
+
+        renderWithRouter('g1');
+
+        await waitFor(() => {
+            expect(screen.getByText('期の目的')).toBeInTheDocument();
+        });
+
+        expect(screen.getByText('共通の学習内容')).toBeInTheDocument();
+        const commonHeading = screen.getByRole('heading', { name: '共通情報' });
+        const sessionDate = screen.getByText('2026-01-20');
+        expect(
+            commonHeading.compareDocumentPosition(sessionDate) & Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+    });
+
+    it('管理者モードで共通情報を保存できること', async () => {
+        const user = userEvent.setup();
+        mockAuth.sasToken = 'dev';
+        mockAuth.isAdmin = true;
+        mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+        mockFetchSession.mockImplementation((ref) => {
+            if (ref === 'g1-2026-01-15/0')
+                return Promise.resolve({ ok: true, data: mockSessionData1 });
+            if (ref === 'g1-2026-01-20/0')
+                return Promise.resolve({ ok: true, data: mockSessionData2 });
+            return Promise.resolve({ ok: false, error: 'not found' });
+        });
+
+        renderWithRouter('g1');
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: '登録' })).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByRole('button', { name: '登録' }));
+        await user.type(screen.getByLabelText('セッションの目的'), '共通の目的');
+        await user.click(screen.getByRole('button', { name: '保存' }));
+
+        await waitFor(() => {
+            expect(mockSaveGroupTermDetail).toHaveBeenCalled();
+        });
+        expect(screen.getByText('共通情報を保存しました')).toBeInTheDocument();
+    });
+
     describe('期別表示', () => {
         it('複数期のサマリーが降順で表示されること', async () => {
             mockFetchIndex.mockResolvedValue({ ok: true, data: mockMultiPeriodIndexData });
@@ -488,7 +580,10 @@ describe('GroupDetailPage', () => {
             expect(selectedButton).toHaveTextContent('2025年度 下期');
 
             // 下期のセッション（2026-01-15）が右列に表示される
-            expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('2026-01-15');
+            const sessionHeadings = screen
+                .getAllByRole('heading', { level: 3 })
+                .map((heading) => heading.textContent);
+            expect(sessionHeadings.some((text) => text.includes('2026-01-15'))).toBe(true);
         });
 
         it('期を切り替えるとその期のセッションが表示されること', async () => {

@@ -1,0 +1,11 @@
+{
+  "purpose": "TypeScript の型理解を深める",
+  "learningContent": "型推論、ユニオン型、ジェネリクスの扱いを整理する",
+  "learningOutcome": "型エラーの読み解きと型設計の相談ができる状態を目指す",
+  "references": [
+    {
+      "title": "TypeScript Handbook",
+      "url": "https://www.typescriptlang.org/docs/"
+    }
+  ]
+}

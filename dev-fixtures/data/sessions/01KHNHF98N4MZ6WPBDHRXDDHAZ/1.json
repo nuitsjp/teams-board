@@ -1,0 +1,26 @@
+{
+  "sessionId": "01KHNHF98N4MZ6WPBDHRXDDHAZ",
+  "revision": 1,
+  "startedAt": "2025-06-15T09:00:00.000Z",
+  "endedAt": null,
+  "attendances": [
+    {
+      "memberId": "01KHNHF98NYNJPQV869R3WT90Y",
+      "durationSeconds": 3600
+    },
+    {
+      "memberId": "01KHNHF98NDVMV15W5VA72P6D0",
+      "durationSeconds": 2700
+    },
+    {
+      "memberId": "01KHNHF98NZGBYKJESBD8TPJZ5",
+      "durationSeconds": 3300
+    }
+  ],
+  "instructors": [
+    "01KHNHF98NDVMV15W5VA72P6D0",
+    "01KHNHF98NZGBYKJESBD8TPJZ5"
+  ],
+  "createdAt": "2026-02-17T10:13:57.654Z",
+  "url": "https://github.com/R0007-RJ-SolDev/Idw"
+}

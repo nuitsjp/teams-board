@@ -11,6 +11,14 @@ import { formatDuration } from '../utils/format-duration.js';
 import { navigateBack } from '../utils/navigate-back.js';
 import { getFiscalPeriod } from '../utils/fiscal-period.js';
 import {
+    createEmptyTermDetail,
+    fetchGroupTermDetail,
+    hasTermDetailContent,
+    saveGroupTermDetail,
+    validateTermDetail,
+} from '../services/term-detail-service.js';
+import { TermDetailForm, TermDetailView } from '../components/TermDetailEditor.jsx';
+import {
     ArrowLeft,
     Clock,
     Calendar,
@@ -22,6 +30,7 @@ import {
     AlertCircle,
     CheckCircle,
     Building2,
+    ExternalLink,
 } from 'lucide-react';
 
 /**
@@ -88,6 +97,13 @@ export function GroupDetailPage() {
     const [deleteMessage, setDeleteMessage] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const [organizerName, setOrganizerName] = useState(null);
+    const [commonDetail, setCommonDetail] = useState(null);
+    const [commonDraft, setCommonDraft] = useState(createEmptyTermDetail());
+    const [commonLoading, setCommonLoading] = useState(false);
+    const [commonEditing, setCommonEditing] = useState(false);
+    const [commonSaving, setCommonSaving] = useState(false);
+    const [commonMessage, setCommonMessage] = useState(null);
+    const selectedPeriod = periodSessions.find((p) => p.label === selectedPeriodLabel);
 
     useEffect(() => {
         let cancelled = false;
@@ -164,12 +180,13 @@ export function GroupDetailPage() {
                 const date = extractDate(session.startedAt);
                 const period = getFiscalPeriod(date);
                 if (!periodMap.has(period.label)) {
-                    periodMap.set(period.label, {
-                        label: period.label,
-                        fiscalYear: period.fiscalYear,
-                        half: period.half,
-                        sortKey: period.sortKey,
-                        totalSessions: 0,
+                        periodMap.set(period.label, {
+                            label: period.label,
+                            termKey: String(period.sortKey),
+                            fiscalYear: period.fiscalYear,
+                            half: period.half,
+                            sortKey: period.sortKey,
+                            totalSessions: 0,
                         totalDurationSeconds: 0,
                         sessions: [],
                     });
@@ -187,6 +204,7 @@ export function GroupDetailPage() {
                     sessionRef,
                     date,
                     title: session.title,
+                    url: session.url,
                     attendeeCount: attendees.length,
                     totalDurationSeconds,
                     attendees,
@@ -223,6 +241,49 @@ export function GroupDetailPage() {
             cancelled = true;
         };
     }, [groupId, refreshKey]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        if (!selectedPeriod) {
+            setCommonDetail(null);
+            setCommonDraft(createEmptyTermDetail());
+            setCommonEditing(false);
+            setCommonLoading(false);
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        setCommonLoading(true);
+
+        (async () => {
+            const result = await fetchGroupTermDetail(groupId, selectedPeriod.termKey);
+            if (cancelled) {
+                return;
+            }
+
+            if (!result.ok) {
+                setCommonMessage({
+                    type: 'error',
+                    text: `共通情報の取得に失敗しました。${result.error}`,
+                });
+                setCommonDetail(null);
+                setCommonDraft(createEmptyTermDetail());
+                setCommonLoading(false);
+                return;
+            }
+
+            setCommonDetail(result.data);
+            setCommonDraft(result.data ?? createEmptyTermDetail());
+            setCommonEditing(false);
+            setCommonLoading(false);
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [groupId, selectedPeriod?.termKey]);
 
     const toggleSession = (sessionId) => {
         setExpandedSessions((prev) => {
@@ -322,7 +383,54 @@ export function GroupDetailPage() {
         }
     }, [deleteTarget, blobWriter, indexEditor, cachedIndex, sessionDataMap, groupId]);
 
-    const selectedPeriod = periodSessions.find((p) => p.label === selectedPeriodLabel);
+    const handleStartEditCommonDetail = () => {
+        setCommonDraft(commonDetail ?? createEmptyTermDetail());
+        setCommonEditing(true);
+        setCommonMessage(null);
+    };
+
+    const handleCancelEditCommonDetail = () => {
+        setCommonDraft(commonDetail ?? createEmptyTermDetail());
+        setCommonEditing(false);
+        setCommonMessage(null);
+    };
+
+    const handleSaveCommonDetail = useCallback(async () => {
+        if (!blobStorage || !selectedPeriod) {
+            return;
+        }
+
+        const validationError = validateTermDetail(commonDraft);
+        if (validationError) {
+            setCommonMessage({ type: 'error', text: validationError });
+            return;
+        }
+
+        setCommonSaving(true);
+        setCommonMessage(null);
+
+        const result = await saveGroupTermDetail(
+            blobStorage,
+            groupId,
+            selectedPeriod.termKey,
+            commonDraft
+        );
+
+        if (!result.success) {
+            setCommonSaving(false);
+            setCommonMessage({
+                type: 'error',
+                text: `共通情報の保存に失敗しました。${result.error}`,
+            });
+            return;
+        }
+
+        setCommonDetail(commonDraft);
+        setCommonDraft(commonDraft);
+        setCommonEditing(false);
+        setCommonSaving(false);
+        setCommonMessage({ type: 'success', text: '共通情報を保存しました' });
+    }, [blobStorage, commonDraft, groupId, selectedPeriod]);
 
     if (loading) {
         return (
@@ -484,6 +592,84 @@ export function GroupDetailPage() {
 
                 {/* 右列: 選択した期のセッション別アコーディオン */}
                 <div className="space-y-4">
+                    {selectedPeriod && (
+                        <div className="card-base p-6 space-y-4">
+                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                                <div>
+                                    <h3 className="text-lg font-bold text-text-primary">
+                                        共通情報
+                                    </h3>
+                                    <p className="text-sm text-text-muted mt-1">
+                                        {selectedPeriod.label} の共通情報を表示します
+                                    </p>
+                                </div>
+                                {auth.isAdmin && !commonEditing && (
+                                    <button
+                                        type="button"
+                                        onClick={handleStartEditCommonDetail}
+                                        className="rounded-lg border border-border-light px-4 py-2 text-sm text-text-primary hover:bg-surface-muted transition-colors"
+                                    >
+                                        {hasTermDetailContent(commonDetail) ? '編集' : '登録'}
+                                    </button>
+                                )}
+                            </div>
+
+                            <div aria-live="polite">
+                                {commonMessage && (
+                                    <div
+                                        className={`p-3 rounded-xl flex items-center gap-2 animate-scale-in ${
+                                            commonMessage.type === 'success'
+                                                ? 'bg-green-50 text-green-800'
+                                                : 'bg-red-50 text-red-800'
+                                        }`}
+                                    >
+                                        {commonMessage.type === 'success' ? (
+                                            <CheckCircle className="w-5 h-5" aria-hidden="true" />
+                                        ) : (
+                                            <AlertCircle className="w-5 h-5" aria-hidden="true" />
+                                        )}
+                                        <span className="text-sm">{commonMessage.text}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {commonLoading ? (
+                                <div className="space-y-3">
+                                    <div className="h-5 w-32 skeleton" />
+                                    <div className="h-20 w-full skeleton rounded-2xl" />
+                                </div>
+                            ) : commonEditing ? (
+                                <div className="space-y-4">
+                                    <TermDetailForm
+                                        detail={commonDraft}
+                                        onChange={setCommonDraft}
+                                        disabled={commonSaving}
+                                    />
+                                    <div className="flex items-center justify-end gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelEditCommonDetail}
+                                            disabled={commonSaving}
+                                            className="rounded-lg border border-border-light px-4 py-2 text-sm text-text-primary hover:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            キャンセル
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleSaveCommonDetail}
+                                            disabled={commonSaving}
+                                            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
+                                        >
+                                            {commonSaving ? '保存中...' : '保存'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <TermDetailView detail={commonDetail ?? createEmptyTermDetail()} />
+                            )}
+                        </div>
+                    )}
+
                     {selectedPeriod &&
                         selectedPeriod.sessions.map((session, index) => {
                             const isExpanded = expandedSessions.has(session.sessionId);
@@ -513,21 +699,45 @@ export function GroupDetailPage() {
                                                     />
                                                 )}
                                                 <div>
-                                                    <h3 className="text-base font-bold text-text-primary">
+                                                    <h3 className="text-base font-bold text-text-primary flex items-center flex-wrap gap-x-3">
                                                         {(() => {
                                                             const parts =
                                                                 formatSessionParts(session);
                                                             return (
-                                                                <>
+                                                                <span>
                                                                     <span>{parts.date}</span>
                                                                     {parts.title && (
                                                                         <span className="ml-2 font-normal text-text-secondary">
                                                                             {parts.title}
                                                                         </span>
                                                                     )}
-                                                                </>
+                                                                </span>
                                                             );
                                                         })()}
+                                                        {session.url && (
+                                                            <a
+                                                                href={session.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 text-xs font-normal text-primary-500 hover:text-primary-700 transition-colors"
+                                                                /* v8 ignore next -- アコーディオン内のリンククリックでトグルを防止 */
+                                                                onClick={(e) =>
+                                                                    e.stopPropagation()
+                                                                }
+                                                                aria-label="参考情報を開く"
+                                                            >
+                                                                <span className="text-text-muted">
+                                                                    参考情報：
+                                                                </span>
+                                                                <span className="truncate max-w-[200px]">
+                                                                    {session.url}
+                                                                </span>
+                                                                <ExternalLink
+                                                                    className="w-3 h-3 shrink-0"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            </a>
+                                                        )}
                                                     </h3>
                                                     {session.instructorNames.length > 0 && (
                                                         <div className="flex items-center gap-1.5 mt-0.5 text-sm text-text-secondary">

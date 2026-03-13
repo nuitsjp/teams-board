@@ -3,6 +3,7 @@ import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { DashboardPage } from './pages/DashboardPage.jsx';
 import { MemberDetailPage } from './pages/MemberDetailPage.jsx';
+import { MemberGroupTermDetailPage } from './pages/MemberGroupTermDetailPage.jsx';
 import { GroupDetailPage } from './pages/GroupDetailPage.jsx';
 import { OrganizerDetailPage } from './pages/OrganizerDetailPage.jsx';
 import { BookOpen, Settings } from 'lucide-react';
@@ -20,6 +21,10 @@ const adminLoadingFallback = (
 const router = createHashRouter([
   { path: '/', element: <DashboardPage /> },
   { path: '/members/:memberId', element: <MemberDetailPage /> },
+  {
+    path: '/members/:memberId/groups/:groupId/terms/:termKey',
+    element: <MemberGroupTermDetailPage />,
+  },
   { path: '/groups/:groupId', element: <GroupDetailPage /> },
   { path: '/organizers/:organizerId', element: <OrganizerDetailPage /> },
   {

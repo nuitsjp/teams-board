@@ -1,4 +1,4 @@
-import { getFiscalPeriod } from '../../../src/utils/fiscal-period.js';
+import { getFiscalPeriod, getFiscalPeriodFromSortKey } from '../../../src/utils/fiscal-period.js';
 
 describe('getFiscalPeriod', () => {
     it('上期に属するセッションを分類する（2025-06-15 → 2025年度 上期）', () => {
@@ -76,5 +76,48 @@ describe('getFiscalPeriod', () => {
         const firstHalf = getFiscalPeriod('2025-06-15');
         const secondHalf = getFiscalPeriod('2025-11-20');
         expect(secondHalf.sortKey).toBeGreaterThan(firstHalf.sortKey);
+    });
+});
+
+describe('getFiscalPeriodFromSortKey', () => {
+    it('上期の sortKey から期情報を逆算する（20250 → 2025年度 上期）', () => {
+        expect(getFiscalPeriodFromSortKey(20250)).toEqual({
+            fiscalYear: 2025,
+            half: 'first',
+            label: '2025年度 上期',
+            sortKey: 20250,
+        });
+    });
+
+    it('下期の sortKey から期情報を逆算する（20251 → 2025年度 下期）', () => {
+        expect(getFiscalPeriodFromSortKey(20251)).toEqual({
+            fiscalYear: 2025,
+            half: 'second',
+            label: '2025年度 下期',
+            sortKey: 20251,
+        });
+    });
+
+    it('文字列の sortKey も受け付ける', () => {
+        expect(getFiscalPeriodFromSortKey('20240')).toEqual({
+            fiscalYear: 2024,
+            half: 'first',
+            label: '2024年度 上期',
+            sortKey: 20240,
+        });
+    });
+
+    it('不正な halfIndex の場合は null を返す', () => {
+        expect(getFiscalPeriodFromSortKey(20252)).toBeNull();
+    });
+
+    it('数値に変換できない値の場合は null を返す', () => {
+        expect(getFiscalPeriodFromSortKey('abc')).toBeNull();
+    });
+
+    it('getFiscalPeriod の結果と getFiscalPeriodFromSortKey が往復一致する', () => {
+        const original = getFiscalPeriod('2025-11-20');
+        const restored = getFiscalPeriodFromSortKey(original.sortKey);
+        expect(restored).toEqual(original);
     });
 });
