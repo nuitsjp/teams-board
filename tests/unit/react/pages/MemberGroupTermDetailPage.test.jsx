@@ -940,6 +940,28 @@ describe('MemberGroupTermDetailPage', () => {
         expect(rows.length).toBe(2);
     });
 
+    // --- 追加カバレッジ: メンバー情報追加→キャンセル後に編集ボタンで空フォームが表示される ---
+    it('メンバー情報追加をキャンセルした後、編集ボタンで空フォームが表示される', async () => {
+        const user = userEvent.setup();
+        setupDefaultMocks();
+        renderWithRouter();
+
+        await waitFor(() => {
+            expect(screen.getByText('メンバー情報を追加')).toBeInTheDocument();
+        });
+
+        // 追加→キャンセル
+        await user.click(screen.getByText('メンバー情報を追加'));
+        await user.click(screen.getByText('キャンセル'));
+
+        // activeTab が 'member' のまま、editing が false → 編集ボタンが表示される
+        await user.click(screen.getByText('編集'));
+
+        // memberDetail が null なので空のフォームが表示される
+        const purposeInput = screen.getByLabelText('セッションの目的');
+        expect(purposeInput).toHaveValue('');
+    });
+
     // --- 追加カバレッジ: メンバーの初期文字がアバターに表示される ---
     it('メンバー名の先頭文字がアバターに表示される', async () => {
         setupDefaultMocks();
