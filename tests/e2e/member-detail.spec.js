@@ -58,8 +58,8 @@ test.describe('メンバー期別グループ詳細画面', () => {
         // 詳細セクションが表示されること
         await expect(page.getByText('詳細')).toBeVisible();
 
-        // メンバー情報の内容が表示されること（member-group-term-details のデータ）
-        await expect(page.getByText('コンポーネント設計パターンの習得')).toBeVisible();
+        // 共通情報が優先表示されること（group-term-details のデータ）
+        await expect(page.getByText('フロントエンド技術のキャッチアップと実践力向上')).toBeVisible();
     });
 
     test('講師バッジがセッション一覧に表示されること', async ({ page }) => {
