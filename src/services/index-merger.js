@@ -88,6 +88,7 @@ export class IndexMerger {
             sessionId: parsedSession.sessionId,
             revision: 0,
             title: '',
+            url: '',
             startedAt: parsedSession.startedAt,
             endedAt: parsedSession.endedAt,
             attendances: sessionAttendances,
