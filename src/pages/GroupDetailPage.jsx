@@ -247,9 +247,9 @@ export function GroupDetailPage() {
         };
     }, [groupId, refreshKey]);
 
-    // 共通情報の取得（期選択時）
+    // 共通情報の取得（期選択時・認証不要）
     useEffect(() => {
-        if (!termDetailService || !selectedPeriodLabel || !auth.isAdmin) return;
+        if (!selectedPeriodLabel) return;
         let cancelled = false;
         const selectedPeriodObj = periodSessions.find((p) => p.label === selectedPeriodLabel);
         if (!selectedPeriodObj) return;
@@ -258,7 +258,7 @@ export function GroupDetailPage() {
         (async () => {
             setEditingCommon(false);
             setCommonMessage(null);
-            const result = await termDetailService.fetchGroupTermDetail(groupId, termKey);
+            const result = await TermDetailService.fetchGroupTermDetail(groupId, termKey);
             if (cancelled) return;
             if (result.ok) {
                 setCommonDetail(result.data);
@@ -269,7 +269,7 @@ export function GroupDetailPage() {
         return () => {
             cancelled = true;
         };
-    }, [termDetailService, selectedPeriodLabel, groupId, auth.isAdmin, periodSessions]);
+    }, [selectedPeriodLabel, groupId, periodSessions]);
 
     const toggleSession = (sessionId) => {
         setExpandedSessions((prev) => {
@@ -583,14 +583,14 @@ export function GroupDetailPage() {
 
                 {/* 右列: 選択した期のセッション別アコーディオン */}
                 <div className="space-y-4">
-                    {/* 共通情報セクション（管理者モードのみ） */}
-                    {auth.isAdmin && selectedPeriod && (
+                    {/* 共通情報セクション（表示は全員、編集は管理者のみ） */}
+                    {selectedPeriod && (
                         <div className="card-base overflow-hidden animate-fade-in-up">
                             <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
                                 <h3 className="text-base font-bold text-text-primary">
                                     共通情報（{selectedPeriod.label}）
                                 </h3>
-                                {!editingCommon && (
+                                {auth.isAdmin && !editingCommon && (
                                     <button
                                         type="button"
                                         onClick={startEditingCommon}

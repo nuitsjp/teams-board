@@ -14,13 +14,15 @@ export class TermDetailService {
     }
 
     /**
-     * グループ期共通情報を取得する
+     * グループ期共通情報を取得する（認証不要）
      * @param {string} groupId
      * @param {string} termKey - sortKey 形式（例: "20240"）
      * @returns {Promise<{ok: true, data: object} | {ok: false, notFound: boolean, error?: string}>}
      */
-    async fetchGroupTermDetail(groupId, termKey) {
-        return this.#fetchJson(`data/group-term-details/${groupId}/${termKey}.json`);
+    static async fetchGroupTermDetail(groupId, termKey) {
+        return TermDetailService.#fetchJson(
+            `data/group-term-details/${groupId}/${termKey}.json`
+        );
     }
 
     /**
@@ -37,14 +39,14 @@ export class TermDetailService {
     }
 
     /**
-     * メンバー個別情報を取得する
+     * メンバー個別情報を取得する（認証不要）
      * @param {string} memberId
      * @param {string} groupId
      * @param {string} termKey
      * @returns {Promise<{ok: true, data: object} | {ok: false, notFound: boolean, error?: string}>}
      */
-    async fetchMemberGroupTermDetail(memberId, groupId, termKey) {
-        return this.#fetchJson(
+    static async fetchMemberGroupTermDetail(memberId, groupId, termKey) {
+        return TermDetailService.#fetchJson(
             `data/member-group-term-details/${memberId}/${groupId}/${termKey}.json`
         );
     }
@@ -80,7 +82,7 @@ export class TermDetailService {
      * @param {string} url
      * @returns {Promise<{ok: true, data: object} | {ok: false, notFound: boolean, error?: string}>}
      */
-    async #fetchJson(url) {
+    static async #fetchJson(url) {
         try {
             const response = await fetch(`${url}?v=${Date.now()}`);
             if (response.status === 404) {

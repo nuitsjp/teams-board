@@ -488,7 +488,8 @@ describe('GroupDetailPage', () => {
             expect(selectedButton).toHaveTextContent('2025年度 下期');
 
             // 下期のセッション（2026-01-15）が右列に表示される
-            expect(screen.getByRole('heading', { level: 3 })).toHaveTextContent('2026-01-15');
+            const h3s = screen.getAllByRole('heading', { level: 3 });
+            expect(h3s.some((h) => h.textContent.includes('2026-01-15'))).toBe(true);
         });
 
         it('期を切り替えるとその期のセッションが表示されること', async () => {

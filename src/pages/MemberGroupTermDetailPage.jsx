@@ -173,23 +173,21 @@ export function MemberGroupTermDetailPage() {
             setSessions(termSessions);
             setTotalDurationSeconds(totalDuration);
 
-            // 詳細情報を取得（termDetailService がなくても表示は可能）
-            if (termDetailService) {
-                const [commonResult, memberResult] = await Promise.all([
-                    termDetailService.fetchGroupTermDetail(groupId, termKey),
-                    termDetailService.fetchMemberGroupTermDetail(memberId, groupId, termKey),
-                ]);
-                if (cancelled) return;
+            // 詳細情報を取得（static メソッドで認証不要）
+            const [commonResult, memberResult] = await Promise.all([
+                TermDetailService.fetchGroupTermDetail(groupId, termKey),
+                TermDetailService.fetchMemberGroupTermDetail(memberId, groupId, termKey),
+            ]);
+            if (cancelled) return;
 
-                if (commonResult.ok) setCommonDetail(commonResult.data);
-                if (memberResult.ok) setMemberDetail(memberResult.data);
+            if (commonResult.ok) setCommonDetail(commonResult.data);
+            if (memberResult.ok) setMemberDetail(memberResult.data);
 
-                // 初期タブ設定
-                if (memberResult.ok && !isDetailEmpty(memberResult.data)) {
-                    setActiveTab('member');
-                } else if (commonResult.ok && !isDetailEmpty(commonResult.data)) {
-                    setActiveTab('common');
-                }
+            // 初期タブ設定
+            if (memberResult.ok && !isDetailEmpty(memberResult.data)) {
+                setActiveTab('member');
+            } else if (commonResult.ok && !isDetailEmpty(commonResult.data)) {
+                setActiveTab('common');
             }
 
             setLoading(false);
@@ -197,7 +195,7 @@ export function MemberGroupTermDetailPage() {
         return () => {
             cancelled = true;
         };
-    }, [memberId, groupId, termKey, termDetailService]);
+    }, [memberId, groupId, termKey]);
 
     const hasCommon = commonDetail && !isDetailEmpty(commonDetail);
     const hasMember = memberDetail && !isDetailEmpty(memberDetail);
