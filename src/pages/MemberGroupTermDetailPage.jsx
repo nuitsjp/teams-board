@@ -183,11 +183,11 @@ export function MemberGroupTermDetailPage() {
             if (commonResult.ok) setCommonDetail(commonResult.data);
             if (memberResult.ok) setMemberDetail(memberResult.data);
 
-            // 初期タブ設定
-            if (memberResult.ok && !isDetailEmpty(memberResult.data)) {
-                setActiveTab('member');
-            } else if (commonResult.ok && !isDetailEmpty(commonResult.data)) {
+            // 初期タブ設定（共通情報を優先）
+            if (commonResult.ok && !isDetailEmpty(commonResult.data)) {
                 setActiveTab('common');
+            } else if (memberResult.ok && !isDetailEmpty(memberResult.data)) {
+                setActiveTab('member');
             }
 
             setLoading(false);
@@ -614,36 +614,7 @@ export function MemberGroupTermDetailPage() {
                 >
                     {/* ヘッダー */}
                     <div className="px-6 py-4 border-b border-border-light">
-                        {hasCommon && hasMember ? (
-                            <div className="flex gap-1">
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('member')}
-                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                        activeTab === 'member'
-                                            ? 'bg-primary-100 text-primary-700'
-                                            : 'text-text-secondary hover:bg-surface-muted'
-                                    }`}
-                                >
-                                    個人情報
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('common')}
-                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                        activeTab === 'common'
-                                            ? 'bg-primary-100 text-primary-700'
-                                            : 'text-text-secondary hover:bg-surface-muted'
-                                    }`}
-                                >
-                                    共通情報
-                                </button>
-                            </div>
-                        ) : (
-                            <h3 className="text-base font-bold text-text-primary">
-                                {hasCommon ? '共通情報' : hasMember ? '個人情報' : '詳細'}
-                            </h3>
-                        )}
+                        <h3 className="text-base font-bold text-text-primary">詳細</h3>
                     </div>
 
                     <div className="p-6">

@@ -280,12 +280,12 @@ describe('MemberGroupTermDetailPage', () => {
     });
 
     // --- 7. 共通情報のみ ---
-    it('共通情報のみの場合ヘッダーに「共通情報」を表示する', async () => {
+    it('共通情報のみの場合ヘッダーに「詳細」を表示し共通情報の内容が見える', async () => {
         setupCommonDetailOnly();
         renderWithRouter();
 
         await waitFor(() => {
-            expect(screen.getByText('共通情報')).toBeInTheDocument();
+            expect(screen.getByText('詳細')).toBeInTheDocument();
         });
         // 共通情報の内容
         expect(screen.getByText('フロントエンド技術の共有')).toBeInTheDocument();
@@ -293,15 +293,17 @@ describe('MemberGroupTermDetailPage', () => {
         expect(screen.getByText('コンポーネント設計の理解')).toBeInTheDocument();
         // 参考資料リンク
         expect(screen.getByText('参考サイト')).toBeInTheDocument();
+        // 共通情報のみの場合「メンバー情報を追加」は表示されない
+        expect(screen.queryByText('メンバー情報を追加')).not.toBeInTheDocument();
     });
 
     // --- 8. 個人情報のみ ---
-    it('個人情報のみの場合ヘッダーに「個人情報」を表示し編集ボタンがある', async () => {
+    it('個人情報のみの場合ヘッダーに「詳細」を表示し編集ボタンがある', async () => {
         setupMemberDetailOnly();
         renderWithRouter();
 
         await waitFor(() => {
-            expect(screen.getByText('個人情報')).toBeInTheDocument();
+            expect(screen.getByText('詳細')).toBeInTheDocument();
         });
         expect(screen.getByText('個人の学習目的')).toBeInTheDocument();
         expect(screen.getByText('Hooks の深掘り')).toBeInTheDocument();
@@ -310,35 +312,22 @@ describe('MemberGroupTermDetailPage', () => {
         expect(screen.getByText('編集')).toBeInTheDocument();
     });
 
-    // --- 9. 両方存在 ---
-    it('両方存在する場合タブボタンが表示され個人情報タブがデフォルト', async () => {
+    // --- 9. 両方存在: 共通優先 ---
+    it('両方存在する場合は共通情報が優先して表示される', async () => {
         setupBothDetails();
         renderWithRouter();
 
         await waitFor(() => {
-            // タブボタン
-            expect(screen.getByRole('button', { name: '個人情報' })).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: '共通情報' })).toBeInTheDocument();
+            expect(screen.getByText('詳細')).toBeInTheDocument();
         });
-        // デフォルトはメンバータブ → 個人の内容が表示
-        expect(screen.getByText('個人の学習目的')).toBeInTheDocument();
-    });
-
-    // --- 10. タブ切り替え ---
-    it('共通情報タブをクリックすると共通情報が表示される', async () => {
-        const user = userEvent.setup();
-        setupBothDetails();
-        renderWithRouter();
-
-        await waitFor(() => {
-            expect(screen.getByRole('button', { name: '共通情報' })).toBeInTheDocument();
-        });
-
-        await user.click(screen.getByRole('button', { name: '共通情報' }));
-
-        // 共通情報が表示される
+        // 共通情報が優先的に表示される
         expect(screen.getByText('フロントエンド技術の共有')).toBeInTheDocument();
         expect(screen.getByText('React 19 の新機能')).toBeInTheDocument();
+        // 個人情報の編集ボタンは表示されない（共通情報タブのため）
+        expect(screen.queryByText('編集')).not.toBeInTheDocument();
+        // タブボタンは存在しない
+        expect(screen.queryByRole('button', { name: '個人情報' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '共通情報' })).not.toBeInTheDocument();
     });
 
     // --- 11. 編集フォーム表示 ---
@@ -736,18 +725,17 @@ describe('MemberGroupTermDetailPage', () => {
         });
     });
 
-    // --- 追加カバレッジ: 削除成功後に共通情報がある場合タブが切り替わる ---
-    it('削除成功後に共通情報がある場合は共通情報タブに切り替わる', async () => {
+    // --- 追加カバレッジ: 個人情報のみで削除成功 ---
+    it('個人情報を削除すると追加ボタンが表示される', async () => {
         const user = userEvent.setup();
-        setupBothDetails();
+        setupMemberDetailOnly();
         mockDeleteMemberGroupTermDetail.mockResolvedValue({ success: true });
         renderWithRouter();
 
         await waitFor(() => {
-            expect(screen.getByRole('button', { name: '個人情報' })).toBeInTheDocument();
+            expect(screen.getByText('編集')).toBeInTheDocument();
         });
 
-        // 個人情報タブ → 編集
         await user.click(screen.getByText('編集'));
         await user.click(screen.getByText('削除'));
 
@@ -823,23 +811,17 @@ describe('MemberGroupTermDetailPage', () => {
         });
     });
 
-    // --- 追加カバレッジ: 個人情報タブに切り替えて戻る ---
-    it('タブを個人情報に戻すと個人情報が再表示される', async () => {
-        const user = userEvent.setup();
-        setupBothDetails();
+    // --- 追加カバレッジ: 共通情報がある場合は「メンバー情報を追加」が出ない ---
+    it('共通情報がある場合は「メンバー情報を追加」ボタンが表示されない', async () => {
+        setupCommonDetailOnly();
         renderWithRouter();
 
         await waitFor(() => {
-            expect(screen.getByRole('button', { name: '共通情報' })).toBeInTheDocument();
+            expect(screen.getByText('フロントエンド技術の共有')).toBeInTheDocument();
         });
 
-        // 共通情報に切り替え
-        await user.click(screen.getByRole('button', { name: '共通情報' }));
-        expect(screen.getByText('フロントエンド技術の共有')).toBeInTheDocument();
-
-        // 個人情報に戻す
-        await user.click(screen.getByRole('button', { name: '個人情報' }));
-        expect(screen.getByText('個人の学習目的')).toBeInTheDocument();
+        // 追加ボタンは表示されない
+        expect(screen.queryByText('メンバー情報を追加')).not.toBeInTheDocument();
     });
 
     // --- 追加カバレッジ: 複数参考資料の操作 ---
@@ -917,8 +899,8 @@ describe('MemberGroupTermDetailPage', () => {
         renderWithRouter();
 
         await waitFor(() => {
-            // 共通情報が表示される（h3 の「共通情報」）
-            expect(screen.getByText('共通情報')).toBeInTheDocument();
+            // 見出しは「詳細」に統一
+            expect(screen.getByText('詳細')).toBeInTheDocument();
             expect(screen.getByText('フロントエンド技術の共有')).toBeInTheDocument();
         });
     });

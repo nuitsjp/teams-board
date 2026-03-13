@@ -55,8 +55,8 @@ test.describe('メンバー期別グループ詳細画面', () => {
             .filter({ hasText: 'フロントエンド勉強会' });
         await groupRow.click();
 
-        // 詳細セクションが表示されること（個人情報のみの場合は「個人情報」ラベル）
-        await expect(page.getByText('個人情報')).toBeVisible();
+        // 詳細セクションが表示されること
+        await expect(page.getByText('詳細')).toBeVisible();
 
         // メンバー情報の内容が表示されること（member-group-term-details のデータ）
         await expect(page.getByText('コンポーネント設計パターンの習得')).toBeVisible();

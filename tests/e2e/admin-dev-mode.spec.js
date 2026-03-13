@@ -264,8 +264,8 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
         await expect(groupCard).toBeVisible();
         await groupCard.click();
 
-        // 期詳細画面が表示されること（個人情報のみの場合は「個人情報」ラベル）
-        await expect(page.getByText('個人情報')).toBeVisible();
+        // 期詳細画面が表示されること
+        await expect(page.getByText('詳細')).toBeVisible();
 
         // メンバー情報が表示されていること
         await expect(page.getByText('業務で扱う複雑な型を読み解けるようにする')).toBeVisible();
