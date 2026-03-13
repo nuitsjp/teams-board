@@ -252,13 +252,6 @@ describe('IndexMerger', () => {
       expect(result.sessionRecord.instructors).toEqual([]);
     });
 
-    it("sessionRecord に url: '' がデフォルトで含まれること", () => {
-      const parsedSession = createParsedSession();
-      const result = merger.merge(emptyIndex, parsedSession);
-
-      expect(result.sessionRecord.url).toBe('');
-    });
-
     it('sessionRecord の memberId が index.members の ID と一致すること', () => {
       const parsedSession = createParsedSession();
       const result = merger.merge(emptyIndex, parsedSession);

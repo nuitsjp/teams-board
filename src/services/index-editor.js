@@ -284,7 +284,6 @@ export class IndexEditor {
      * @param {object} sessionData - 現在のセッションデータ
      * @param {object} updates - 更新フィールド
      * @param {string} [updates.title] - 新しいタイトル
-     * @param {string} [updates.url] - セッション関連 URL
      * @param {string[]} [updates.instructors] - 講師 ID（ULID）の配列
      * @returns {{ sessionRecord: object, newRef: string, newPath: string, error?: string }}
      */
@@ -324,14 +323,6 @@ export class IndexEditor {
             }
         } else if (sessionData.title) {
             sessionRecord.title = sessionData.title;
-        }
-
-        if (updates.url !== undefined) {
-            if (updates.url.length > 0) {
-                sessionRecord.url = updates.url;
-            }
-        } else if (sessionData.url) {
-            sessionRecord.url = sessionData.url;
         }
 
         if (updates.instructors !== undefined) {

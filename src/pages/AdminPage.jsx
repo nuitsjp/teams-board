@@ -86,7 +86,6 @@ export function AdminPage() {
   const [groups, setGroups] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [sessionNameInputs, setSessionNameInputs] = useState({});
-  const [sessionUrlInputs, setSessionUrlInputs] = useState({});
   const [instructorInputs, setInstructorInputs] = useState({});
   const [savingGroupId, setSavingGroupId] = useState(null);
   const [groupMessage, setGroupMessage] = useState({ type: '', text: '' });
@@ -139,11 +138,6 @@ export function AdminPage() {
         setSessionNameInputs(
           Object.fromEntries(
             loadedSessions.map((session) => [session._ref, session.title || ''])
-          )
-        );
-        setSessionUrlInputs(
-          Object.fromEntries(
-            loadedSessions.map((session) => [session._ref, session.url || ''])
           )
         );
         setInstructorInputs(
@@ -555,8 +549,8 @@ export function AdminPage() {
 
   // セッション保存処理（V2: 新リビジョンを作成しセッションファイルを追記）
   const handleSaveSession = useCallback(
-    /* v8 ignore next -- SessionEditorPanel が常に4引数で呼ぶためデフォルト値には到達しない */
-    async (sessionRef, name, instructors = [], url = '') => {
+    /* v8 ignore next -- SessionEditorPanel が常に3引数で呼ぶためデフォルト値には到達しない */
+    async (sessionRef, name, instructors = []) => {
       const target = sessions.find((session) => session._ref === sessionRef);
       if (!target) return;
 
@@ -573,7 +567,6 @@ export function AdminPage() {
       const { sessionRecord: newSessionRecord, newRef, newPath, error: revisionError } =
         indexEditor.createSessionRevision(sessionRef, target, {
           title: normalizedName,
-          url,
           instructors,
         });
 
@@ -679,12 +672,6 @@ export function AdminPage() {
           const next = { ...prev };
           delete next[sessionRef];
           next[newRef] = normalizedName;
-          return next;
-        });
-        setSessionUrlInputs((prev) => {
-          const next = { ...prev };
-          delete next[sessionRef];
-          next[newRef] = url;
           return next;
         });
         setInstructorInputs((prev) => {
@@ -1218,16 +1205,6 @@ export function AdminPage() {
                 }
                 onSessionNameChange={(value) =>
                   setSessionNameInputs((prev) => ({
-                    ...prev,
-                    [selectedSessionRef]: value,
-                  }))
-                }
-                sessionUrl={
-                  selectedSessionRef ? (sessionUrlInputs[selectedSessionRef] || '') : ''
-                }
-                /* v8 ignore next 5 -- onSessionNameChange と同じパターンの単純なステートセッター */
-                onSessionUrlChange={(value) =>
-                  setSessionUrlInputs((prev) => ({
                     ...prev,
                     [selectedSessionRef]: value,
                   }))

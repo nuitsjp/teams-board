@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "version": 2,
-  "updatedAt": "2026-03-03T13:19:44.508Z",
+  "version": 1,
+  "updatedAt": "2026-02-17T10:13:57.654Z",
   "organizers": [
     {
       "id": "01KHNHF98Q1ORGN1Z0R0000001",
@@ -19,7 +19,7 @@
       "organizerId": "01KHNHF98Q1ORGN1Z0R0000001",
       "totalDurationSeconds": 64805,
       "sessionRevisions": [
-        "01KHNHF98N4MZ6WPBDHRXDDHAZ/1",
+        "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
         "01KHNHF98N0P2H1KMQ89Q3YBM7/0",
         "01KHNHF98N550RZ2Q24ZECZ5TC/0",
         "01KHNHF98NZMT5XXHKFQYJFEPS/0",
@@ -74,7 +74,7 @@
       "totalDurationSeconds": 74983,
       "instructorCount": 3,
       "sessionRevisions": [
-        "01KHNHF98N4MZ6WPBDHRXDDHAZ/1",
+        "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
         "01KHNHF98N0P2H1KMQ89Q3YBM7/0",
         "01KHNHF98NHCE84RXN9CPPZJ96/0",
         "01KHNHF98N78W27JMQGTQV0PGB/0",
@@ -101,7 +101,7 @@
       "totalDurationSeconds": 32189,
       "instructorCount": 2,
       "sessionRevisions": [
-        "01KHNHF98N4MZ6WPBDHRXDDHAZ/1",
+        "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
         "01KHNHF98NHCE84RXN9CPPZJ96/0",
         "01KHNHF98N78W27JMQGTQV0PGB/0",
         "01KHNHF98N550RZ2Q24ZECZ5TC/0",
@@ -118,7 +118,7 @@
       "totalDurationSeconds": 42769,
       "instructorCount": 1,
       "sessionRevisions": [
-        "01KHNHF98N4MZ6WPBDHRXDDHAZ/1",
+        "01KHNHF98N4MZ6WPBDHRXDDHAZ/0",
         "01KHNHF98N0P2H1KMQ89Q3YBM7/0",
         "01KHNHF98N78W27JMQGTQV0PGB/0",
         "01KHNHF98NZMT5XXHKFQYJFEPS/0",

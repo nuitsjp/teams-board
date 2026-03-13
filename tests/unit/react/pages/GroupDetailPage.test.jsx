@@ -116,7 +116,6 @@ const mockSessionData2 = {
     sessionId: 'g1-2026-01-20',
     revision: 0,
     title: '第3回 React入門',
-    url: 'https://example.com/recording',
     startedAt: '2026-01-20T19:00:00',
     endedAt: null,
     instructors: [],

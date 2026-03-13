@@ -4,7 +4,7 @@ import { DataFetcher } from '../services/data-fetcher.js';
 import { formatDuration } from '../utils/format-duration.js';
 import { navigateBack } from '../utils/navigate-back.js';
 import { getFiscalPeriod } from '../utils/fiscal-period.js';
-import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight, GraduationCap, Building2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, ChevronDown, ChevronRight, GraduationCap, Building2 } from 'lucide-react';
 
 const fetcher = new DataFetcher();
 
@@ -127,7 +127,6 @@ export function MemberDetailPage() {
           organizerName: resolvedGroup.organizerName,
           date,
           title: session.title,
-          url: session.url,
           durationSeconds: attendance.durationSeconds,
         });
       }
@@ -168,7 +167,6 @@ export function MemberDetailPage() {
           organizerName: resolvedGroup.organizerName,
           date,
           title: session.title,
-          url: session.url,
         });
       }
 
@@ -193,7 +191,6 @@ export function MemberDetailPage() {
             sessionId: session.sessionId,
             date: session.date,
             title: session.title,
-            url: session.url,
             durationSeconds: session.durationSeconds,
           });
         }
@@ -220,7 +217,6 @@ export function MemberDetailPage() {
             sessionId: session.sessionId,
             date: session.date,
             title: session.title,
-            url: session.url,
           });
         }
         const instructorGrouped = Array.from(instructorGroupMap.values());
@@ -462,27 +458,10 @@ export function MemberDetailPage() {
                                       className="text-sm hover:bg-surface-muted transition-colors"
                                     >
                                       <td className="px-6 py-3">
-                                        <div className="flex items-center flex-wrap gap-x-3">
-                                          <span>
-                                            <span className="text-text-primary">{parts.date}</span>
-                                            {parts.title && (
-                                              <span className="ml-2 text-text-secondary">{parts.title}</span>
-                                            )}
-                                          </span>
-                                          {session.url && (
-                                            <a
-                                              href={session.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="inline-flex items-center gap-1 text-xs text-primary-500 hover:text-primary-700 transition-colors"
-                                              aria-label="参考情報を開く"
-                                            >
-                                              <span className="text-text-muted">参考情報：</span>
-                                              <span className="truncate max-w-[200px]">{session.url}</span>
-                                              <ExternalLink className="w-3 h-3 shrink-0" aria-hidden="true" />
-                                            </a>
-                                          )}
-                                        </div>
+                                        <span className="text-text-primary">{parts.date}</span>
+                                        {parts.title && (
+                                          <span className="ml-2 text-text-secondary">{parts.title}</span>
+                                        )}
                                       </td>
                                       <td className="px-6 py-3 text-text-primary text-right font-medium font-display tabular-nums">
                                         {formatDuration(session.durationSeconds)}
@@ -571,27 +550,10 @@ export function MemberDetailPage() {
                                       className="text-sm hover:bg-surface-muted transition-colors"
                                     >
                                       <td className="px-6 py-3">
-                                        <div className="flex items-center flex-wrap gap-x-3">
-                                          <span>
-                                            <span className="text-text-primary">{parts.date}</span>
-                                            {parts.title && (
-                                              <span className="ml-2 text-text-secondary">{parts.title}</span>
-                                            )}
-                                          </span>
-                                          {session.url && (
-                                            <a
-                                              href={session.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="inline-flex items-center gap-1 text-xs text-primary-500 hover:text-primary-700 transition-colors"
-                                              aria-label="参考情報を開く"
-                                            >
-                                              <span className="text-text-muted">参考情報：</span>
-                                              <span className="truncate max-w-[200px]">{session.url}</span>
-                                              <ExternalLink className="w-3 h-3 shrink-0" aria-hidden="true" />
-                                            </a>
-                                          )}
-                                        </div>
+                                        <span className="text-text-primary">{parts.date}</span>
+                                        {parts.title && (
+                                          <span className="ml-2 text-text-secondary">{parts.title}</span>
+                                        )}
                                       </td>
                                     </tr>
                                   );
