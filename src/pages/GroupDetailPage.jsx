@@ -210,6 +210,7 @@ export function GroupDetailPage() {
                     sessionRef,
                     date,
                     title: session.title,
+                    url: session.url,
                     attendeeCount: attendees.length,
                     totalDurationSeconds,
                     attendees,
@@ -909,21 +910,45 @@ export function GroupDetailPage() {
                                                     />
                                                 )}
                                                 <div>
-                                                    <h3 className="text-base font-bold text-text-primary">
+                                                    <h3 className="text-base font-bold text-text-primary flex items-center flex-wrap gap-x-3">
                                                         {(() => {
                                                             const parts =
                                                                 formatSessionParts(session);
                                                             return (
-                                                                <>
+                                                                <span>
                                                                     <span>{parts.date}</span>
                                                                     {parts.title && (
                                                                         <span className="ml-2 font-normal text-text-secondary">
                                                                             {parts.title}
                                                                         </span>
                                                                     )}
-                                                                </>
+                                                                </span>
                                                             );
                                                         })()}
+                                                        {session.url && (
+                                                            <a
+                                                                href={session.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 text-xs font-normal text-primary-500 hover:text-primary-700 transition-colors"
+                                                                /* v8 ignore next -- アコーディオン内のリンククリックでトグルを防止 */
+                                                                onClick={(e) =>
+                                                                    e.stopPropagation()
+                                                                }
+                                                                aria-label="参考情報を開く"
+                                                            >
+                                                                <span className="text-text-muted">
+                                                                    参考情報：
+                                                                </span>
+                                                                <span className="truncate max-w-[200px]">
+                                                                    {session.url}
+                                                                </span>
+                                                                <ExternalLink
+                                                                    className="w-3 h-3 shrink-0"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            </a>
+                                                        )}
                                                     </h3>
                                                     {session.instructorNames.length > 0 && (
                                                         <div className="flex items-center gap-1.5 mt-0.5 text-sm text-text-secondary">
