@@ -1,0 +1,11 @@
+{
+  "purpose": "業務で扱う複雑な型を読み解けるようにする",
+  "learningContent": "・条件型（Conditional Types）の仕組みと使い分け\n・マップ型（Mapped Types）によるオブジェクト型の変換\n・テンプレートリテラル型でのパターンマッチ\n・infer キーワードを使った型推論の活用\n・ユーティリティ型（Pick, Omit, Record 等）の内部実装の理解",
+  "learningOutcome": "ライブラリの型定義（d.ts）を読んで設計意図を理解できるようになった\n業務コードの型エラーを自力で解消できるようになり、レビュー依頼が減った\nチーム内の型設計レビューに参加して建設的なフィードバックを返せるようになった",
+  "references": [
+    {
+      "title": "TypeScript Deep Dive",
+      "url": "https://basarat.gitbook.io/typescript/"
+    }
+  ]
+}

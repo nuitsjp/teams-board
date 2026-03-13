@@ -70,6 +70,11 @@ export class AzureBlobStorage {
                 },
             });
 
+            // 404は成功扱い（冪等性）
+            if (response.status === 404) {
+                return { path, success: true };
+            }
+
             if (!response.ok) {
                 return {
                     path,

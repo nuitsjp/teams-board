@@ -1,6 +1,6 @@
 // @ts-check
 import { test, expect } from '@playwright/test';
-import { restoreIndexJson } from './helpers/fixture-lifecycle.js';
+import { restoreIndexJson, restoreFixtureFromGit } from './helpers/fixture-lifecycle.js';
 import { navigateTo } from './helpers/navigation.js';
 
 test.describe('開発モード — ダミートークンでの管理者機能', () => {
@@ -17,6 +17,11 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
             testInfo.title.includes('主催者を設定して保存')
         ) {
             await restoreIndexJson();
+        }
+        if (testInfo.title.includes('メンバー情報を編集して削除')) {
+            await restoreFixtureFromGit(
+                'data/member-group-term-details/01KHNHF98NYNJPQV869R3WT90Y/01KHNHF98N1V9F6KS4EF77WWG9/20251.json'
+            );
         }
     });
 
@@ -236,6 +241,58 @@ test.describe('開発モード — ダミートークンでの管理者機能', 
 
         // 成功メッセージが表示されること
         await expect(page.getByText('セッションを削除しました')).toBeVisible();
+    });
+
+    test('token=devで登録済みメンバー情報を編集して削除できること', async ({ page }) => {
+        // ダッシュボードからメンバー詳細へ遷移
+        await navigateTo(page, '/?token=dev');
+        await expect(page.getByRole('heading', { name: 'メンバー' })).toBeVisible();
+
+        // Suzuki Taro A のメンバー行をクリック
+        const memberRow = page
+            .getByTestId('member-row')
+            .filter({ hasText: 'Suzuki Taro A' });
+        await expect(memberRow).toBeVisible();
+        await memberRow.click();
+
+        await expect(page.getByText('戻る')).toBeVisible();
+
+        // TypeScript読書会のグループ行をクリック
+        const groupRow = page
+            .getByTestId('member-term-group-row')
+            .filter({ hasText: 'TypeScript読書会' });
+        await expect(groupRow).toBeVisible();
+        await groupRow.click();
+
+        // 期詳細画面が表示されること
+        await expect(page.getByText('詳細')).toBeVisible();
+
+        // メンバー情報が表示されていること
+        await expect(page.getByText('業務で扱う複雑な型を読み解けるようにする')).toBeVisible();
+
+        // 編集ボタンをクリック
+        await page.getByRole('button', { name: '編集' }).click();
+
+        // 目的を編集
+        const purposeInput = page.getByLabel('セッションの目的');
+        await purposeInput.fill('E2E テスト用の目的');
+
+        // 保存
+        await page.getByRole('button', { name: '保存' }).click();
+        await expect(page.getByText('メンバー情報を保存しました')).toBeVisible();
+        await expect(page.getByText('E2E テスト用の目的')).toBeVisible();
+
+        // 編集モードに再度入り、削除を実行
+        await page.getByRole('button', { name: '編集' }).click();
+        await page.getByRole('button', { name: '削除' }).click();
+
+        // 削除確認ダイアログ
+        const dialog = page.getByRole('dialog');
+        await expect(dialog).toBeVisible();
+        await dialog.getByRole('button', { name: '削除' }).click();
+
+        // 削除成功メッセージ
+        await expect(page.getByText('メンバー情報を削除しました')).toBeVisible();
     });
 
     test('URLからtoken=devが削除されること', async ({ page }) => {
