@@ -3,6 +3,25 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GroupDetailPage } from '../../../../src/pages/GroupDetailPage.jsx';
 
+// TermDetailService モック
+const mockFetchGroupTermDetail = vi.fn();
+const mockSaveGroupTermDetail = vi.fn();
+vi.mock('../../../../src/services/term-detail-service.js', () => ({
+    TermDetailService: Object.assign(
+        vi.fn().mockImplementation(() => ({
+            saveGroupTermDetail: (...args) => mockSaveGroupTermDetail(...args),
+        })),
+        {
+            fetchGroupTermDetail: (...args) => mockFetchGroupTermDetail(...args),
+        }
+    ),
+}));
+
+// validate-url モック
+vi.mock('../../../../src/utils/validate-url.js', () => ({
+    isValidUrl: (url) => url && url.startsWith('http'),
+}));
+
 // モック用の関数参照を保持する
 const mockFetchIndex = vi.fn();
 const mockFetchSession = vi.fn();
@@ -218,6 +237,8 @@ describe('GroupDetailPage', () => {
         // デフォルトは非管理者モード
         mockAuth.sasToken = null;
         mockAuth.isAdmin = false;
+        // デフォルトで共通情報は未取得
+        mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
     });
 
     it('ローディング中に「読み込み中…」と表示すること', () => {
@@ -931,7 +952,7 @@ describe('GroupDetailPage', () => {
             });
         });
 
-        it('削除処理で例外が発生した場合にエラーメッセージが表示されること', async () => {
+        it('削除処理で例外が発生した場合にエラーメッセージを表示すること', async () => {
             const user = userEvent.setup();
             mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
             mockFetchSession.mockImplementation((ref) => {
@@ -958,6 +979,434 @@ describe('GroupDetailPage', () => {
 
             await waitFor(() => {
                 expect(screen.getByText(/削除に失敗しました/)).toBeInTheDocument();
+            });
+        });
+    });
+
+    describe('共通情報の表示', () => {
+        // 共通のセットアップヘルパー
+        const setupMocks = () => {
+            mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+            mockFetchSession.mockImplementation((ref) => {
+                if (ref === 'g1-2026-01-15/0')
+                    return Promise.resolve({ ok: true, data: mockSessionData1 });
+                if (ref === 'g1-2026-01-20/0')
+                    return Promise.resolve({ ok: true, data: mockSessionData2 });
+                return Promise.resolve({ ok: false, error: 'not found' });
+            });
+        };
+
+        it('共通情報が未登録の場合に「共通情報は未登録です」と表示されること', async () => {
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('共通情報は未登録です')).toBeInTheDocument();
+            });
+        });
+
+        it('共通情報のデータが存在する場合に各フィールドが表示されること', async () => {
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({
+                ok: true,
+                data: {
+                    purpose: 'React の基礎を学ぶ',
+                    learningContent: 'コンポーネント設計',
+                    learningOutcome: 'SPA の構築ができる',
+                    references: [
+                        { title: '公式ドキュメント', url: 'https://react.dev' },
+                        { title: '', url: 'https://example.com' },
+                    ],
+                },
+            });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('React の基礎を学ぶ')).toBeInTheDocument();
+            });
+            expect(screen.getByText('コンポーネント設計')).toBeInTheDocument();
+            expect(screen.getByText('SPA の構築ができる')).toBeInTheDocument();
+            // 参考資料のリンクが表示される（タイトルありとURLのみ）
+            expect(screen.getByText('公式ドキュメント')).toBeInTheDocument();
+            expect(screen.getByText('https://example.com')).toBeInTheDocument();
+        });
+
+        it('非管理者モードでは編集ボタンが表示されないこと', async () => {
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('共通情報は未登録です')).toBeInTheDocument();
+            });
+
+            // 編集ボタンが存在しない
+            expect(screen.queryByRole('button', { name: /編集/ })).not.toBeInTheDocument();
+        });
+    });
+
+    describe('共通情報の編集（管理者モード）', () => {
+        // 管理者モードのセットアップ
+        beforeEach(() => {
+            mockAuth.sasToken = 'test-sas';
+            mockAuth.isAdmin = true;
+        });
+
+        afterEach(() => {
+            mockAuth.sasToken = null;
+            mockAuth.isAdmin = false;
+        });
+
+        const setupMocks = () => {
+            mockFetchIndex.mockResolvedValue({ ok: true, data: mockIndexData });
+            mockFetchSession.mockImplementation((ref) => {
+                if (ref === 'g1-2026-01-15/0')
+                    return Promise.resolve({ ok: true, data: mockSessionData1 });
+                if (ref === 'g1-2026-01-20/0')
+                    return Promise.resolve({ ok: true, data: mockSessionData2 });
+                return Promise.resolve({ ok: false, error: 'not found' });
+            });
+        };
+
+        it('管理者モードで編集ボタンが表示されクリックで編集フォームが開くこと', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            // 編集ボタンをクリック
+            const editButton = screen.getByRole('button', { name: /編集/ });
+            await user.click(editButton);
+
+            // 編集フォームのフィールドが表示される
+            expect(screen.getByLabelText('セッションの目的')).toBeInTheDocument();
+            expect(screen.getByLabelText('学習内容')).toBeInTheDocument();
+            expect(screen.getByLabelText('学習の成果')).toBeInTheDocument();
+            expect(screen.getByText('参考資料')).toBeInTheDocument();
+        });
+
+        it('既存データがある場合に編集フォームにプリフィルされること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({
+                ok: true,
+                data: {
+                    purpose: '既存の目的',
+                    learningContent: '既存の学習内容',
+                    learningOutcome: '既存の成果',
+                    references: [{ title: '既存リンク', url: 'https://existing.com' }],
+                },
+            });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('既存の目的')).toBeInTheDocument();
+            });
+
+            // 編集ボタンをクリック
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+
+            // フィールドにプリフィルされた値
+            expect(screen.getByLabelText('セッションの目的')).toHaveValue('既存の目的');
+            expect(screen.getByLabelText('学習内容')).toHaveValue('既存の学習内容');
+            expect(screen.getByLabelText('学習の成果')).toHaveValue('既存の成果');
+        });
+
+        it('フィールドを入力して保存に成功すること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+            mockSaveGroupTermDetail.mockResolvedValue({ success: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            // 編集モードに入る
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+
+            // フィールドに入力
+            await user.type(screen.getByLabelText('セッションの目的'), 'テスト目的');
+            await user.type(screen.getByLabelText('学習内容'), 'テスト内容');
+
+            // 保存
+            await user.click(screen.getByRole('button', { name: /保存/ }));
+
+            await waitFor(() => {
+                expect(screen.getByText('共通情報を保存しました')).toBeInTheDocument();
+            });
+            expect(mockSaveGroupTermDetail).toHaveBeenCalled();
+        });
+
+        it('保存失敗時にエラーメッセージが表示されること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+            mockSaveGroupTermDetail.mockResolvedValue({ success: false, error: 'ストレージエラー' });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+            await user.click(screen.getByRole('button', { name: /保存/ }));
+
+            await waitFor(() => {
+                expect(screen.getByText(/保存に失敗しました/)).toBeInTheDocument();
+            });
+        });
+
+        it('保存中に例外が発生した場合にエラーメッセージが表示されること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+            mockSaveGroupTermDetail.mockRejectedValue(new Error('ネットワークエラー'));
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+            await user.click(screen.getByRole('button', { name: /保存/ }));
+
+            await waitFor(() => {
+                expect(screen.getByText(/保存に失敗しました.*ネットワークエラー/)).toBeInTheDocument();
+            });
+        });
+
+        it('不正な URL がある場合にバリデーションエラーで保存がブロックされること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+
+            // 参考資料を追加
+            await user.click(screen.getByText('追加'));
+
+            // 不正な URL を入力
+            const urlInput = screen.getByPlaceholderText('https://...');
+            await user.type(urlInput, 'invalid-url');
+
+            // 保存を試みる
+            await user.click(screen.getByRole('button', { name: /保存/ }));
+
+            // バリデーションエラーが表示される
+            await waitFor(() => {
+                expect(
+                    screen.getByText('http または https の URL を入力してください')
+                ).toBeInTheDocument();
+            });
+
+            // saveGroupTermDetail は呼ばれない
+            expect(mockSaveGroupTermDetail).not.toHaveBeenCalled();
+        });
+
+        it('参考資料の追加と削除ができること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+
+            // 追加ボタンで参考資料を追加
+            await user.click(screen.getByText('追加'));
+            expect(screen.getByPlaceholderText('タイトル')).toBeInTheDocument();
+            expect(screen.getByPlaceholderText('https://...')).toBeInTheDocument();
+
+            // 削除ボタンで参考資料を削除
+            await user.click(screen.getByRole('button', { name: /参考資料 1 を削除/ }));
+            expect(screen.queryByPlaceholderText('タイトル')).not.toBeInTheDocument();
+        });
+
+        it('編集中にキャンセルで表示モードに戻ること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+
+            // 編集フォームが表示されている
+            expect(screen.getByLabelText('セッションの目的')).toBeInTheDocument();
+
+            // キャンセルをクリック
+            await user.click(screen.getByRole('button', { name: 'キャンセル' }));
+
+            // 表示モードに戻る
+            expect(screen.getByText('共通情報は未登録です')).toBeInTheDocument();
+        });
+
+        it('学習の成果フィールドに入力できること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+            mockSaveGroupTermDetail.mockResolvedValue({ success: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+            await user.type(screen.getByLabelText('学習の成果'), '成果テスト');
+            await user.click(screen.getByRole('button', { name: /保存/ }));
+
+            await waitFor(() => {
+                expect(mockSaveGroupTermDetail).toHaveBeenCalledWith(
+                    'g1',
+                    expect.any(String),
+                    expect.objectContaining({ learningOutcome: '成果テスト' })
+                );
+            });
+        });
+
+        it('参考資料のタイトルと URL を編集できること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({
+                ok: true,
+                data: {
+                    purpose: '',
+                    learningContent: '',
+                    learningOutcome: '',
+                    references: [{ title: '元タイトル', url: 'https://original.com' }],
+                },
+            });
+            mockSaveGroupTermDetail.mockResolvedValue({ success: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('元タイトル')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+
+            // タイトルを変更
+            const titleInput = screen.getByDisplayValue('元タイトル');
+            await user.clear(titleInput);
+            await user.type(titleInput, '新タイトル');
+
+            // URL を変更
+            const urlInput = screen.getByDisplayValue('https://original.com');
+            await user.clear(urlInput);
+            await user.type(urlInput, 'https://new.example.com');
+
+            await user.click(screen.getByRole('button', { name: /保存/ }));
+
+            await waitFor(() => {
+                expect(mockSaveGroupTermDetail).toHaveBeenCalledWith(
+                    'g1',
+                    expect.any(String),
+                    expect.objectContaining({
+                        references: [{ title: '新タイトル', url: 'https://new.example.com' }],
+                    })
+                );
+            });
+        });
+
+        it('参考資料を削除すると URL エラーインデックスも調整されること', async () => {
+            const user = userEvent.setup();
+            setupMocks();
+            mockFetchGroupTermDetail.mockResolvedValue({
+                ok: true,
+                data: {
+                    purpose: '',
+                    learningContent: '',
+                    learningOutcome: '',
+                    references: [
+                        { title: '資料1', url: 'https://a.com' },
+                        { title: '資料2', url: 'invalid' },
+                    ],
+                },
+            });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('資料1')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByRole('button', { name: /編集/ }));
+
+            // まず保存でバリデーションエラーを出す
+            await user.click(screen.getByRole('button', { name: /保存/ }));
+            await waitFor(() => {
+                expect(
+                    screen.getByText('http または https の URL を入力してください')
+                ).toBeInTheDocument();
+            });
+
+            // 1番目の資料を削除（インデックス調整が走る）
+            await user.click(screen.getByRole('button', { name: /参考資料 1 を削除/ }));
+
+            // 資料1が消え、資料2が残る
+            expect(screen.queryByDisplayValue('資料1')).not.toBeInTheDocument();
+            expect(screen.getByDisplayValue('資料2')).toBeInTheDocument();
+        });
+
+        it('期を切り替えると共通情報が再取得されること', async () => {
+            const user = userEvent.setup();
+            mockFetchIndex.mockResolvedValue({ ok: true, data: mockMultiPeriodIndexData });
+            mockFetchSession.mockImplementation((ref) =>
+                Promise.resolve({ ok: true, data: mockMultiPeriodSessions[ref] })
+            );
+            mockFetchGroupTermDetail.mockResolvedValue({ ok: false, notFound: true });
+
+            renderWithRouter('g1');
+
+            await waitFor(() => {
+                expect(screen.getByText('フロントエンド勉強会')).toBeInTheDocument();
+            });
+
+            // 初回ロード時に fetchGroupTermDetail が呼ばれる
+            await waitFor(() => {
+                expect(mockFetchGroupTermDetail).toHaveBeenCalled();
+            });
+            const callCount = mockFetchGroupTermDetail.mock.calls.length;
+
+            // 上期ボタンをクリック
+            const firstHalfButton = screen.getByRole('button', { pressed: false });
+            await user.click(firstHalfButton);
+
+            // 期切り替えで再度 fetchGroupTermDetail が呼ばれる
+            await waitFor(() => {
+                expect(mockFetchGroupTermDetail.mock.calls.length).toBeGreaterThan(callCount);
             });
         });
     });
