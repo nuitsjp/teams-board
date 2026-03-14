@@ -98,16 +98,23 @@ graph LR
     dashboard["ダッシュボード"]
     group["会議グループ詳細"]
     member["メンバー詳細"]
+    memberGroupTerm["メンバー期別グループ詳細"]
+    organizer["主催者詳細"]
     admin["管理画面"]
 
     dashboard <-->|グループ選択| group
     dashboard <-->|メンバー選択| member
+    dashboard <-->|主催者選択| organizer
     dashboard <-->|管理者のみ| admin
+    member <-->|グループ・期間選択| memberGroupTerm
+    group -->|主催者選択| organizer
 ```
 
-| # | 名称 | 英語名 | 説明 |
-|--|--|--|--|
-| 1 | ダッシュボード | Dashboard | 会議グループ一覧・メンバー一覧・統計情報を表示する |
-| 2 | 会議グループ詳細 | SessionGroupDetail | 会議グループの開催履歴・会議別参加者・主催者情報を表示する |
-| 3 | メンバー詳細 | MemberDetail | メンバーの会議グループ別参加履歴・参加時間・講師実績を表示する |
-| 4 | 管理画面 | AdminPanel | 参加者レポートの登録・会議グループ名の修正・主催者設定・講師設定を行う（管理者のみ） |
+| # | 名称 | 英語名 | ルート | 説明 |
+|--|--|--|--|--|
+| 1 | [ダッシュボード](10.画面仕様/ダッシュボード.md) | Dashboard | `#/` | 会議グループ一覧・メンバー一覧・主催者一覧・統計情報を表示する |
+| 2 | [メンバー詳細](10.画面仕様/メンバー詳細.md) | MemberDetail | `#/members/:memberId` | メンバーの会議グループ別参加履歴・参加時間・講師実績を表示する |
+| 3 | [メンバー期別グループ詳細](10.画面仕様/メンバー期別グループ詳細.md) | MemberGroupTermDetail | `#/members/:memberId/groups/:groupId/terms/:termKey` | メンバーの特定グループ・期間における参加履歴と学習記録を表示する |
+| 4 | [会議グループ詳細](10.画面仕様/会議グループ詳細.md) | SessionGroupDetail | `#/groups/:groupId` | 会議グループの開催履歴・会議別参加者・主催者情報を表示する |
+| 5 | [主催者詳細](10.画面仕様/主催者詳細.md) | OrganizerDetail | `#/organizers/:organizerId` | 主催者が管理する会議グループの一覧と開催実績を表示する |
+| 6 | [管理画面](10.画面仕様/管理画面.md) | AdminPanel | `#/admin` | 参加者レポートの登録・会議グループ名の修正・主催者設定・講師設定を行う（管理者のみ） |
