@@ -65,7 +65,7 @@ function getBorderColorClass(status) {
  *
  * @param {{ item: object, groups: Array, onRemove: (id: string) => void, onSelectGroup: (fileId: string, groupId: string, groupName: string) => void }} props
  */
-export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], onRemove, onSelectGroup }) {
+export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], onRemove, onSelectGroup, duplicateWarning }) {
   const [expanded, setExpanded] = useState(false);
 
   const hasParseResult = item.parseResult && item.parseResult.ok;
@@ -176,6 +176,14 @@ export const FileQueueCard = memo(function FileQueueCard({ item, groups = [], on
               合計: {formatDuration(totalDuration)}
             </span>
           </div>
+
+          {/* 同グループ・同日セッション重複警告 */}
+          {duplicateWarning && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-t border-amber-200 text-amber-800 text-sm">
+              <AlertTriangle size={14} className="shrink-0" />
+              <span>{duplicateWarning}</span>
+            </div>
+          )}
 
           {/* 展開時の参加者テーブル */}
           {expanded && (
