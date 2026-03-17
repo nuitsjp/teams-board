@@ -609,3 +609,50 @@ describe('FileQueueCard — グループ選択の新規グループ', () => {
         expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     });
 });
+
+describe('FileQueueCard — 同グループ・同日セッション重複警告', () => {
+    it('duplicateWarning が渡された場合に警告メッセージが表示される', () => {
+        const item = createReadyItem();
+        const warning = '「フロントエンド勉強会」の 2026-01-15 のセッションは既に登録されています';
+        render(
+            <FileQueueCard
+                item={item}
+                groups={mockGroups}
+                onRemove={vi.fn()}
+                onSelectGroup={vi.fn()}
+                duplicateWarning={warning}
+            />
+        );
+
+        expect(screen.getByText(warning)).toBeInTheDocument();
+    });
+
+    it('duplicateWarning が未指定の場合は警告が表示されない', () => {
+        const item = createReadyItem();
+        render(
+            <FileQueueCard
+                item={item}
+                groups={mockGroups}
+                onRemove={vi.fn()}
+                onSelectGroup={vi.fn()}
+            />
+        );
+
+        expect(screen.queryByText(/既に登録されています/)).not.toBeInTheDocument();
+    });
+
+    it('duplicateWarning があっても削除ボタンは表示される（ブロッキングではない）', () => {
+        const item = createReadyItem();
+        render(
+            <FileQueueCard
+                item={item}
+                groups={mockGroups}
+                onRemove={vi.fn()}
+                onSelectGroup={vi.fn()}
+                duplicateWarning="重複あり"
+            />
+        );
+
+        expect(screen.getByText('削除')).toBeInTheDocument();
+    });
+});

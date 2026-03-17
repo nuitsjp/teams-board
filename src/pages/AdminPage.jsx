@@ -176,6 +176,42 @@ export function AdminPage() {
     });
   }, [groups]);
 
+  // 同グループ・同日セッション重複警告の算出
+  const duplicateWarnings = useMemo(() => {
+    if (groups.length === 0 || sessions.length === 0) return new Map();
+
+    // グループ名 → 既存セッション日付のSet を構築
+    const groupDateMap = new Map();
+    for (const group of groups) {
+      const refSet = new Set(group.sessionRevisions);
+      const dates = new Set();
+      for (const session of sessions) {
+        if (refSet.has(session._ref) && session.startedAt) {
+          dates.add(session.startedAt.slice(0, 10));
+        }
+      }
+      if (dates.size > 0) {
+        groupDateMap.set(group.name, dates);
+      }
+    }
+
+    const warnings = new Map();
+    for (const item of queue) {
+      if (!item.parseResult?.ok) continue;
+      const { groupName, date } = item.parseResult.parsedSession;
+      const effectiveGroupName = item.groupOverride?.groupName ?? groupName;
+      if (!effectiveGroupName || !date) continue;
+      const existingDates = groupDateMap.get(effectiveGroupName);
+      if (existingDates?.has(date)) {
+        warnings.set(
+          item.id,
+          `「${effectiveGroupName}」の ${date} のセッションは既に登録されています`
+        );
+      }
+    }
+    return warnings;
+  }, [groups, sessions, queue]);
+
   // 一括保存処理（V2: parsedSession → indexMerger.merge → sessionRecord）
   const handleBulkSave = useCallback(async () => {
     const itemsToSave = queue.filter((item) => item.status === 'ready');
@@ -1012,6 +1048,7 @@ export function AdminPage() {
         groups={groups}
         onRemove={removeFile}
         onSelectGroup={selectGroup}
+        duplicateWarnings={duplicateWarnings}
       />
 
       {saving ? (
