@@ -32,7 +32,7 @@ vi.mock('../../../../src/services/term-detail-service.js', () => ({
 }));
 
 // useAuth モック
-const mockAuth = { sasToken: null, isAdmin: false };
+const mockAuth = { sasToken: null, isAdmin: false, writerSasToken: null };
 vi.mock('../../../../src/hooks/useAuth.jsx', () => ({
     useAuth: () => mockAuth,
     createAuthAdapter: (auth) => ({
@@ -158,6 +158,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.sasToken = null;
     mockAuth.isAdmin = false;
+    mockAuth.writerSasToken = null;
 });
 
 describe('MemberGroupTermDetailPage', () => {
@@ -446,6 +447,7 @@ describe('MemberGroupTermDetailPage', () => {
     // --- 15. 削除確認 ---
     it('削除ボタンをクリックすると確認ダイアログが表示される', async () => {
         const user = userEvent.setup();
+        mockAuth.isAdmin = true;
         setupMemberDetailOnly();
         renderWithRouter();
 
@@ -466,6 +468,7 @@ describe('MemberGroupTermDetailPage', () => {
 
     it('削除確認ダイアログでキャンセルすると閉じる', async () => {
         const user = userEvent.setup();
+        mockAuth.isAdmin = true;
         setupMemberDetailOnly();
         renderWithRouter();
 
@@ -488,6 +491,7 @@ describe('MemberGroupTermDetailPage', () => {
     // --- 16. 削除成功 ---
     it('削除が成功するとメンバー情報が消え成功メッセージが表示される', async () => {
         const user = userEvent.setup();
+        mockAuth.isAdmin = true;
         setupMemberDetailOnly();
         mockDeleteMemberGroupTermDetail.mockResolvedValue({ success: true });
         renderWithRouter();
@@ -511,6 +515,7 @@ describe('MemberGroupTermDetailPage', () => {
 
     it('削除が失敗した場合エラーメッセージが表示される', async () => {
         const user = userEvent.setup();
+        mockAuth.isAdmin = true;
         setupMemberDetailOnly();
         mockDeleteMemberGroupTermDetail.mockResolvedValue({
             success: false,
@@ -537,6 +542,7 @@ describe('MemberGroupTermDetailPage', () => {
 
     it('削除時に例外が発生した場合エラーメッセージが表示される', async () => {
         const user = userEvent.setup();
+        mockAuth.isAdmin = true;
         setupMemberDetailOnly();
         mockDeleteMemberGroupTermDetail.mockRejectedValue(new Error('サーバーエラー'));
         renderWithRouter();
@@ -728,6 +734,7 @@ describe('MemberGroupTermDetailPage', () => {
     // --- 追加カバレッジ: 個人情報のみで削除成功 ---
     it('個人情報を削除すると追加ボタンが表示される', async () => {
         const user = userEvent.setup();
+        mockAuth.isAdmin = true;
         setupMemberDetailOnly();
         mockDeleteMemberGroupTermDetail.mockResolvedValue({ success: true });
         renderWithRouter();
@@ -1164,6 +1171,7 @@ describe('MemberGroupTermDetailPage', () => {
     // --- 追加カバレッジ: 削除中に例外が発生 ---
     it('削除中に例外が発生するとエラーメッセージが表示される', async () => {
         const user = userEvent.setup();
+        mockAuth.isAdmin = true;
         setupMemberDetailOnly();
         mockDeleteMemberGroupTermDetail.mockRejectedValue(new Error('削除失敗'));
         renderWithRouter();
@@ -1186,6 +1194,7 @@ describe('MemberGroupTermDetailPage', () => {
     // --- 追加カバレッジ: 削除確認ダイアログのキャンセル ---
     it('削除確認ダイアログでキャンセルすると閉じる', async () => {
         const user = userEvent.setup();
+        mockAuth.isAdmin = true;
         setupMemberDetailOnly();
         renderWithRouter();
 
@@ -1213,6 +1222,65 @@ describe('MemberGroupTermDetailPage', () => {
 
         await waitFor(() => {
             expect(screen.getByText('セッションデータはありません')).toBeInTheDocument();
+        });
+    });
+
+    // --- 一般ユーザーの書き込み（writerSasToken） ---
+    describe('一般ユーザーの書き込み（writerSasToken）', () => {
+        it('writerSasToken がある場合、保存が成功すること', async () => {
+            const user = userEvent.setup();
+            mockAuth.writerSasToken = 'writer-sas-token';
+            setupDefaultMocks();
+            mockSaveMemberGroupTermDetail.mockResolvedValue({ success: true });
+            renderWithRouter();
+
+            await waitFor(() => {
+                expect(screen.getByText('メンバー情報を追加')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByText('メンバー情報を追加'));
+
+            const purposeInput = screen.getByLabelText('セッションの目的');
+            await user.type(purposeInput, '一般ユーザーの目的');
+
+            await user.click(screen.getByText('保存'));
+
+            await waitFor(() => {
+                expect(screen.getByText('メンバー情報を保存しました')).toBeInTheDocument();
+            });
+        });
+
+        it('writerSasToken がある場合でも削除ボタンが表示されないこと', async () => {
+            const user = userEvent.setup();
+            mockAuth.writerSasToken = 'writer-sas-token';
+            setupMemberDetailOnly();
+            renderWithRouter();
+
+            await waitFor(() => {
+                expect(screen.getByText('編集')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByText('編集'));
+
+            // 削除ボタンは表示されない（isAdmin が false）
+            expect(screen.queryByText('削除')).not.toBeInTheDocument();
+        });
+
+        it('管理者の場合は削除ボタンが表示されること', async () => {
+            const user = userEvent.setup();
+            mockAuth.sasToken = 'admin-token';
+            mockAuth.isAdmin = true;
+            setupMemberDetailOnly();
+            renderWithRouter();
+
+            await waitFor(() => {
+                expect(screen.getByText('編集')).toBeInTheDocument();
+            });
+
+            await user.click(screen.getByText('編集'));
+
+            // 管理者なので削除ボタンが表示される
+            expect(screen.getByText('削除')).toBeInTheDocument();
         });
     });
 });

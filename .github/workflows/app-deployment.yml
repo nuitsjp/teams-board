@@ -158,6 +158,19 @@ jobs:
             --overwrite \
             --auth-mode login
 
+      - name: ライタートークンの配置
+        run: |
+          echo '{"sasToken":"${{ vars.WRITER_SAS_TOKEN }}"}' > "$RUNNER_TEMP/writer-token.json"
+          az storage blob upload \
+            --file "$RUNNER_TEMP/writer-token.json" \
+            --container-name '$web' \
+            --name 'data/writer-token.json' \
+            --content-type 'application/json; charset=utf-8' \
+            --content-cache-control 'no-cache' \
+            --account-name "${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" \
+            --auth-mode login \
+            --overwrite
+
       - name: 配信結果を記録
         run: |
           WEB_URL=$(az storage account show \

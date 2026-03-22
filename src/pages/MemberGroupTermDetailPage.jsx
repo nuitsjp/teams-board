@@ -57,7 +57,7 @@ export function MemberGroupTermDetailPage() {
     const auth = useAuth();
     const authAdapter = useMemo(() => createAuthAdapter(auth), [auth]);
 
-    // BlobStorage（認証済み/開発モード）
+    // BlobStorage（認証済み/開発モード/一般ユーザー書き込み）
     const blobStorage = useMemo(() => {
         if (import.meta.env.DEV && authAdapter.getSasToken() === 'dev') {
             return new DevBlobStorage();
@@ -65,12 +65,16 @@ export function MemberGroupTermDetailPage() {
         if (authAdapter.getSasToken()) {
             return new AzureBlobStorage(APP_CONFIG.blobBaseUrl, authAdapter);
         }
-        // 未認証でもメンバー情報の追加ボタンは表示されるので DevBlobStorage で対応
+        // 一般ユーザー: writerSasToken で書き込み
+        if (auth.writerSasToken) {
+            const writerAuth = { getSasToken: () => auth.writerSasToken };
+            return new AzureBlobStorage(APP_CONFIG.blobBaseUrl, writerAuth);
+        }
         if (import.meta.env.DEV) {
             return new DevBlobStorage();
         }
         return null;
-    }, [authAdapter]);
+    }, [authAdapter, auth.writerSasToken]);
 
     const termDetailService = useMemo(
         () => (blobStorage ? new TermDetailService(blobStorage) : null),
@@ -542,7 +546,7 @@ export function MemberGroupTermDetailPage() {
                 >
                     キャンセル
                 </button>
-                {hasMember && (
+                {hasMember && auth.isAdmin && (
                     <button
                         type="button"
                         onClick={() => setShowDeleteConfirm(true)}

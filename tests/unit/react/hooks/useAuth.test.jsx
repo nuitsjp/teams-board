@@ -1,13 +1,20 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth, createAuthAdapter } from '../../../../src/hooks/useAuth.jsx';
+
+// fetchWriterToken モック
+const mockFetchWriterToken = vi.fn();
+vi.mock('../../../../src/services/writer-token.js', () => ({
+  fetchWriterToken: (...args) => mockFetchWriterToken(...args),
+}));
 
 // テスト用コンポーネント
 function AuthDisplay() {
-  const { sasToken, isAdmin } = useAuth();
+  const { sasToken, isAdmin, writerSasToken } = useAuth();
   return (
     <div>
       <span data-testid="token">{sasToken || 'null'}</span>
       <span data-testid="admin">{isAdmin ? 'true' : 'false'}</span>
+      <span data-testid="writer-token">{writerSasToken || 'null'}</span>
     </div>
   );
 }
@@ -19,6 +26,7 @@ describe('useAuth', () => {
   beforeEach(() => {
     originalReplaceState = window.history.replaceState;
     window.history.replaceState = vi.fn();
+    mockFetchWriterToken.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -161,6 +169,84 @@ describe('useAuth', () => {
       '',
       expect.stringContaining('other=value')
     );
+  });
+});
+
+describe('writerSasToken', () => {
+  let originalReplaceState;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetchWriterToken.mockResolvedValue(null);
+    originalReplaceState = window.history.replaceState;
+    window.history.replaceState = vi.fn();
+  });
+
+  afterEach(() => {
+    window.history.replaceState = originalReplaceState;
+  });
+
+  it('管理者トークンがない場合、writerSasToken を非同期取得すること', async () => {
+    mockFetchWriterToken.mockResolvedValue('writer-token-abc');
+
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: new URL('http://localhost/'),
+    });
+
+    render(
+      <AuthProvider>
+        <AuthDisplay />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('writer-token').textContent).toBe('writer-token-abc');
+    });
+    expect(mockFetchWriterToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('管理者トークンがある場合、writerSasToken の取得をスキップすること', async () => {
+    mockFetchWriterToken.mockResolvedValue('should-not-be-used');
+
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: new URL('http://localhost/?token=admin-sas-token'),
+    });
+
+    render(
+      <AuthProvider>
+        <AuthDisplay />
+      </AuthProvider>
+    );
+
+    // 管理者トークンが設定されている
+    expect(screen.getByTestId('token').textContent).toBe('admin-sas-token');
+    // fetchWriterToken は呼ばれない
+    expect(mockFetchWriterToken).not.toHaveBeenCalled();
+    // writerSasToken は null のまま
+    expect(screen.getByTestId('writer-token').textContent).toBe('null');
+  });
+
+  it('writerSasToken 取得失敗時は null のままであること', async () => {
+    mockFetchWriterToken.mockResolvedValue(null);
+
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: new URL('http://localhost/'),
+    });
+
+    render(
+      <AuthProvider>
+        <AuthDisplay />
+      </AuthProvider>
+    );
+
+    // useEffect が実行されるのを待つ
+    await waitFor(() => {
+      expect(mockFetchWriterToken).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByTestId('writer-token').textContent).toBe('null');
   });
 });
 
