@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { fetchWriterToken } from '../services/writer-token.js';
 
 /**
- * 認証状態の型: { sasToken: string|null, isAdmin: boolean }
+ * 認証状態の型: { sasToken: string|null, isAdmin: boolean, writerSasToken: string|null }
  */
-const AuthContext = createContext({ sasToken: null, isAdmin: false });
+const AuthContext = createContext({ sasToken: null, isAdmin: false, writerSasToken: null });
 
 /**
  * URLクエリパラメータからSASトークンを抽出する
@@ -43,7 +44,20 @@ function extractAuth() {
  * 認証状態を提供するProvider
  */
 export function AuthProvider({ children }) {
-  const [auth] = useState(() => extractAuth());
+  const [auth, setAuth] = useState(() => ({
+    ...extractAuth(),
+    writerSasToken: null,
+  }));
+
+  useEffect(() => {
+    if (!auth.sasToken) {
+      fetchWriterToken().then((token) => {
+        if (token) {
+          setAuth((prev) => ({ ...prev, writerSasToken: token }));
+        }
+      });
+    }
+  }, []);
 
   return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
