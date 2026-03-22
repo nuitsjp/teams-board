@@ -245,7 +245,10 @@ export function MemberGroupTermDetailPage() {
 
     // 保存
     const handleSave = useCallback(async () => {
-        if (!termDetailService) return;
+        if (!termDetailService) {
+            setMessage({ type: 'error', text: '書き込み準備ができていません。しばらく待ってから再度お試しください' });
+            return;
+        }
         const errors = validateUrls(editData.references);
         if (errors.length > 0) {
             setUrlErrors(errors);

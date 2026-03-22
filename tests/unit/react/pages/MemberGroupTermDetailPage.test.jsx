@@ -1282,5 +1282,32 @@ describe('MemberGroupTermDetailPage', () => {
             // 管理者なので削除ボタンが表示される
             expect(screen.getByText('削除')).toBeInTheDocument();
         });
+
+        it('writerSasToken がない場合、保存時にエラーメッセージが表示されること', async () => {
+            const user = userEvent.setup();
+            // 本番環境をシミュレート（DEV fallback を無効化）
+            const originalDev = import.meta.env.DEV;
+            import.meta.env.DEV = false;
+            try {
+                // sasToken も writerSasToken も null → blobStorage が null
+                setupDefaultMocks();
+                renderWithRouter();
+
+                await waitFor(() => {
+                    expect(screen.getByText('メンバー情報を追加')).toBeInTheDocument();
+                });
+
+                await user.click(screen.getByText('メンバー情報を追加'));
+                await user.click(screen.getByText('保存'));
+
+                await waitFor(() => {
+                    expect(
+                        screen.getByText('書き込み準備ができていません。しばらく待ってから再度お試しください')
+                    ).toBeInTheDocument();
+                });
+            } finally {
+                import.meta.env.DEV = originalDev;
+            }
+        });
     });
 });
